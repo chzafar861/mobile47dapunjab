@@ -13,13 +13,6 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  useFonts,
-  Poppins_400Regular,
-  Poppins_500Medium,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
-} from "@expo-google-fonts/poppins";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
@@ -169,13 +162,6 @@ export default function ShopScreen() {
   const [cart, setCart] = useState<ShopItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [fontsLoaded] = useFonts({
-    Poppins_400Regular,
-    Poppins_500Medium,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
-  });
-
   useEffect(() => {
     loadCart();
   }, []);
@@ -200,8 +186,6 @@ export default function ShopScreen() {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
-
-  if (!fontsLoaded) return null;
 
   return (
     <View style={styles.container}>

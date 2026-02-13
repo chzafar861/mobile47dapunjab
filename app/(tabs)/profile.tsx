@@ -14,13 +14,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import {
-  useFonts,
-  Poppins_400Regular,
-  Poppins_500Medium,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
-} from "@expo-google-fonts/poppins";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
@@ -49,13 +42,6 @@ export default function ProfileScreen() {
     purpose: "",
   });
   const [bookings, setBookings] = useState<any[]>([]);
-
-  const [fontsLoaded] = useFonts({
-    Poppins_400Regular,
-    Poppins_500Medium,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
-  });
 
   useEffect(() => {
     loadProfile();
@@ -110,8 +96,6 @@ export default function ProfileScreen() {
       ]
     );
   };
-
-  if (!fontsLoaded) return null;
 
   return (
     <View style={styles.container}>
