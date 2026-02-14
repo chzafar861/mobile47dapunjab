@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   ScrollView,
+  Modal,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -21,14 +23,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getApiUrl } from "@/lib/query-client";
 
 type Mode = "login" | "signup";
-
-function showAlert(title: string, msg: string) {
-  if (Platform.OS === "web") {
-    window.alert(`${title}\n\n${msg}`);
-  } else {
-    Alert.alert(title, msg);
-  }
-}
+type ResetStep = "email" | "code" | "newPassword" | "done";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -46,6 +41,20 @@ export default function LoginScreen() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [oauthStatus, setOauthStatus] = useState<{ google: boolean; facebook: boolean }>({ google: false, facebook: false });
+
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetStep, setResetStep] = useState<ResetStep>("email");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [resetCodeDisplay, setResetCodeDisplay] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const codeInputRefs = useRef<(TextInput | null)[]>([]);
+  const [codeDigits, setCodeDigits] = useState<string[]>(["", "", "", "", "", ""]);
 
   useEffect(() => {
     (async () => {
@@ -122,6 +131,376 @@ export default function LoginScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setSocialLoading(null);
+    }
+  };
+
+  const openResetModal = () => {
+    setResetStep("email");
+    setResetEmail(email.trim());
+    setResetCode("");
+    setResetCodeDisplay("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setResetError("");
+    setResetSuccess("");
+    setCodeDigits(["", "", "", "", "", ""]);
+    setShowNewPassword(false);
+    setShowResetModal(true);
+  };
+
+  const closeResetModal = () => {
+    setShowResetModal(false);
+  };
+
+  const handleRequestCode = async () => {
+    setResetError("");
+    if (!resetEmail.trim()) {
+      setResetError("Please enter your email address");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(resetEmail.trim())) {
+      setResetError("Please enter a valid email address");
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const baseUrl = getApiUrl();
+      const res = await globalThis.fetch(new URL("/api/auth/forgot-password", baseUrl).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: resetEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setResetError(data.error || "Something went wrong");
+        return;
+      }
+      if (data.code) {
+        setResetCodeDisplay(data.code);
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setResetStep("code");
+    } catch (e: any) {
+      setResetError("Network error. Please try again.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleCodeDigitChange = (index: number, value: string) => {
+    if (value.length > 1) {
+      const digits = value.replace(/[^0-9]/g, "").split("").slice(0, 6);
+      const newDigits = [...codeDigits];
+      digits.forEach((d, i) => {
+        if (index + i < 6) newDigits[index + i] = d;
+      });
+      setCodeDigits(newDigits);
+      const nextFocus = Math.min(index + digits.length, 5);
+      codeInputRefs.current[nextFocus]?.focus();
+      return;
+    }
+    const cleanVal = value.replace(/[^0-9]/g, "");
+    const newDigits = [...codeDigits];
+    newDigits[index] = cleanVal;
+    setCodeDigits(newDigits);
+    if (cleanVal && index < 5) {
+      codeInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleCodeKeyPress = (index: number, key: string) => {
+    if (key === "Backspace" && !codeDigits[index] && index > 0) {
+      codeInputRefs.current[index - 1]?.focus();
+      const newDigits = [...codeDigits];
+      newDigits[index - 1] = "";
+      setCodeDigits(newDigits);
+    }
+  };
+
+  const handleVerifyCode = () => {
+    setResetError("");
+    const fullCode = codeDigits.join("");
+    if (fullCode.length !== 6) {
+      setResetError("Please enter the complete 6-digit code");
+      return;
+    }
+    setResetCode(fullCode);
+    setResetStep("newPassword");
+  };
+
+  const handleResetPassword = async () => {
+    setResetError("");
+    if (!newPassword || newPassword.length < 6) {
+      setResetError("Password must be at least 6 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setResetError("Passwords don't match");
+      return;
+    }
+    const fullCode = codeDigits.join("");
+    setResetLoading(true);
+    try {
+      const baseUrl = getApiUrl();
+      const res = await globalThis.fetch(new URL("/api/auth/reset-password", baseUrl).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: resetEmail.trim(), code: fullCode, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setResetError(data.error || "Reset failed");
+        return;
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setResetStep("done");
+      setResetSuccess(data.message || "Password reset successfully!");
+    } catch (e: any) {
+      setResetError("Network error. Please try again.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleResetDone = () => {
+    closeResetModal();
+    setEmail(resetEmail);
+    setPassword("");
+    setMode("login");
+    clearMessages();
+    setSuccessMsg("Password reset! Sign in with your new password.");
+  };
+
+  const renderResetContent = () => {
+    switch (resetStep) {
+      case "email":
+        return (
+          <>
+            <View style={resetStyles.iconCircle}>
+              <Ionicons name="mail-outline" size={32} color={Colors.light.primary} />
+            </View>
+            <Text style={resetStyles.title}>Forgot Password?</Text>
+            <Text style={resetStyles.subtitle}>
+              Enter your email and we'll send you a code to reset your password.
+            </Text>
+
+            {resetError ? (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={16} color="#D32F2F" />
+                <Text style={styles.errorText}>{resetError}</Text>
+              </View>
+            ) : null}
+
+            <View style={[styles.inputRow, { marginBottom: 20 }]}>
+              <Ionicons name="mail-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email address"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={resetEmail}
+                onChangeText={(t) => { setResetEmail(t); setResetError(""); }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                testID="reset-email-input"
+              />
+            </View>
+
+            <Pressable
+              onPress={handleRequestCode}
+              disabled={resetLoading}
+              style={({ pressed }) => [styles.submitBtn, { opacity: pressed ? 0.9 : 1, marginTop: 0 }]}
+              testID="send-code-btn"
+            >
+              <LinearGradient
+                colors={[Colors.light.primary, Colors.light.primaryDark]}
+                style={styles.submitGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                {resetLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="send-outline" size={18} color="#fff" />
+                    <Text style={styles.submitText}>Send Reset Code</Text>
+                  </>
+                )}
+              </LinearGradient>
+            </Pressable>
+          </>
+        );
+
+      case "code":
+        return (
+          <>
+            <View style={resetStyles.iconCircle}>
+              <Ionicons name="keypad-outline" size={32} color={Colors.light.primary} />
+            </View>
+            <Text style={resetStyles.title}>Enter Reset Code</Text>
+            <Text style={resetStyles.subtitle}>
+              Enter the 6-digit code to verify your identity.
+            </Text>
+
+            {resetCodeDisplay ? (
+              <View style={resetStyles.codeDisplayBanner}>
+                <Ionicons name="key-outline" size={18} color={Colors.light.primary} />
+                <Text style={resetStyles.codeDisplayText}>
+                  Your code: <Text style={resetStyles.codeDisplayCode}>{resetCodeDisplay}</Text>
+                </Text>
+              </View>
+            ) : null}
+
+            {resetError ? (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={16} color="#D32F2F" />
+                <Text style={styles.errorText}>{resetError}</Text>
+              </View>
+            ) : null}
+
+            <View style={resetStyles.codeRow}>
+              {codeDigits.map((digit, i) => (
+                <TextInput
+                  key={i}
+                  ref={(ref) => { codeInputRefs.current[i] = ref; }}
+                  style={[
+                    resetStyles.codeInput,
+                    digit ? resetStyles.codeInputFilled : null,
+                  ]}
+                  value={digit}
+                  onChangeText={(v) => handleCodeDigitChange(i, v)}
+                  onKeyPress={({ nativeEvent }) => handleCodeKeyPress(i, nativeEvent.key)}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  selectTextOnFocus
+                  testID={`code-digit-${i}`}
+                />
+              ))}
+            </View>
+
+            <Pressable
+              onPress={handleVerifyCode}
+              style={({ pressed }) => [styles.submitBtn, { opacity: pressed ? 0.9 : 1, marginTop: 4 }]}
+              testID="verify-code-btn"
+            >
+              <LinearGradient
+                colors={[Colors.light.primary, Colors.light.primaryDark]}
+                style={styles.submitGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Ionicons name="checkmark-outline" size={18} color="#fff" />
+                <Text style={styles.submitText}>Verify Code</Text>
+              </LinearGradient>
+            </Pressable>
+          </>
+        );
+
+      case "newPassword":
+        return (
+          <>
+            <View style={resetStyles.iconCircle}>
+              <Ionicons name="lock-open-outline" size={32} color={Colors.light.primary} />
+            </View>
+            <Text style={resetStyles.title}>New Password</Text>
+            <Text style={resetStyles.subtitle}>
+              Choose a strong new password for your account.
+            </Text>
+
+            {resetError ? (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={16} color="#D32F2F" />
+                <Text style={styles.errorText}>{resetError}</Text>
+              </View>
+            ) : null}
+
+            <View style={[styles.inputRow, { marginBottom: 14 }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="New password (min 6 characters)"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={newPassword}
+                onChangeText={(t) => { setNewPassword(t); setResetError(""); }}
+                secureTextEntry={!showNewPassword}
+                autoCapitalize="none"
+                testID="new-password-input"
+              />
+              <Pressable onPress={() => setShowNewPassword(!showNewPassword)} style={styles.eyeBtn}>
+                <Ionicons name={showNewPassword ? "eye-off-outline" : "eye-outline"} size={20} color={Colors.light.tabIconDefault} />
+              </Pressable>
+            </View>
+
+            <View style={[styles.inputRow, { marginBottom: 20 }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm new password"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={confirmPassword}
+                onChangeText={(t) => { setConfirmPassword(t); setResetError(""); }}
+                secureTextEntry={!showNewPassword}
+                autoCapitalize="none"
+                testID="confirm-password-input"
+              />
+            </View>
+
+            <Pressable
+              onPress={handleResetPassword}
+              disabled={resetLoading}
+              style={({ pressed }) => [styles.submitBtn, { opacity: pressed ? 0.9 : 1, marginTop: 0 }]}
+              testID="reset-password-btn"
+            >
+              <LinearGradient
+                colors={[Colors.light.primary, Colors.light.primaryDark]}
+                style={styles.submitGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                {resetLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="shield-checkmark-outline" size={18} color="#fff" />
+                    <Text style={styles.submitText}>Reset Password</Text>
+                  </>
+                )}
+              </LinearGradient>
+            </Pressable>
+          </>
+        );
+
+      case "done":
+        return (
+          <>
+            <View style={[resetStyles.iconCircle, { backgroundColor: "#E8F5E9" }]}>
+              <Ionicons name="checkmark-circle" size={36} color="#2E7D32" />
+            </View>
+            <Text style={resetStyles.title}>Password Reset!</Text>
+            <Text style={resetStyles.subtitle}>
+              {resetSuccess || "Your password has been reset successfully. You can now sign in with your new password."}
+            </Text>
+
+            <Pressable
+              onPress={handleResetDone}
+              style={({ pressed }) => [styles.submitBtn, { opacity: pressed ? 0.9 : 1, marginTop: 8 }]}
+              testID="back-to-login-btn"
+            >
+              <LinearGradient
+                colors={[Colors.light.primary, Colors.light.primaryDark]}
+                style={styles.submitGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Ionicons name="log-in-outline" size={18} color="#fff" />
+                <Text style={styles.submitText}>Back to Sign In</Text>
+              </LinearGradient>
+            </Pressable>
+          </>
+        );
     }
   };
 
@@ -254,6 +633,12 @@ export default function LoginScreen() {
               </Pressable>
             </View>
 
+            {mode === "login" && (
+              <Pressable onPress={openResetModal} style={styles.forgotBtn} testID="forgot-password-btn">
+                <Text style={styles.forgotText}>Forgot Password?</Text>
+              </Pressable>
+            )}
+
             <Pressable
               onPress={handleSubmit}
               disabled={loading}
@@ -341,9 +726,168 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={showResetModal}
+        animationType="slide"
+        transparent
+        onRequestClose={closeResetModal}
+      >
+        <View style={resetStyles.overlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={resetStyles.keyboardAvoid}
+          >
+            <View style={resetStyles.sheet}>
+              <View style={resetStyles.handle} />
+              <Pressable onPress={closeResetModal} style={resetStyles.closeBtn} testID="close-reset-modal">
+                <Ionicons name="close" size={22} color={Colors.light.tabIconDefault} />
+              </Pressable>
+
+              <View style={resetStyles.stepIndicator}>
+                {["email", "code", "newPassword", "done"].map((step, i) => (
+                  <View
+                    key={step}
+                    style={[
+                      resetStyles.stepDot,
+                      i <= ["email", "code", "newPassword", "done"].indexOf(resetStep) && resetStyles.stepDotActive,
+                    ]}
+                  />
+                ))}
+              </View>
+
+              {renderResetContent()}
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
     </View>
   );
 }
+
+const { width: screenWidth } = Dimensions.get("window");
+
+const resetStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  keyboardAvoid: {
+    justifyContent: "flex-end",
+  },
+  sheet: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    paddingTop: 12,
+    minHeight: 380,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#D9D9D9",
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  closeBtn: {
+    position: "absolute" as const,
+    top: 16,
+    right: 16,
+    zIndex: 10,
+    padding: 4,
+  },
+  stepIndicator: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 24,
+  },
+  stepDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#E0E0E0",
+  },
+  stepDotActive: {
+    backgroundColor: Colors.light.primary,
+  },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.light.backgroundSecondary,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  title: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 22,
+    color: Colors.light.text,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 14,
+    color: Colors.light.tabIconDefault,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 24,
+    paddingHorizontal: 10,
+  },
+  codeDisplayBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#E8F5E9",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#C8E6C9",
+  },
+  codeDisplayText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 14,
+    color: "#2E7D32",
+    flex: 1,
+  },
+  codeDisplayCode: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 18,
+    letterSpacing: 3,
+    color: Colors.light.primary,
+  },
+  codeRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 24,
+  },
+  codeInput: {
+    width: Math.min(48, (screenWidth - 80) / 6),
+    height: 56,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.light.border,
+    backgroundColor: Colors.light.backgroundSecondary,
+    textAlign: "center",
+    fontFamily: "Poppins_700Bold",
+    fontSize: 22,
+    color: Colors.light.text,
+  },
+  codeInputFilled: {
+    borderColor: Colors.light.primary,
+    backgroundColor: "#E8F5E9",
+  },
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -478,6 +1022,18 @@ const styles = StyleSheet.create({
   },
   eyeBtn: {
     padding: 6,
+  },
+  forgotBtn: {
+    alignSelf: "flex-end",
+    marginBottom: 8,
+    marginTop: -6,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  forgotText: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 13,
+    color: Colors.light.primary,
   },
   submitBtn: {
     borderRadius: 14,
