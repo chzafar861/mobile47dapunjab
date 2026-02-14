@@ -8,6 +8,8 @@ import {
   Platform,
   Alert,
   TextInput,
+  ActivityIndicator,
+  KeyboardAvoidingView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
@@ -18,12 +20,59 @@ import { useAuth } from "@/lib/auth-context";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 
+function InputField({
+  icon,
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  keyboardType,
+  multiline,
+  editable = true,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  onChangeText?: (t: string) => void;
+  placeholder?: string;
+  keyboardType?: "default" | "phone-pad" | "email-address";
+  multiline?: boolean;
+  editable?: boolean;
+}) {
+  return (
+    <View style={styles.fieldContainer}>
+      <View style={styles.fieldLabelRow}>
+        <Ionicons name={icon as any} size={16} color={Colors.light.primary} />
+        <Text style={styles.fieldLabel}>{label}</Text>
+      </View>
+      <TextInput
+        style={[
+          styles.input,
+          multiline && styles.textArea,
+          !editable && styles.inputDisabled,
+        ]}
+        placeholder={placeholder || label}
+        placeholderTextColor={Colors.light.tabIconDefault}
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType || "default"}
+        multiline={multiline}
+        numberOfLines={multiline ? 3 : 1}
+        textAlignVertical={multiline ? "top" : "center"}
+        editable={editable}
+        testID={`input-${label.toLowerCase().replace(/\s/g, "-")}`}
+      />
+    </View>
+  );
+}
+
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user, isAdmin, logout, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editData, setEditData] = useState({
     name: user?.name || "",
     phone: user?.phone || "",
@@ -56,18 +105,55 @@ export default function ProfileScreen() {
     } catch {}
   };
 
+  const startEditing = () => {
+    setEditData({
+      name: user?.name || "",
+      phone: user?.phone || "",
+      city: user?.city || "",
+      country: user?.country || "",
+      purpose: user?.purpose || "",
+    });
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditData({
+      name: user?.name || "",
+      phone: user?.phone || "",
+      city: user?.city || "",
+      country: user?.country || "",
+      purpose: user?.purpose || "",
+    });
+    setIsEditing(false);
+  };
+
   const saveProfile = async () => {
     if (!editData.name.trim()) {
-      Alert.alert("Required", "Please enter your name.");
+      if (Platform.OS === "web") {
+        window.alert("Please enter your name.");
+      } else {
+        Alert.alert("Required", "Please enter your name.");
+      }
       return;
     }
+    setIsSaving(true);
     try {
       await updateProfile(editData);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setIsEditing(false);
-      Alert.alert("Saved", "Your profile has been updated.");
+      if (Platform.OS === "web") {
+        window.alert("Your profile has been updated.");
+      } else {
+        Alert.alert("Saved", "Your profile has been updated.");
+      }
     } catch {
-      Alert.alert("Error", "Could not save profile.");
+      if (Platform.OS === "web") {
+        window.alert("Could not save profile. Please try again.");
+      } else {
+        Alert.alert("Error", "Could not save profile. Please try again.");
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -93,9 +179,14 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={90}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           paddingTop: insets.top + webTopInset + 16,
           paddingBottom: insets.bottom + webBottomInset + 100,
@@ -123,84 +214,123 @@ export default function ProfileScreen() {
               <Text style={styles.adminBadgeText}>Admin</Text>
             </View>
           )}
+          {!isEditing && (
+            <Pressable
+              onPress={startEditing}
+              style={({ pressed }) => [
+                styles.editProfileBtn,
+                { opacity: pressed ? 0.85 : 1 },
+              ]}
+              testID="edit-profile-btn"
+            >
+              <Ionicons name="create-outline" size={16} color={Colors.light.primary} />
+              <Text style={styles.editProfileBtnText}>Edit Profile</Text>
+            </Pressable>
+          )}
         </LinearGradient>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              {isEditing ? "Edit Profile" : "Profile"}
-            </Text>
-            <Pressable
-              onPress={() => {
-                if (isEditing) {
-                  saveProfile();
-                } else {
-                  setIsEditing(true);
-                }
-              }}
-            >
-              <Ionicons
-                name={isEditing ? "checkmark" : "create-outline"}
-                size={22}
-                color={Colors.light.primary}
-              />
-            </Pressable>
-          </View>
+        {isEditing ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Edit Profile</Text>
 
-          {isEditing ? (
-            <View style={styles.formFields}>
-              <TextInput
-                style={styles.input}
-                placeholder="Full Name"
-                placeholderTextColor={Colors.light.tabIconDefault}
+            <View style={styles.formCard}>
+              <InputField
+                icon="person-outline"
+                label="Full Name"
                 value={editData.name}
                 onChangeText={(t) => setEditData({ ...editData, name: t })}
+                placeholder="Enter your full name"
               />
-              <TextInput
-                style={styles.input}
-                placeholder="Phone Number"
-                placeholderTextColor={Colors.light.tabIconDefault}
+              <InputField
+                icon="mail-outline"
+                label="Email"
+                value={user?.email || ""}
+                editable={false}
+              />
+              <InputField
+                icon="call-outline"
+                label="Phone"
                 value={editData.phone}
                 onChangeText={(t) => setEditData({ ...editData, phone: t })}
+                placeholder="e.g. +92 300 1234567"
                 keyboardType="phone-pad"
               />
-              <TextInput
-                style={styles.input}
-                placeholder="City"
-                placeholderTextColor={Colors.light.tabIconDefault}
+              <InputField
+                icon="location-outline"
+                label="City"
                 value={editData.city}
                 onChangeText={(t) => setEditData({ ...editData, city: t })}
+                placeholder="e.g. Lahore, London, New York"
               />
-              <TextInput
-                style={styles.input}
-                placeholder="Country"
-                placeholderTextColor={Colors.light.tabIconDefault}
+              <InputField
+                icon="globe-outline"
+                label="Country"
                 value={editData.country}
                 onChangeText={(t) => setEditData({ ...editData, country: t })}
+                placeholder="e.g. Pakistan, UK, USA"
               />
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Purpose of Visit (e.g., tourism, family visit)"
-                placeholderTextColor={Colors.light.tabIconDefault}
+              <InputField
+                icon="airplane-outline"
+                label="Purpose of Visit"
                 value={editData.purpose}
                 onChangeText={(t) => setEditData({ ...editData, purpose: t })}
+                placeholder="e.g. Tourism, Family Visit, Business"
                 multiline
-                numberOfLines={3}
-                textAlignVertical="top"
               />
             </View>
-          ) : (
+
+            <View style={styles.formActions}>
+              <Pressable
+                onPress={cancelEditing}
+                style={({ pressed }) => [
+                  styles.cancelBtn,
+                  { opacity: pressed ? 0.85 : 1 },
+                ]}
+                testID="cancel-edit-btn"
+              >
+                <Ionicons name="close" size={18} color={Colors.light.textSecondary} />
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={saveProfile}
+                disabled={isSaving}
+                style={({ pressed }) => [
+                  styles.saveBtn,
+                  { opacity: pressed || isSaving ? 0.75 : 1 },
+                ]}
+                testID="save-profile-btn"
+              >
+                {isSaving ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark" size={18} color="#fff" />
+                    <Text style={styles.saveBtnText}>Save Changes</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Profile Details</Text>
             <View style={styles.profileDetails}>
+              <ProfileRow icon="person-outline" label="Name" value={user?.name || ""} />
+              <View style={styles.rowDivider} />
               <ProfileRow icon="call-outline" label="Phone" value={user?.phone || ""} />
+              <View style={styles.rowDivider} />
               <ProfileRow icon="mail-outline" label="Email" value={user?.email || ""} />
+              <View style={styles.rowDivider} />
               <ProfileRow icon="location-outline" label="City" value={user?.city || ""} />
+              <View style={styles.rowDivider} />
               <ProfileRow icon="globe-outline" label="Country" value={user?.country || ""} />
+              <View style={styles.rowDivider} />
               <ProfileRow icon="airplane-outline" label="Purpose" value={user?.purpose || ""} />
             </View>
-          )}
-        </View>
+          </View>
+        )}
 
-        {isAdmin && (
+        {isAdmin && !isEditing && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Admin Panel</Text>
             <View style={styles.adminStats}>
@@ -249,55 +379,62 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Links</Text>
-          <Pressable
-            onPress={() => router.push("/history")}
-            style={({ pressed }) => [
-              styles.linkRow,
-              { opacity: pressed ? 0.8 : 1 },
-            ]}
-          >
-            <MaterialCommunityIcons name="mosque" size={20} color={Colors.light.primary} />
-            <Text style={styles.linkText}>History & Heritage</Text>
-            <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
-          </Pressable>
-          <Pressable
-            onPress={() => router.push("/submit-details")}
-            style={({ pressed }) => [
-              styles.linkRow,
-              { opacity: pressed ? 0.8 : 1 },
-            ]}
-          >
-            <Feather name="send" size={20} color={Colors.light.accent} />
-            <Text style={styles.linkText}>Submit Property Details</Text>
-            <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
-          </Pressable>
-          <Pressable
-            onPress={handleLogout}
-            style={({ pressed }) => [
-              styles.linkRow,
-              { opacity: pressed ? 0.8 : 1 },
-            ]}
-          >
-            <Ionicons name="log-out-outline" size={20} color={Colors.light.danger} />
-            <Text style={[styles.linkText, { color: Colors.light.danger }]}>Sign Out</Text>
-            <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
-          </Pressable>
-        </View>
+        {!isEditing && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Quick Links</Text>
+            <Pressable
+              onPress={() => router.push("/history")}
+              style={({ pressed }) => [
+                styles.linkRow,
+                { opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <MaterialCommunityIcons name="mosque" size={20} color={Colors.light.primary} />
+              <Text style={styles.linkText}>History & Heritage</Text>
+              <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/submit-details")}
+              style={({ pressed }) => [
+                styles.linkRow,
+                { opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <Feather name="send" size={20} color={Colors.light.accent} />
+              <Text style={styles.linkText}>Submit Property Details</Text>
+              <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
+            </Pressable>
+            <Pressable
+              onPress={handleLogout}
+              style={({ pressed }) => [
+                styles.linkRow,
+                { opacity: pressed ? 0.8 : 1 },
+              ]}
+              testID="sign-out-btn"
+            >
+              <Ionicons name="log-out-outline" size={20} color={Colors.light.danger} />
+              <Text style={[styles.linkText, { color: Colors.light.danger }]}>Sign Out</Text>
+              <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
+            </Pressable>
+          </View>
+        )}
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 function ProfileRow({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <View style={styles.profileRow}>
-      <Ionicons name={icon as any} size={18} color={Colors.light.textSecondary} />
-      <Text style={styles.profileLabel}>{label}</Text>
-      <Text style={styles.profileValue} numberOfLines={1}>
-        {value || "Not set"}
-      </Text>
+      <View style={styles.profileIconWrap}>
+        <Ionicons name={icon as any} size={16} color={Colors.light.primary} />
+      </View>
+      <View style={styles.profileRowText}>
+        <Text style={styles.profileLabel}>{label}</Text>
+        <Text style={styles.profileValue} numberOfLines={1}>
+          {value || "Not set"}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -355,15 +492,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#fff",
   },
+  editProfileBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 14,
+  },
+  editProfileBtnText: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 13,
+    color: Colors.light.primary,
+  },
   section: {
     paddingHorizontal: 16,
     marginBottom: 20,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
   },
   sectionTitle: {
     fontFamily: "Poppins_600SemiBold",
@@ -371,11 +517,27 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     marginBottom: 12,
   },
-  formFields: {
-    gap: 10,
+  formCard: {
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderRadius: 16,
+    padding: 16,
+    gap: 16,
+  },
+  fieldContainer: {
+    gap: 6,
+  },
+  fieldLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  fieldLabel: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 13,
+    color: Colors.light.textSecondary,
   },
   input: {
-    backgroundColor: Colors.light.backgroundSecondary,
+    backgroundColor: Colors.light.background,
     borderRadius: 12,
     padding: 14,
     fontFamily: "Poppins_400Regular",
@@ -384,31 +546,89 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.light.border,
   },
+  inputDisabled: {
+    backgroundColor: Colors.light.border + "40",
+    color: Colors.light.tabIconDefault,
+  },
   textArea: {
     minHeight: 80,
+  },
+  formActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 16,
+  },
+  cancelBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  cancelBtnText: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+  },
+  saveBtn: {
+    flex: 1.5,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: Colors.light.primary,
+    borderRadius: 14,
+    padding: 14,
+  },
+  saveBtnText: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 14,
+    color: "#fff",
   },
   profileDetails: {
     backgroundColor: Colors.light.backgroundSecondary,
     borderRadius: 16,
     padding: 16,
-    gap: 12,
+    gap: 0,
   },
   profileRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
+    paddingVertical: 10,
+  },
+  profileIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: Colors.light.primary + "15",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileRowText: {
+    flex: 1,
   },
   profileLabel: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    width: 60,
+    fontFamily: "Poppins_400Regular",
+    fontSize: 11,
+    color: Colors.light.tabIconDefault,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.5,
   },
   profileValue: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 13,
+    fontFamily: "Poppins_500Medium",
+    fontSize: 14,
     color: Colors.light.text,
-    flex: 1,
+    marginTop: 1,
+  },
+  rowDivider: {
+    height: 1,
+    backgroundColor: Colors.light.border + "60",
   },
   adminStats: {
     flexDirection: "row",
