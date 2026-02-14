@@ -185,7 +185,7 @@ export default function ServicesScreen() {
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                setActiveBooking("Protocol Service");
+                router.push("/protocol-request");
               }}
               style={({ pressed }) => [
                 styles.bookBtn,
