@@ -14,6 +14,7 @@ import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { firebaseApi } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
 import Colors from "@/constants/colors";
 
 interface ServiceBooking {
@@ -235,7 +236,7 @@ export default function ServicesScreen() {
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                setActiveBooking("Video Service ($100 - No Editing)");
+                router.push("/video-request");
               }}
               style={({ pressed }) => [
                 styles.bookBtn,

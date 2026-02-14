@@ -39,6 +39,7 @@ function AuthGate() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="history" options={{ headerShown: false }} />
           <Stack.Screen name="submit-details" options={{ headerShown: false }} />
+          <Stack.Screen name="video-request" options={{ headerShown: false }} />
           <Stack.Screen name="admin" options={{ headerShown: false }} />
         </>
       )}
