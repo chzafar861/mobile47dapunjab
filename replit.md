@@ -4,6 +4,9 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, Bronze Migration & Family Search Portal, history, and property detail submissions.
 
 ## Recent Changes
+- 2026-02-14: Enhanced History page with image-based cards, hero banner, expandable details, location/year metadata, significance badges, 11 detailed entries with stock images
+- 2026-02-14: Enhanced Pakistan Guide with image sections, hero banners, image place cards for tourism destinations, richer content across all sections (Partition, Old History, Modern History, Capital, Economy, Tourism)
+- 2026-02-14: Added 16 stock images for landmarks (Lahore Fort, Badshahi Mosque, Faisal Mosque, Mohenjo-daro, Hunza Valley, K2, Swat Valley, Shalimar Gardens, Taxila, etc.)
 - 2026-02-14: Replaced Rent tab with Bronze Migration & Family Search Portal (Explore tab)
 - 2026-02-14: Added migration_records table with search, submit, and filter APIs
 - 2026-02-14: Switched from Firebase Firestore to PostgreSQL for reliable cloud persistence
