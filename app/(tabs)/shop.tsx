@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { db, collection, addDoc, getDocs, deleteDoc, doc, query } from "@/lib/firebase";
+import { firebaseApi } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 
@@ -168,17 +168,15 @@ export default function ShopScreen() {
 
   const loadCart = async () => {
     try {
-      const snapshot = await getDocs(collection(db, "cart"));
-      const items: ShopItem[] = snapshot.docs.map((d) => d.data() as ShopItem);
+      const items = await firebaseApi.getCart();
       setCart(items);
     } catch {}
   };
 
   const addToCart = async (item: ShopItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const cartItem = { ...item, cartId: Date.now().toString() + Math.random().toString(36).substr(2, 9) };
     try {
-      await addDoc(collection(db, "cart"), cartItem);
+      await firebaseApi.addToCart(item);
       setCart((prev) => [...prev, item]);
       Alert.alert("Added to Cart", `${item.name} has been added to your cart.`);
     } catch {

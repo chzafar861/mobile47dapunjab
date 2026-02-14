@@ -13,7 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { db, collection, getDocs, deleteDoc, doc, query } from "@/lib/firebase";
+import { firebaseApi } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 
@@ -31,16 +31,16 @@ export default function AdminScreen() {
 
   const loadData = async () => {
     try {
-      const bSnap = await getDocs(collection(db, "bookings"));
-      setBookings(bSnap.docs.map((d) => ({ ...d.data(), docId: d.id })));
-      const pSnap = await getDocs(collection(db, "propertyDetails"));
-      setPropertyDetails(pSnap.docs.map((d) => ({ ...d.data(), docId: d.id })));
+      const [b, p] = await Promise.all([
+        firebaseApi.getBookings(),
+        firebaseApi.getPropertyDetails(),
+      ]);
+      setBookings(b);
+      setPropertyDetails(p);
     } catch {}
   };
 
   const deleteBooking = async (id: string) => {
-    const item = bookings.find((b) => b.docId === id || b.id === id);
-    const docId = item?.docId || id;
     Alert.alert("Delete Booking", "Are you sure?", [
       { text: "Cancel", style: "cancel" },
       {
@@ -48,9 +48,9 @@ export default function AdminScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            await deleteDoc(doc(db, "bookings", docId));
+            await firebaseApi.deleteBooking(id);
           } catch {}
-          setBookings((prev) => prev.filter((b) => (b.docId || b.id) !== (item?.docId || id)));
+          setBookings((prev) => prev.filter((b) => b.docId !== id));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         },
       },
@@ -58,8 +58,6 @@ export default function AdminScreen() {
   };
 
   const deleteProperty = async (id: string) => {
-    const item = propertyDetails.find((p) => p.docId === id || p.id === id);
-    const docId = item?.docId || id;
     Alert.alert("Delete Property", "Are you sure?", [
       { text: "Cancel", style: "cancel" },
       {
@@ -67,9 +65,9 @@ export default function AdminScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            await deleteDoc(doc(db, "propertyDetails", docId));
+            await firebaseApi.deletePropertyDetail(id);
           } catch {}
-          setPropertyDetails((prev) => prev.filter((p) => (p.docId || p.id) !== (item?.docId || id)));
+          setPropertyDetails((prev) => prev.filter((p) => p.docId !== id));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         },
       },

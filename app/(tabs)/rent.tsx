@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { db, collection, addDoc } from "@/lib/firebase";
+import { firebaseApi } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 
@@ -197,7 +197,7 @@ export default function RentScreen() {
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      await addDoc(collection(db, "rentalInquiries"), {
+      await firebaseApi.addRentalInquiry({
         rentalId: item.id,
         title: item.title,
         type: item.type,

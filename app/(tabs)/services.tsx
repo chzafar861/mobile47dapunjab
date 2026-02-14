@@ -12,7 +12,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { db, collection, addDoc } from "@/lib/firebase";
+import { firebaseApi } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 
@@ -50,10 +50,10 @@ function BookingForm({ serviceType, onClose, onSubmit }: BookingFormProps) {
       date: new Date().toISOString(),
     };
     try {
-      await addDoc(collection(db, "bookings"), booking);
+      await firebaseApi.addBooking(booking);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSubmit(booking);
-    } catch {
+    } catch (e: any) {
       Alert.alert("Error", "Could not save booking.");
     }
   };

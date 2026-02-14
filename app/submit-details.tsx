@@ -12,7 +12,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { db, collection, addDoc } from "@/lib/firebase";
+import { firebaseApi } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 
@@ -59,7 +59,7 @@ export default function SubmitDetailsScreen() {
     };
 
     try {
-      await addDoc(collection(db, "propertyDetails"), detail);
+      await firebaseApi.addPropertyDetail(detail);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSubmitted(true);
     } catch {

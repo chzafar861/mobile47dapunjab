@@ -1,40 +1,38 @@
-import { initializeApp } from "firebase/app";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
-  setDoc,
-  getDoc,
-  query,
-  orderBy,
-  Timestamp,
-} from "firebase/firestore";
+import { getApiUrl } from "./query-client";
+import { fetch } from "expo/fetch";
 
-const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-};
+async function apiCall(method: string, path: string, data?: any) {
+  const baseUrl = getApiUrl();
+  const url = new URL(path, baseUrl);
+  const res = await fetch(url.toString(), {
+    method,
+    headers: data ? { "Content-Type": "application/json" } : {},
+    body: data ? JSON.stringify(data) : undefined,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || res.statusText);
+  }
+  return res.json();
+}
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+export const firebaseApi = {
+  addBooking: (data: any) => apiCall("POST", "/api/bookings", data),
+  getBookings: () => apiCall("GET", "/api/bookings"),
+  deleteBooking: (id: string) => apiCall("DELETE", `/api/bookings/${id}`),
 
-export { db };
-export {
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc,
-  setDoc,
-  getDoc,
-  query,
-  orderBy,
-  Timestamp,
+  addToCart: (data: any) => apiCall("POST", "/api/cart", data),
+  getCart: () => apiCall("GET", "/api/cart"),
+  deleteCartItem: (id: string) => apiCall("DELETE", `/api/cart/${id}`),
+
+  addRentalInquiry: (data: any) => apiCall("POST", "/api/rental-inquiries", data),
+
+  addPropertyDetail: (data: any) => apiCall("POST", "/api/property-details", data),
+  getPropertyDetails: () => apiCall("GET", "/api/property-details"),
+  deletePropertyDetail: (id: string) => apiCall("DELETE", `/api/property-details/${id}`),
+
+  getProfile: () => apiCall("GET", "/api/profile"),
+  saveProfile: (data: any) => apiCall("PUT", "/api/profile", data),
+
+  clearAll: () => apiCall("POST", "/api/clear-all"),
 };
