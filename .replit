@@ -72,3 +72,13 @@ task = "shell.exec"
 args = "npm run expo:dev"
 waitForPort = 8081
 ensurePreviewReachable = "/status"
+
+[userenv]
+
+[userenv.shared]
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN = "dapunjab-replat.firebaseapp.com"
+EXPO_PUBLIC_FIREBASE_PROJECT_ID = "dapunjab-replat"
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET = "dapunjab-replat.firebasestorage.app"
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = "782339856043"
+EXPO_PUBLIC_FIREBASE_APP_ID = "1:782339856043:web:5e6d7f04f248ad078989ee"
+EXPO_PUBLIC_FIREBASE_API_KEY = "AIzaSyA4PLyqPDBAT_LmfAHWZPmOyQL5zjjfwS8"
