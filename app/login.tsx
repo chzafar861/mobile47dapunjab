@@ -27,7 +27,6 @@ type ResetStep = "email" | "code" | "newPassword" | "done";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { login, register, refreshUser } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
@@ -514,15 +513,15 @@ export default function LoginScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
-            paddingTop: insets.top + webTopInset,
             paddingBottom: insets.bottom + webBottomInset + 40,
             flexGrow: 1,
+            backgroundColor: Colors.light.background,
           }}
           keyboardShouldPersistTaps="handled"
         >
           <LinearGradient
             colors={[Colors.light.primaryDark, Colors.light.primary, Colors.light.primaryDark]}
-            style={styles.headerGradient}
+            style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
@@ -892,10 +891,11 @@ const resetStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    backgroundColor: Colors.light.primaryDark,
   },
   headerGradient: {
-    paddingVertical: 48,
+    paddingBottom: 48,
+    paddingTop: 0,
     alignItems: "center",
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
@@ -932,6 +932,7 @@ const styles = StyleSheet.create({
   formContainer: {
     paddingHorizontal: 24,
     paddingTop: 28,
+    backgroundColor: Colors.light.background,
   },
   modeToggle: {
     flexDirection: "row",
