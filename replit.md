@@ -1,18 +1,20 @@
 # 47daPunjab
 
 ## Overview
-A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, rentals, history, and property detail submissions.
+A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, Bronze Migration & Family Search Portal, history, and property detail submissions.
 
 ## Recent Changes
+- 2026-02-14: Replaced Rent tab with Bronze Migration & Family Search Portal (Explore tab)
+- 2026-02-14: Added migration_records table with search, submit, and filter APIs
 - 2026-02-14: Switched from Firebase Firestore to PostgreSQL for reliable cloud persistence
-- 2026-02-14: All API endpoints verified working (bookings, cart, properties, profile, rentals)
+- 2026-02-14: All API endpoints verified working (bookings, cart, properties, profile, migration)
 - 2026-02-13: Initial build - all core screens created
 
 ## Project Architecture
 - **Stack**: Expo Router (React Native) + Express backend
 - **Data**: PostgreSQL (built-in) for cloud persistence via JSONB columns
-- **Database Tables**: bookings, cart, property_details, rental_inquiries, users
-- **API Layer**: server/firebase.ts abstracts DB operations; server/routes.ts defines REST endpoints
+- **Database Tables**: bookings, cart, property_details, rental_inquiries, users, auth_users, migration_records
+- **API Layer**: server/firebase.ts abstracts DB operations; server/routes.ts defines REST endpoints; server/auth.ts handles authentication
 - **Font**: Poppins (Google Fonts)
 - **Colors**: Emerald green + Gold accent (Pakistan inspired)
 
@@ -20,14 +22,22 @@ A mobile service platform for Punjab, Pakistan visitors. Features protocol servi
 - `app/(tabs)/index.tsx` - Home with services overview
 - `app/(tabs)/services.tsx` - Protocol, Video ($100/hr), Customs services with booking
 - `app/(tabs)/shop.tsx` - Product marketplace with cart
-- `app/(tabs)/rent.tsx` - Rental listings (property, vehicle, equipment)
+- `app/(tabs)/rent.tsx` - Bronze Migration & Family Search Portal (search/submit 1947 partition records)
 - `app/(tabs)/profile.tsx` - User profile + admin toggle
 - `app/history.tsx` - Historical/destroyed places + modern Pakistan
 - `app/submit-details.tsx` - Property/land detail submission form
 - `app/admin.tsx` - Full admin dashboard with booking/property management
 
+### Migration Portal Features
+- Search by name, village, district, year, location (ILIKE full-text search)
+- Filter by migration period (before/after 1947) and district
+- Submit family migration records with validation
+- Expandable result cards showing origin village, current location, notes
+- 10 seed records with real historical migration data
+- API: GET/POST /api/migration-records, DELETE /api/migration-records/:id, PATCH /api/migration-records/:id/status
+
 ### Tab Navigation
-5 tabs: Home, Services, Shop, Rent, Profile
+5 tabs: Home, Services, Shop, Explore (Migration Portal), Profile
 Supports NativeTabs (iOS 26 liquid glass) and classic Tabs with blur
 
 ## User Preferences
