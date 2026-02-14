@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, router, useSegments, useRootNavigationState } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -21,6 +21,21 @@ SplashScreen.preventAutoHideAsync();
 
 function AuthGate() {
   const { user, isLoading } = useAuth();
+  const segments = useSegments();
+  const navigationState = useRootNavigationState();
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!navigationState?.key) return;
+
+    const inAuthScreen = segments[0] === "login";
+
+    if (user && inAuthScreen) {
+      router.replace("/(tabs)");
+    } else if (!user && !inAuthScreen) {
+      router.replace("/login");
+    }
+  }, [user, isLoading, segments, navigationState?.key]);
 
   if (isLoading) {
     return (
@@ -32,20 +47,15 @@ function AuthGate() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {!user ? (
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-      ) : (
-        <>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="history" options={{ headerShown: false }} />
-          <Stack.Screen name="submit-details" options={{ headerShown: false }} />
-          <Stack.Screen name="video-request" options={{ headerShown: false }} />
-          <Stack.Screen name="protocol-request" options={{ headerShown: false }} />
-          <Stack.Screen name="customs-request" options={{ headerShown: false }} />
-          <Stack.Screen name="pakistan-guide" options={{ headerShown: false }} />
-          <Stack.Screen name="admin" options={{ headerShown: false }} />
-        </>
-      )}
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="history" options={{ headerShown: false }} />
+      <Stack.Screen name="submit-details" options={{ headerShown: false }} />
+      <Stack.Screen name="video-request" options={{ headerShown: false }} />
+      <Stack.Screen name="protocol-request" options={{ headerShown: false }} />
+      <Stack.Screen name="customs-request" options={{ headerShown: false }} />
+      <Stack.Screen name="pakistan-guide" options={{ headerShown: false }} />
+      <Stack.Screen name="admin" options={{ headerShown: false }} />
     </Stack>
   );
 }
