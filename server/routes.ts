@@ -118,6 +118,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/migration-records", async (req: Request, res: Response) => {
+    try {
+      const { search, period, district } = req.query;
+      let query = `SELECT * FROM migration_records WHERE status = 'approved'`;
+      const params: any[] = [];
+      let paramIndex = 1;
+
+      if (search && String(search).trim()) {
+        const searchTerm = `%${String(search).trim()}%`;
+        query += ` AND (full_name ILIKE $${paramIndex} OR village_of_origin ILIKE $${paramIndex} OR district ILIKE $${paramIndex} OR current_location ILIKE $${paramIndex} OR notes ILIKE $${paramIndex})`;
+        params.push(searchTerm);
+        paramIndex++;
+      }
+
+      if (period && period !== "all") {
+        query += ` AND migration_period = $${paramIndex}`;
+        params.push(String(period));
+        paramIndex++;
+      }
+
+      if (district && String(district).trim()) {
+        query += ` AND district ILIKE $${paramIndex}`;
+        params.push(`%${String(district).trim()}%`);
+        paramIndex++;
+      }
+
+      query += ` ORDER BY created_at DESC`;
+
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const result = await dbPool.query(query, params);
+      res.json(result.rows);
+    } catch (e: any) {
+      console.error("Error searching migration records:", e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/migration-records", async (req: Request, res: Response) => {
+    try {
+      const { full_name, image_url, village_of_origin, district, year_of_migration, migration_period, current_location, contact_info, notes } = req.body;
+
+      if (!full_name || !village_of_origin || !district || !current_location) {
+        return res.status(400).json({ error: "Full name, village of origin, district, and current location are required." });
+      }
+
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const result = await dbPool.query(
+        `INSERT INTO migration_records (full_name, image_url, village_of_origin, district, year_of_migration, migration_period, current_location, contact_info, notes, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+        [full_name, image_url || null, village_of_origin, district, year_of_migration ? parseInt(year_of_migration) : null, migration_period || 'after_1947', current_location, contact_info || null, notes || null, 'approved']
+      );
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      console.error("Error adding migration record:", e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete("/api/migration-records/:id", async (req: Request, res: Response) => {
+    try {
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      await dbPool.query(`DELETE FROM migration_records WHERE id = $1`, [parseInt(req.params.id)]);
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error("Error deleting migration record:", e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.patch("/api/migration-records/:id/status", async (req: Request, res: Response) => {
+    try {
+      const { status } = req.body;
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const result = await dbPool.query(
+        `UPDATE migration_records SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+        [status, parseInt(req.params.id)]
+      );
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.post("/api/clear-all", async (_req: Request, res: Response) => {
     try {
       await setDocument("users", "defaultUser", { name: "", phone: "", email: "", city: "", country: "", purpose: "" });
