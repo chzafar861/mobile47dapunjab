@@ -8,6 +8,7 @@ import {
   Platform,
   Dimensions,
   Animated,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
@@ -88,20 +89,27 @@ function ServiceShowcase({
   );
 }
 
-function InfoSection({
+function ImageInfoSection({
+  image,
   icon,
   iconColor,
   title,
+  subtitle,
   children,
 }: {
+  image?: any;
   icon: string;
   iconColor: string;
   title: string;
+  subtitle?: string;
   children: React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
   return (
     <View style={styles.infoSection}>
+      {image && (
+        <Image source={image} style={styles.infoSectionImage} resizeMode="cover" />
+      )}
       <Pressable
         onPress={() => {
           setExpanded(!expanded);
@@ -112,7 +120,10 @@ function InfoSection({
         <View style={[styles.infoSectionIcon, { backgroundColor: iconColor + "15" }]}>
           <Ionicons name={icon as any} size={22} color={iconColor} />
         </View>
-        <Text style={styles.infoSectionTitle}>{title}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.infoSectionTitle}>{title}</Text>
+          {subtitle && <Text style={styles.infoSectionSubtitle}>{subtitle}</Text>}
+        </View>
         <Ionicons
           name={expanded ? "chevron-up" : "chevron-down"}
           size={20}
@@ -124,10 +135,14 @@ function InfoSection({
   );
 }
 
-function InfoBullet({ text }: { text: string }) {
+function InfoBullet({ text, icon }: { text: string; icon?: string }) {
   return (
     <View style={styles.bulletRow}>
-      <View style={styles.bulletDot} />
+      {icon ? (
+        <Ionicons name={icon as any} size={14} color={Colors.light.primary} style={{ marginTop: 2 }} />
+      ) : (
+        <View style={styles.bulletDot} />
+      )}
       <Text style={styles.bulletText}>{text}</Text>
     </View>
   );
@@ -139,6 +154,21 @@ function StatCard({ value, label, icon, color }: { value: string; label: string;
       <Ionicons name={icon as any} size={20} color={color} />
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function ImagePlaceCard({ name, desc, image }: { name: string; desc: string; image: any }) {
+  return (
+    <View style={styles.imgPlaceCard}>
+      <Image source={image} style={styles.imgPlaceImage} resizeMode="cover" />
+      <LinearGradient
+        colors={["transparent", "rgba(0,0,0,0.75)"]}
+        style={styles.imgPlaceOverlay}
+      >
+        <Text style={styles.imgPlaceName}>{name}</Text>
+        <Text style={styles.imgPlaceDesc}>{desc}</Text>
+      </LinearGradient>
     </View>
   );
 }
@@ -249,9 +279,22 @@ function CurrentServicesPage() {
 function PakistanInfoPage() {
   return (
     <View style={styles.pageContent}>
-      <Text style={styles.pageIntro}>
-        Discover the rich history, vibrant culture, and modern achievements of Pakistan. From ancient civilizations to a thriving modern nation.
-      </Text>
+      <View style={styles.infoHeroBanner}>
+        <Image
+          source={require("@/assets/images/faisal-mosque.jpg")}
+          style={styles.infoHeroImage}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.8)"]}
+          style={styles.infoHeroOverlay}
+        >
+          <Text style={styles.infoHeroTitle}>Discover Pakistan</Text>
+          <Text style={styles.infoHeroDesc}>
+            From the ancient Indus Valley to a nuclear power and tech hub - 5,000+ years of civilization, culture, and progress.
+          </Text>
+        </LinearGradient>
+      </View>
 
       <View style={styles.statsRow}>
         <StatCard value="220M+" label="Population" icon="people" color={Colors.light.primary} />
@@ -259,68 +302,96 @@ function PakistanInfoPage() {
         <StatCard value="796K" label="Area (km2)" icon="map" color="#1B4332" />
       </View>
 
-      <InfoSection icon="time-outline" iconColor="#8B0000" title="Punjab 1947 - The Partition">
+      <ImageInfoSection
+        image={require("@/assets/images/lahore-fort.jpg")}
+        icon="time-outline"
+        iconColor="#8B0000"
+        title="Punjab 1947 - The Partition"
+        subtitle="The event that shaped South Asia forever"
+      >
         <Text style={styles.infoBody}>
-          The partition of British India in 1947 was one of the most significant events in South Asian history. Punjab, the "Land of Five Rivers," was divided between Pakistan and India, reshaping millions of lives.
+          The partition of British India in 1947 was one of the most significant events in South Asian history. Punjab, the "Land of Five Rivers," was divided between Pakistan and India, reshaping millions of lives forever. It remains one of the largest mass migrations in human history, affecting over 14 million people.
         </Text>
-        <InfoBullet text="August 14, 1947: Pakistan gained independence under the leadership of Quaid-e-Azam Muhammad Ali Jinnah" />
-        <InfoBullet text="The Radcliffe Line divided Punjab, separating communities that had coexisted for centuries" />
-        <InfoBullet text="Millions of Muslims migrated to West Punjab (Pakistan), while Hindus and Sikhs moved east" />
-        <InfoBullet text="Lahore, the cultural capital of Punjab, became part of Pakistan" />
-        <InfoBullet text="The partition led to one of the largest mass migrations in human history" />
-        <InfoBullet text="Despite the tragedy, Pakistan emerged as a sovereign nation with rich cultural heritage" />
-      </InfoSection>
+        <InfoBullet icon="flag" text="August 14, 1947: Pakistan gained independence under the leadership of Quaid-e-Azam Muhammad Ali Jinnah, the Father of the Nation" />
+        <InfoBullet icon="cut" text="The Radcliffe Line divided Punjab, separating communities, families, and friendships that had coexisted for centuries" />
+        <InfoBullet icon="people" text="Over 7 million Muslims migrated to West Punjab (Pakistan), while Hindus and Sikhs moved east in the largest mass migration ever" />
+        <InfoBullet icon="business" text="Lahore, the cultural and intellectual capital of Punjab, became part of Pakistan and remains the heart of Pakistani Punjab" />
+        <InfoBullet icon="heart" text="Despite the immense tragedy and loss, Pakistan emerged as a sovereign nation with rich cultural heritage, resilience, and hope" />
+        <InfoBullet icon="book" text="The stories of partition are preserved through oral histories, literature, and the Bronze Migration Portal on this app" />
+      </ImageInfoSection>
 
-      <InfoSection icon="library-outline" iconColor="#4A148C" title="Pakistan Old History">
+      <ImageInfoSection
+        image={require("@/assets/images/mohenjo-daro.jpg")}
+        icon="library-outline"
+        iconColor="#4A148C"
+        title="Pakistan Old History"
+        subtitle="5,000+ years of civilization"
+      >
         <Text style={styles.infoBody}>
-          The land that is now Pakistan has been home to some of the world's oldest and most sophisticated civilizations, spanning over 5,000 years of recorded history.
+          The land that is now Pakistan has been home to some of the world's oldest and most sophisticated civilizations, spanning over 5,000 years of recorded history. From the advanced urban planning of Mohenjo-daro to the Greco-Buddhist art of Gandhara, this region has been at the crossroads of major world civilizations.
         </Text>
-        <InfoBullet text="Indus Valley Civilization (3300-1300 BC): Mohenjo-daro and Harappa were among the world's most advanced ancient cities" />
-        <InfoBullet text="Gandhara Civilization: Taxila was a renowned center of Buddhist learning and Greco-Buddhist art" />
-        <InfoBullet text="Persian & Greek Influence: Alexander the Great passed through in 326 BC" />
-        <InfoBullet text="Mughal Empire (1526-1857): Lahore became a jewel of Mughal architecture with the Badshahi Mosque, Lahore Fort, and Shalimar Gardens" />
-        <InfoBullet text="Sikh Empire (1799-1849): Ranjit Singh ruled Punjab from Lahore" />
-        <InfoBullet text="British Colonial Period (1849-1947): Infrastructure development, railways, and the seeds of independence movement" />
+        <InfoBullet icon="business" text="Indus Valley Civilization (3300-1300 BC): Mohenjo-daro and Harappa were among the world's most advanced ancient cities with grid streets, drainage, and public baths" />
+        <InfoBullet icon="school" text="Gandhara Civilization: Taxila University (Takshashila) was one of the world's earliest universities, predating Oxford by over 1,500 years" />
+        <InfoBullet icon="globe" text="Persian & Greek Influence: Alexander the Great passed through in 326 BC, leaving a legacy of Greco-Buddhist art and culture" />
+        <InfoBullet icon="shield" text="Mughal Empire (1526-1857): Lahore became a jewel of Mughal architecture with the Badshahi Mosque, Lahore Fort, and Shalimar Gardens" />
+        <InfoBullet icon="people" text="Sikh Empire (1799-1849): Maharaja Ranjit Singh ruled Punjab from Lahore, expanding the Lahore Fort and preserving Mughal heritage" />
+        <InfoBullet icon="train" text="British Colonial Period (1849-1947): Railways, canals, and institutions were built, along with the seeds of the independence movement" />
         <View style={styles.infoPlaces}>
-          <PlaceCard name="Mohenjo-daro" desc="Ancient Indus Valley city, UNESCO site" icon="business-outline" />
-          <PlaceCard name="Taxila" desc="Ancient Gandhara university town" icon="school-outline" />
-          <PlaceCard name="Lahore Fort" desc="Mughal citadel, UNESCO World Heritage" icon="shield-outline" />
+          <ImagePlaceCard name="Mohenjo-daro" desc="Ancient Indus Valley city - UNESCO World Heritage" image={require("@/assets/images/mohenjo-daro.jpg")} />
+          <ImagePlaceCard name="Taxila" desc="Ancient Gandhara university town" image={require("@/assets/images/taxila.jpg")} />
+          <ImagePlaceCard name="Lahore Fort" desc="Mughal citadel - UNESCO World Heritage" image={require("@/assets/images/lahore-fort.jpg")} />
         </View>
-      </InfoSection>
+      </ImageInfoSection>
 
-      <InfoSection icon="rocket-outline" iconColor="#0D47A1" title="Pakistan Modern History">
+      <ImageInfoSection
+        image={require("@/assets/images/modern-city.jpg")}
+        icon="rocket-outline"
+        iconColor="#0D47A1"
+        title="Pakistan Modern History"
+        subtitle="From independence to a nuclear power"
+      >
         <Text style={styles.infoBody}>
-          Since independence in 1947, Pakistan has grown into a dynamic nation with significant achievements in defense, science, infrastructure, and culture.
+          Since independence in 1947, Pakistan has grown into a dynamic nation with significant achievements in defense, science, infrastructure, culture, and technology. The journey from a newly born nation to the world's 7th nuclear power is a story of resilience and ambition.
         </Text>
-        <InfoBullet text="1956: Pakistan became an Islamic Republic with its first constitution" />
-        <InfoBullet text="1960s: 'Decade of Development' with rapid industrialization under Ayub Khan" />
-        <InfoBullet text="1970s: Bhutto era - nationalization, nuclear program begins" />
-        <InfoBullet text="1998: Pakistan becomes the 7th nuclear power in the world" />
-        <InfoBullet text="CPEC (2015+): China-Pakistan Economic Corridor, $62 billion infrastructure investment" />
-        <InfoBullet text="IT & Tech: Rapidly growing freelance and tech industry, one of the top freelancing countries globally" />
-        <InfoBullet text="2023+: Digital Pakistan initiative, expanding 5G, fintech, and e-commerce" />
-      </InfoSection>
+        <InfoBullet icon="document-text" text="1956: Pakistan became an Islamic Republic with its first constitution, establishing democratic governance" />
+        <InfoBullet icon="trending-up" text="1960s: 'Decade of Development' - rapid industrialization, the new capital Islamabad was built, and Pakistan's GDP grew at 6%+ annually" />
+        <InfoBullet icon="nuclear" text="1998: Pakistan becomes the 7th nuclear power in the world, ensuring strategic defense capability" />
+        <InfoBullet icon="construct" text="CPEC (2015+): China-Pakistan Economic Corridor - $62 billion infrastructure investment transforming roads, ports, and energy" />
+        <InfoBullet icon="code-slash" text="IT & Tech: Rapidly growing freelance and tech industry - one of the top 4 freelancing countries globally with $2.6B+ IT exports" />
+        <InfoBullet icon="phone-portrait" text="2023+: Digital Pakistan initiative expanding 5G, fintech, e-commerce, and startup ecosystem" />
+      </ImageInfoSection>
 
-      <InfoSection icon="business-outline" iconColor="#1B5E20" title="Capital City - Islamabad">
+      <ImageInfoSection
+        image={require("@/assets/images/islamabad.jpg")}
+        icon="business-outline"
+        iconColor="#1B5E20"
+        title="Capital City - Islamabad"
+        subtitle="One of the most beautiful capitals in the world"
+      >
         <Text style={styles.infoBody}>
-          Islamabad, the capital city, is one of the most beautiful and well-planned capitals in the world. Nestled at the foot of the Margalla Hills, it combines modern governance with natural beauty.
+          Islamabad, the capital city, is one of the most beautiful and well-planned capitals in the world. Nestled at the foot of the Margalla Hills, it combines modern governance with natural beauty. Built as a purpose-designed capital in the 1960s, it features wide tree-lined avenues, modern architecture, and abundant green spaces.
         </Text>
-        <InfoBullet text="Founded in 1960 as a purpose-built capital to replace Karachi" />
-        <InfoBullet text="Home to Faisal Mosque, one of the largest mosques in the world" />
-        <InfoBullet text="Parliament House, Supreme Court, and all federal institutions" />
-        <InfoBullet text="Margalla Hills National Park offers hiking, wildlife, and stunning views" />
-        <InfoBullet text="Centaurus Mall, F-7 Jinnah Super, and vibrant food scenes" />
-        <InfoBullet text="Diplomatic enclave hosts 75+ embassies and international organizations" />
+        <InfoBullet icon="calendar" text="Founded in 1960 as a purpose-built capital to replace Karachi, designed by Greek architect Constantinos Doxiadis" />
+        <InfoBullet icon="star" text="Home to Faisal Mosque, the largest mosque in South Asia with capacity for 300,000 worshippers" />
+        <InfoBullet icon="business" text="Parliament House, Supreme Court, Aiwan-e-Sadr (Presidential Palace), and all federal institutions" />
+        <InfoBullet icon="leaf" text="Margalla Hills National Park offers hiking trails, wildlife, monkeys, leopards, and stunning panoramic views" />
+        <InfoBullet icon="restaurant" text="F-7 Jinnah Super, F-6 Super Market, and vibrant food scenes from street food to five-star dining" />
+        <InfoBullet icon="globe" text="Diplomatic enclave hosts 75+ embassies, international organizations, and United Nations offices" />
         <View style={styles.infoPlaces}>
-          <PlaceCard name="Faisal Mosque" desc="Iconic Turkish-designed mosque" icon="star-outline" />
-          <PlaceCard name="Margalla Hills" desc="National park & hiking trails" icon="leaf-outline" />
-          <PlaceCard name="Pakistan Monument" desc="Petal-shaped national landmark" icon="flag-outline" />
+          <ImagePlaceCard name="Faisal Mosque" desc="Iconic Turkish-designed mosque - largest in South Asia" image={require("@/assets/images/faisal-mosque.jpg")} />
+          <PlaceCard name="Margalla Hills" desc="National park & hiking trails with stunning views" icon="leaf-outline" />
+          <PlaceCard name="Pakistan Monument" desc="Petal-shaped national landmark celebrating unity" icon="flag-outline" />
         </View>
-      </InfoSection>
+      </ImageInfoSection>
 
-      <InfoSection icon="trending-up-outline" iconColor="#E65100" title="Industries & Economy">
+      <ImageInfoSection
+        icon="trending-up-outline"
+        iconColor="#E65100"
+        title="Industries & Economy"
+        subtitle="A diverse and growing economy"
+      >
         <Text style={styles.infoBody}>
-          Pakistan has a diverse and growing economy driven by agriculture, textiles, IT services, and strategic trade partnerships.
+          Pakistan has a diverse and growing economy driven by agriculture, textiles, IT services, and strategic trade partnerships. With a GDP of $350+ billion (PPP) and a young population, Pakistan is positioned among the Next Eleven economies with high growth potential.
         </Text>
         <View style={styles.industryGrid}>
           <View style={styles.industryItem}>
@@ -328,47 +399,56 @@ function PakistanInfoPage() {
               <Ionicons name="leaf" size={20} color="#2E7D32" />
             </View>
             <Text style={styles.industryName}>Agriculture</Text>
-            <Text style={styles.industryDesc}>World's 5th largest cotton, 4th largest milk producer</Text>
+            <Text style={styles.industryDesc}>World's 5th largest cotton producer, 4th largest milk producer, major wheat & rice exporter</Text>
           </View>
           <View style={styles.industryItem}>
             <View style={[styles.industryIcon, { backgroundColor: "#E3F2FD" }]}>
               <MaterialCommunityIcons name="tshirt-crew" size={20} color="#1565C0" />
             </View>
             <Text style={styles.industryName}>Textiles</Text>
-            <Text style={styles.industryDesc}>Largest export sector, global supplier of garments</Text>
+            <Text style={styles.industryDesc}>Largest export sector, global supplier of denim, bed linen, surgical instruments</Text>
           </View>
           <View style={styles.industryItem}>
             <View style={[styles.industryIcon, { backgroundColor: "#FFF3E0" }]}>
               <Ionicons name="code-slash" size={20} color="#E65100" />
             </View>
             <Text style={styles.industryName}>IT & Tech</Text>
-            <Text style={styles.industryDesc}>$2.6B+ IT exports, top freelancing nation</Text>
+            <Text style={styles.industryDesc}>$2.6B+ IT exports, 4th largest freelancing nation, growing startup ecosystem</Text>
           </View>
           <View style={styles.industryItem}>
             <View style={[styles.industryIcon, { backgroundColor: "#F3E5F5" }]}>
               <Ionicons name="construct" size={20} color="#6A1B9A" />
             </View>
             <Text style={styles.industryName}>Construction</Text>
-            <Text style={styles.industryDesc}>CPEC, new cities, dams, and motorways</Text>
+            <Text style={styles.industryDesc}>CPEC highways, new cities, Diamer-Bhasha dam, M-tag motorway network</Text>
           </View>
         </View>
-        <InfoBullet text="GDP: $350+ billion (PPP), one of the Next Eleven economies" />
-        <InfoBullet text="Key trade partners: China, UAE, Saudi Arabia, USA, EU" />
-        <InfoBullet text="Remittances from overseas Pakistanis exceed $30 billion annually" />
-      </InfoSection>
+        <InfoBullet icon="cash" text="GDP: $350+ billion (PPP), one of the Next Eleven economies identified by Goldman Sachs" />
+        <InfoBullet icon="swap-horizontal" text="Key trade partners: China, UAE, Saudi Arabia, USA, EU, Turkey" />
+        <InfoBullet icon="send" text="Remittances from overseas Pakistanis exceed $30 billion annually - a lifeline for the economy" />
+        <InfoBullet icon="people" text="65% of population is under 30 years old - one of the youngest demographics globally" />
+      </ImageInfoSection>
 
-      <InfoSection icon="airplane-outline" iconColor="#00695C" title="Tourism & Contacts">
+      <ImageInfoSection
+        image={require("@/assets/images/hunza-valley.jpg")}
+        icon="airplane-outline"
+        iconColor="#00695C"
+        title="Tourism & Natural Beauty"
+        subtitle="From the highest peaks to ancient deserts"
+      >
         <Text style={styles.infoBody}>
-          Pakistan is home to some of the world's most breathtaking landscapes, from the highest peaks of the Karakoram to the ancient ruins of Mohenjo-daro.
+          Pakistan is home to some of the world's most breathtaking landscapes, from the highest peaks of the Karakoram to the golden beaches of Makran coast. Named the "Best Holiday Destination" by Conde Nast Traveller in 2020, Pakistan is rapidly emerging as a top tourism destination.
         </Text>
         <View style={styles.infoPlaces}>
-          <PlaceCard name="Hunza Valley" desc="Stunning mountain valley, 'Shangri-La' of Pakistan" icon="mountain-outline" />
-          <PlaceCard name="Swat Valley" desc="'Switzerland of the East' - lush green paradise" icon="leaf-outline" />
-          <PlaceCard name="K2 Base Camp" desc="World's 2nd highest peak, trekker's dream" icon="trail-sign-outline" />
-          <PlaceCard name="Skardu" desc="Gateway to the Karakoram, crystal lakes" icon="water-outline" />
-          <PlaceCard name="Lahore Old City" desc="Mughal heritage, food capital of Pakistan" icon="restaurant-outline" />
-          <PlaceCard name="Fairy Meadows" desc="Green meadow with Nanga Parbat views" icon="flower-outline" />
+          <ImagePlaceCard name="Hunza Valley" desc="Stunning mountain valley - the 'Shangri-La' of Pakistan" image={require("@/assets/images/hunza-valley.jpg")} />
+          <ImagePlaceCard name="K2 & Karakoram" desc="World's 2nd highest peak - trekker's ultimate dream" image={require("@/assets/images/k2-mountain.jpg")} />
+          <ImagePlaceCard name="Swat Valley" desc="'Switzerland of the East' - lush green paradise" image={require("@/assets/images/swat-valley.jpg")} />
         </View>
+        <PlaceCard name="Skardu" desc="Gateway to the Karakoram, crystal-clear Shangrila Lake" icon="water-outline" />
+        <PlaceCard name="Lahore Old City" desc="Mughal heritage, food capital of Pakistan" icon="restaurant-outline" />
+        <PlaceCard name="Fairy Meadows" desc="Green alpine meadow with Nanga Parbat views" icon="flower-outline" />
+        <PlaceCard name="Deosai National Park" desc="World's 2nd highest plateau, home to Himalayan brown bear" icon="paw-outline" />
+        <PlaceCard name="Makran Coast" desc="Golden beaches along the Arabian Sea in Balochistan" icon="sunny-outline" />
         <View style={styles.tourContactCard}>
           <LinearGradient
             colors={[Colors.light.primary + "10", Colors.light.primary + "05"]}
@@ -394,7 +474,7 @@ function PakistanInfoPage() {
             </Pressable>
           </LinearGradient>
         </View>
-      </InfoSection>
+      </ImageInfoSection>
     </View>
   );
 }
@@ -580,6 +660,37 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: 8,
   },
+  infoHeroBanner: {
+    borderRadius: 18,
+    overflow: "hidden",
+    height: 180,
+    position: "relative",
+  },
+  infoHeroImage: {
+    width: "100%",
+    height: "100%",
+  },
+  infoHeroOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "flex-end",
+    padding: 18,
+  },
+  infoHeroTitle: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 22,
+    color: "#fff",
+  },
+  infoHeroDesc: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.9)",
+    lineHeight: 18,
+    marginTop: 4,
+  },
   serviceShowcase: {
     borderRadius: 20,
     padding: 20,
@@ -721,6 +832,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
   },
+  infoSectionImage: {
+    width: "100%",
+    height: 140,
+  },
   infoSectionHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -738,7 +853,12 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_600SemiBold",
     fontSize: 15,
     color: Colors.light.text,
-    flex: 1,
+  },
+  infoSectionSubtitle: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 11,
+    color: Colors.light.textSecondary,
+    marginTop: 1,
   },
   infoSectionBody: {
     paddingHorizontal: 16,
@@ -772,8 +892,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoPlaces: {
-    gap: 8,
-    marginTop: 8,
+    gap: 10,
+    marginTop: 10,
+  },
+  imgPlaceCard: {
+    borderRadius: 14,
+    overflow: "hidden",
+    height: 120,
+    position: "relative",
+  },
+  imgPlaceImage: {
+    width: "100%",
+    height: "100%",
+  },
+  imgPlaceOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "flex-end",
+    padding: 12,
+  },
+  imgPlaceName: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 14,
+    color: "#fff",
+  },
+  imgPlaceDesc: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 11,
+    color: "rgba(255,255,255,0.85)",
+    marginTop: 2,
   },
   placeCard: {
     flexDirection: "row",
