@@ -213,6 +213,7 @@ export default function ServicesScreen() {
               <Text style={styles.priceAmount}>$100</Text>
               <Text style={styles.pricePer}>/ 1 hour video</Text>
             </View>
+            <Text style={styles.priceNote}>Without editing - Same day delivery</Text>
             <View style={styles.mainServiceFeatures}>
               <View style={styles.featureChip}>
                 <Ionicons name="camera" size={14} color="#fff" />
@@ -223,14 +224,18 @@ export default function ServicesScreen() {
                 <Text style={styles.chipText}>1 Hour</Text>
               </View>
               <View style={styles.featureChip}>
-                <Feather name="edit-3" size={14} color="#fff" />
-                <Text style={styles.chipText}>Edited</Text>
+                <Ionicons name="today" size={14} color="#fff" />
+                <Text style={styles.chipText}>Same Day</Text>
+              </View>
+              <View style={styles.featureChip}>
+                <Ionicons name="videocam-outline" size={14} color="#fff" />
+                <Text style={styles.chipText}>Raw Footage</Text>
               </View>
             </View>
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                setActiveBooking("Video Service ($100/hr)");
+                setActiveBooking("Video Service ($100 - No Editing)");
               }}
               style={({ pressed }) => [
                 styles.bookBtn,
@@ -355,6 +360,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "rgba(255,255,255,0.8)",
     marginLeft: 6,
+  },
+  priceNote: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.9)",
+    marginTop: 6,
+    fontStyle: "italic" as const,
   },
   mainServiceFeatures: {
     flexDirection: "row",
