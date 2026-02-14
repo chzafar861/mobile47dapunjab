@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
+import { Platform } from "react-native";
 import { getApiUrl } from "./query-client";
-import { fetch } from "expo/fetch";
 
 interface User {
   id: number;
@@ -32,7 +32,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 async function authFetch(path: string, options: RequestInit = {}) {
   const baseUrl = getApiUrl();
   const url = new URL(path, baseUrl);
-  const res = await fetch(url.toString(), {
+  const res = await globalThis.fetch(url.toString(), {
     ...options,
     headers: {
       "Content-Type": "application/json",

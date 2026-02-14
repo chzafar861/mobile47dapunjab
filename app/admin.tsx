@@ -15,7 +15,6 @@ import { router } from "expo-router";
 import { firebaseApi } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import { getApiUrl } from "@/lib/query-client";
-import { fetch } from "expo/fetch";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 
@@ -33,7 +32,7 @@ interface AuthUser {
 async function adminFetch(path: string, options: RequestInit = {}) {
   const baseUrl = getApiUrl();
   const url = new URL(path, baseUrl);
-  const res = await fetch(url.toString(), {
+  const res = await globalThis.fetch(url.toString(), {
     ...options,
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
     credentials: "include",
