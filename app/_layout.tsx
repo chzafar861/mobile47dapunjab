@@ -7,14 +7,8 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
-import * as Font from "expo-font";
-import {
-  Poppins_400Regular,
-  Poppins_500Medium,
-  Poppins_600SemiBold,
-  Poppins_700Bold,
-} from "@expo-google-fonts/poppins";
+import { View, ActivityIndicator, StyleSheet, Platform } from "react-native";
+import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from "@expo-google-fonts/poppins";
 import Colors from "@/constants/colors";
 
 SplashScreen.preventAutoHideAsync();
@@ -70,28 +64,20 @@ const loadStyles = StyleSheet.create({
 });
 
 export default function RootLayout() {
-  const [ready, setReady] = useState(false);
+  const [fontsLoaded, fontError] = useFonts({
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+  });
 
   useEffect(() => {
-    async function loadFonts() {
-      try {
-        await Font.loadAsync({
-          Poppins_400Regular,
-          Poppins_500Medium,
-          Poppins_600SemiBold,
-          Poppins_700Bold,
-        });
-      } catch (e) {
-        console.log("Font loading failed, using system fonts:", e);
-      } finally {
-        setReady(true);
-        SplashScreen.hideAsync();
-      }
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
     }
-    loadFonts();
-  }, []);
+  }, [fontsLoaded, fontError]);
 
-  if (!ready) return null;
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <ErrorBoundary>
