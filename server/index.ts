@@ -1,6 +1,9 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
+import authRouter from "./auth";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -228,10 +231,31 @@ function setupErrorHandler(app: express.Application) {
 (async () => {
   setupCors(app);
   setupBodyParsing(app);
-  setupRequestLogging(app);
 
+  const PgStore = connectPgSimple(session);
+  app.use(
+    session({
+      store: new PgStore({
+        conString: process.env.DATABASE_URL,
+        tableName: "sessions",
+        createTableIfMissing: true,
+      }),
+      secret: process.env.SESSION_SECRET || "47dapunjab-secret-key",
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+      },
+    })
+  );
+
+  setupRequestLogging(app);
   configureExpoAndLanding(app);
 
+  app.use(authRouter);
   const server = await registerRoutes(app);
 
   setupErrorHandler(app);
