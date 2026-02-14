@@ -262,14 +262,14 @@ export default function ServicesScreen() {
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                setActiveBooking("Customs Service");
+                router.push("/customs-request");
               }}
               style={({ pressed }) => [
                 styles.secondaryBtn,
                 { opacity: pressed ? 0.9 : 1 },
               ]}
             >
-              <Text style={styles.secondaryBtnText}>Request Service</Text>
+              <Text style={styles.secondaryBtnText}>Get Started</Text>
             </Pressable>
           </View>
         </View>
