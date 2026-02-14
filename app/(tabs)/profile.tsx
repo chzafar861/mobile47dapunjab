@@ -8,52 +8,46 @@ import {
   Platform,
   Alert,
   TextInput,
-  Switch,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { firebaseApi } from "@/lib/firebase";
+import { useAuth } from "@/lib/auth-context";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
-
-interface UserProfile {
-  name: string;
-  phone: string;
-  email: string;
-  city: string;
-  country: string;
-  purpose: string;
-}
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, isAdmin, logout, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState<UserProfile>({
-    name: "",
-    phone: "",
-    email: "",
-    city: "",
-    country: "",
-    purpose: "",
+  const [editData, setEditData] = useState({
+    name: user?.name || "",
+    phone: user?.phone || "",
+    city: user?.city || "",
+    country: user?.country || "",
+    purpose: user?.purpose || "",
   });
   const [bookings, setBookings] = useState<any[]>([]);
 
   useEffect(() => {
-    loadProfile();
     loadBookings();
   }, []);
 
-  const loadProfile = async () => {
-    try {
-      const data = await firebaseApi.getProfile();
-      if (data) setProfile(data as UserProfile);
-    } catch {}
-  };
+  useEffect(() => {
+    if (user) {
+      setEditData({
+        name: user.name || "",
+        phone: user.phone || "",
+        city: user.city || "",
+        country: user.country || "",
+        purpose: user.purpose || "",
+      });
+    }
+  }, [user]);
 
   const loadBookings = async () => {
     try {
@@ -63,12 +57,12 @@ export default function ProfileScreen() {
   };
 
   const saveProfile = async () => {
-    if (!profile.name.trim()) {
+    if (!editData.name.trim()) {
       Alert.alert("Required", "Please enter your name.");
       return;
     }
     try {
-      await firebaseApi.saveProfile(profile);
+      await updateProfile(editData);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setIsEditing(false);
       Alert.alert("Saved", "Your profile has been updated.");
@@ -77,26 +71,18 @@ export default function ProfileScreen() {
     }
   };
 
-  const clearAllData = async () => {
-    Alert.alert(
-      "Clear All Data",
-      "This will remove all your saved data including profile, bookings, and cart. Continue?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Clear",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await firebaseApi.clearAll();
-            } catch {}
-            setProfile({ name: "", phone: "", email: "", city: "", country: "", purpose: "" });
-            setBookings([]);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          },
+  const handleLogout = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: async () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          await logout();
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
@@ -107,7 +93,6 @@ export default function ProfileScreen() {
           paddingTop: insets.top + webTopInset + 16,
           paddingBottom: insets.bottom + webBottomInset + 100,
         }}
-        contentInsetAdjustmentBehavior="automatic"
       >
         <LinearGradient
           colors={[Colors.light.primaryDark, Colors.light.primary]}
@@ -117,13 +102,20 @@ export default function ProfileScreen() {
             <Ionicons name="person" size={40} color={Colors.light.primary} />
           </View>
           <Text style={styles.profileName}>
-            {profile.name || "Set Up Your Profile"}
+            {user?.name || "Set Up Your Profile"}
           </Text>
+          <Text style={styles.profileEmail}>{user?.email}</Text>
           <Text style={styles.profileLocation}>
-            {profile.city && profile.country
-              ? `${profile.city}, ${profile.country}`
+            {user?.city && user?.country
+              ? `${user.city}, ${user.country}`
               : "Add your location"}
           </Text>
+          {isAdmin && (
+            <View style={styles.adminBadge}>
+              <MaterialCommunityIcons name="shield-check" size={14} color="#fff" />
+              <Text style={styles.adminBadgeText}>Admin</Text>
+            </View>
+          )}
         </LinearGradient>
 
         <View style={styles.section}>
@@ -154,46 +146,37 @@ export default function ProfileScreen() {
                 style={styles.input}
                 placeholder="Full Name"
                 placeholderTextColor={Colors.light.tabIconDefault}
-                value={profile.name}
-                onChangeText={(t) => setProfile({ ...profile, name: t })}
+                value={editData.name}
+                onChangeText={(t) => setEditData({ ...editData, name: t })}
               />
               <TextInput
                 style={styles.input}
                 placeholder="Phone Number"
                 placeholderTextColor={Colors.light.tabIconDefault}
-                value={profile.phone}
-                onChangeText={(t) => setProfile({ ...profile, phone: t })}
+                value={editData.phone}
+                onChangeText={(t) => setEditData({ ...editData, phone: t })}
                 keyboardType="phone-pad"
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor={Colors.light.tabIconDefault}
-                value={profile.email}
-                onChangeText={(t) => setProfile({ ...profile, email: t })}
-                keyboardType="email-address"
-                autoCapitalize="none"
               />
               <TextInput
                 style={styles.input}
                 placeholder="City"
                 placeholderTextColor={Colors.light.tabIconDefault}
-                value={profile.city}
-                onChangeText={(t) => setProfile({ ...profile, city: t })}
+                value={editData.city}
+                onChangeText={(t) => setEditData({ ...editData, city: t })}
               />
               <TextInput
                 style={styles.input}
                 placeholder="Country"
                 placeholderTextColor={Colors.light.tabIconDefault}
-                value={profile.country}
-                onChangeText={(t) => setProfile({ ...profile, country: t })}
+                value={editData.country}
+                onChangeText={(t) => setEditData({ ...editData, country: t })}
               />
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="Purpose of Visit (e.g., tourism, family visit)"
                 placeholderTextColor={Colors.light.tabIconDefault}
-                value={profile.purpose}
-                onChangeText={(t) => setProfile({ ...profile, purpose: t })}
+                value={editData.purpose}
+                onChangeText={(t) => setEditData({ ...editData, purpose: t })}
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
@@ -201,31 +184,13 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <View style={styles.profileDetails}>
-              <ProfileRow icon="call-outline" label="Phone" value={profile.phone} />
-              <ProfileRow icon="mail-outline" label="Email" value={profile.email} />
-              <ProfileRow icon="location-outline" label="City" value={profile.city} />
-              <ProfileRow icon="globe-outline" label="Country" value={profile.country} />
-              <ProfileRow icon="airplane-outline" label="Purpose" value={profile.purpose} />
+              <ProfileRow icon="call-outline" label="Phone" value={user?.phone || ""} />
+              <ProfileRow icon="mail-outline" label="Email" value={user?.email || ""} />
+              <ProfileRow icon="location-outline" label="City" value={user?.city || ""} />
+              <ProfileRow icon="globe-outline" label="Country" value={user?.country || ""} />
+              <ProfileRow icon="airplane-outline" label="Purpose" value={user?.purpose || ""} />
             </View>
           )}
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.adminToggleRow}>
-            <View style={styles.adminToggleLeft}>
-              <MaterialCommunityIcons name="shield-account" size={22} color={Colors.light.primary} />
-              <Text style={styles.adminToggleText}>Admin Mode</Text>
-            </View>
-            <Switch
-              value={isAdmin}
-              onValueChange={(v) => {
-                setIsAdmin(v);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-              trackColor={{ false: Colors.light.border, true: Colors.light.primary + "60" }}
-              thumbColor={isAdmin ? Colors.light.primary : "#f4f4f4"}
-            />
-          </View>
         </View>
 
         {isAdmin && (
@@ -302,14 +267,14 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
           </Pressable>
           <Pressable
-            onPress={clearAllData}
+            onPress={handleLogout}
             style={({ pressed }) => [
               styles.linkRow,
               { opacity: pressed ? 0.8 : 1 },
             ]}
           >
-            <Ionicons name="trash-outline" size={20} color={Colors.light.danger} />
-            <Text style={[styles.linkText, { color: Colors.light.danger }]}>Clear All Data</Text>
+            <Ionicons name="log-out-outline" size={20} color={Colors.light.danger} />
+            <Text style={[styles.linkText, { color: Colors.light.danger }]}>Sign Out</Text>
             <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
           </Pressable>
         </View>
@@ -356,11 +321,32 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: "#fff",
   },
+  profileEmail: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 13,
+    color: "rgba(255,255,255,0.85)",
+    marginTop: 2,
+  },
   profileLocation: {
     fontFamily: "Poppins_400Regular",
     fontSize: 13,
-    color: "rgba(255,255,255,0.8)",
+    color: "rgba(255,255,255,0.7)",
     marginTop: 4,
+  },
+  adminBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 10,
+  },
+  adminBadgeText: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 12,
+    color: "#fff",
   },
   section: {
     paddingHorizontal: 16,
@@ -416,24 +402,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.light.text,
     flex: 1,
-  },
-  adminToggleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderRadius: 14,
-    padding: 16,
-  },
-  adminToggleLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  adminToggleText: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 15,
-    color: Colors.light.text,
   },
   adminStats: {
     flexDirection: "row",
