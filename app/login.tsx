@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -18,33 +18,70 @@ import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/lib/auth-context";
+import { getApiUrl } from "@/lib/query-client";
 
 type Mode = "login" | "signup";
+
+function showAlert(title: string, msg: string) {
+  if (Platform.OS === "web") {
+    window.alert(`${title}\n\n${msg}`);
+  } else {
+    Alert.alert(title, msg);
+  }
+}
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
-  const { login, register, socialLogin } = useAuth();
+  const { login, register, refreshUser } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [oauthStatus, setOauthStatus] = useState<{ google: boolean; facebook: boolean }>({ google: false, facebook: false });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const baseUrl = getApiUrl();
+        const res = await globalThis.fetch(new URL("/api/auth/oauth/status", baseUrl).toString());
+        if (res.ok) {
+          const data = await res.json();
+          setOauthStatus(data);
+        }
+      } catch {}
+    })();
+  }, []);
+
+  const clearMessages = () => {
+    setErrorMsg("");
+    setSuccessMsg("");
+  };
 
   const handleSubmit = async () => {
+    clearMessages();
     if (mode === "signup" && !name.trim()) {
-      Alert.alert("Required", "Please enter your name.");
+      setErrorMsg("Please enter your name");
       return;
     }
     if (!email.trim()) {
-      Alert.alert("Required", "Please enter your email.");
+      setErrorMsg("Please enter your email");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setErrorMsg("Please enter a valid email address");
       return;
     }
     if (!password || password.length < 6) {
-      Alert.alert("Required", "Password must be at least 6 characters.");
+      setErrorMsg("Password must be at least 6 characters");
       return;
     }
     setLoading(true);
@@ -55,29 +92,37 @@ export default function LoginScreen() {
         await register(email.trim(), password, name.trim(), phone.trim());
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setSuccessMsg(mode === "login" ? "Welcome back!" : "Account created successfully!");
     } catch (e: any) {
-      Alert.alert("Error", e.message || "Something went wrong");
+      const msg = e.message || "Something went wrong. Please try again.";
+      setErrorMsg(msg);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert(
-      "Google Login",
-      "Google Sign-In requires OAuth configuration. Please use email login for now, or contact the admin to set up Google OAuth.",
-      [{ text: "OK" }]
-    );
-  };
-
-  const handleFacebookLogin = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert(
-      "Facebook Login",
-      "Facebook Sign-In requires OAuth configuration. Please use email login for now, or contact the admin to set up Facebook OAuth.",
-      [{ text: "OK" }]
-    );
+  const handleOAuthLogin = async (provider: "google" | "facebook") => {
+    clearMessages();
+    const isConfigured = provider === "google" ? oauthStatus.google : oauthStatus.facebook;
+    if (!isConfigured) {
+      setErrorMsg(`${provider === "google" ? "Google" : "Facebook"} login is not configured yet. Please use email login.`);
+      return;
+    }
+    setSocialLoading(provider);
+    try {
+      const baseUrl = getApiUrl();
+      const authUrl = new URL(`/api/auth/${provider}`, baseUrl).toString();
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, undefined);
+      if (result.type === "success" || result.type === "cancel" || result.type === "dismiss") {
+        await refreshUser();
+      }
+    } catch (e: any) {
+      setErrorMsg(`${provider === "google" ? "Google" : "Facebook"} login failed. Please try again.`);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setSocialLoading(null);
+    }
   };
 
   return (
@@ -114,7 +159,7 @@ export default function LoginScreen() {
           <View style={styles.formContainer}>
             <View style={styles.modeToggle}>
               <Pressable
-                onPress={() => { setMode("login"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                onPress={() => { setMode("login"); clearMessages(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                 style={[styles.modeBtn, mode === "login" && styles.modeBtnActive]}
               >
                 <Text style={[styles.modeBtnText, mode === "login" && styles.modeBtnTextActive]}>
@@ -122,7 +167,7 @@ export default function LoginScreen() {
                 </Text>
               </Pressable>
               <Pressable
-                onPress={() => { setMode("signup"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                onPress={() => { setMode("signup"); clearMessages(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                 style={[styles.modeBtn, mode === "signup" && styles.modeBtnActive]}
               >
                 <Text style={[styles.modeBtnText, mode === "signup" && styles.modeBtnTextActive]}>
@@ -130,6 +175,23 @@ export default function LoginScreen() {
                 </Text>
               </Pressable>
             </View>
+
+            {errorMsg ? (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={18} color="#D32F2F" />
+                <Text style={styles.errorText}>{errorMsg}</Text>
+                <Pressable onPress={clearMessages}>
+                  <Ionicons name="close" size={16} color="#D32F2F" />
+                </Pressable>
+              </View>
+            ) : null}
+
+            {successMsg ? (
+              <View style={styles.successBanner}>
+                <Ionicons name="checkmark-circle" size={18} color="#2E7D32" />
+                <Text style={styles.successText}>{successMsg}</Text>
+              </View>
+            ) : null}
 
             {mode === "signup" && (
               <>
@@ -140,8 +202,9 @@ export default function LoginScreen() {
                     placeholder="Full Name"
                     placeholderTextColor={Colors.light.tabIconDefault}
                     value={name}
-                    onChangeText={setName}
+                    onChangeText={(t) => { setName(t); clearMessages(); }}
                     autoCapitalize="words"
+                    testID="name-input"
                   />
                 </View>
                 <View style={styles.inputRow}>
@@ -153,6 +216,7 @@ export default function LoginScreen() {
                     value={phone}
                     onChangeText={setPhone}
                     keyboardType="phone-pad"
+                    testID="phone-input"
                   />
                 </View>
               </>
@@ -165,10 +229,11 @@ export default function LoginScreen() {
                 placeholder="Email"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(t) => { setEmail(t); clearMessages(); }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                testID="email-input"
               />
             </View>
 
@@ -176,12 +241,13 @@ export default function LoginScreen() {
               <Ionicons name="lock-closed-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
-                placeholder="Password"
+                placeholder="Password (min 6 characters)"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(t) => { setPassword(t); clearMessages(); }}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                testID="password-input"
               />
               <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
                 <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={Colors.light.tabIconDefault} />
@@ -192,6 +258,7 @@ export default function LoginScreen() {
               onPress={handleSubmit}
               disabled={loading}
               style={({ pressed }) => [styles.submitBtn, { opacity: pressed ? 0.9 : 1 }]}
+              testID="submit-btn"
             >
               <LinearGradient
                 colors={[Colors.light.primary, Colors.light.primaryDark]}
@@ -220,21 +287,57 @@ export default function LoginScreen() {
 
             <View style={styles.socialRow}>
               <Pressable
-                onPress={handleGoogleLogin}
-                style={({ pressed }) => [styles.socialBtn, styles.googleBtn, { opacity: pressed ? 0.9 : 1 }]}
+                onPress={() => handleOAuthLogin("google")}
+                disabled={!!socialLoading}
+                style={({ pressed }) => [
+                  styles.socialBtn,
+                  styles.googleBtn,
+                  { opacity: pressed ? 0.9 : 1 },
+                  !oauthStatus.google && styles.socialBtnDisabled,
+                ]}
+                testID="google-login-btn"
               >
-                <MaterialCommunityIcons name="google" size={22} color="#DB4437" />
-                <Text style={styles.socialBtnText}>Google</Text>
+                {socialLoading === "google" ? (
+                  <ActivityIndicator color="#DB4437" size="small" />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons name="google" size={22} color={oauthStatus.google ? "#DB4437" : "#999"} />
+                    <Text style={[styles.socialBtnText, !oauthStatus.google && styles.socialBtnTextDisabled]}>Google</Text>
+                  </>
+                )}
               </Pressable>
 
               <Pressable
-                onPress={handleFacebookLogin}
-                style={({ pressed }) => [styles.socialBtn, styles.facebookBtn, { opacity: pressed ? 0.9 : 1 }]}
+                onPress={() => handleOAuthLogin("facebook")}
+                disabled={!!socialLoading}
+                style={({ pressed }) => [
+                  styles.socialBtn,
+                  styles.facebookBtn,
+                  { opacity: pressed ? 0.9 : 1 },
+                  !oauthStatus.facebook && styles.socialBtnDisabled,
+                ]}
+                testID="facebook-login-btn"
               >
-                <MaterialCommunityIcons name="facebook" size={22} color="#1877F2" />
-                <Text style={styles.socialBtnText}>Facebook</Text>
+                {socialLoading === "facebook" ? (
+                  <ActivityIndicator color="#1877F2" size="small" />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons name="facebook" size={22} color={oauthStatus.facebook ? "#1877F2" : "#999"} />
+                    <Text style={[styles.socialBtnText, !oauthStatus.facebook && styles.socialBtnTextDisabled]}>Facebook</Text>
+                  </>
+                )}
               </Pressable>
             </View>
+
+            {(!oauthStatus.google || !oauthStatus.facebook) && (
+              <Text style={styles.oauthNote}>
+                {!oauthStatus.google && !oauthStatus.facebook
+                  ? "Google & Facebook login will be available once OAuth credentials are configured."
+                  : !oauthStatus.google
+                  ? "Google login will be available once configured."
+                  : "Facebook login will be available once configured."}
+              </Text>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -316,6 +419,43 @@ const styles = StyleSheet.create({
     color: Colors.light.primary,
     fontFamily: "Poppins_600SemiBold",
   },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#FFEBEE",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FFCDD2",
+  },
+  errorText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 13,
+    color: "#C62828",
+    flex: 1,
+    lineHeight: 18,
+  },
+  successBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#E8F5E9",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#C8E6C9",
+  },
+  successText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 13,
+    color: "#2E7D32",
+    flex: 1,
+  },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -389,11 +529,27 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.border,
     backgroundColor: "#fff",
   },
+  socialBtnDisabled: {
+    backgroundColor: "#F5F5F5",
+    borderColor: "#E0E0E0",
+  },
   googleBtn: {},
   facebookBtn: {},
   socialBtnText: {
     fontFamily: "Poppins_500Medium",
     fontSize: 14,
     color: Colors.light.text,
+  },
+  socialBtnTextDisabled: {
+    color: "#999",
+  },
+  oauthNote: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 11,
+    color: Colors.light.tabIconDefault,
+    textAlign: "center",
+    marginTop: 12,
+    paddingHorizontal: 20,
+    lineHeight: 16,
   },
 });

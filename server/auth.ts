@@ -1,9 +1,59 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import pg from "pg";
+import crypto from "crypto";
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const router = Router();
+
+function getBaseUrl(req: Request): string {
+  const forwardedProto = req.header("x-forwarded-proto") || req.protocol || "https";
+  const forwardedHost = req.header("x-forwarded-host") || req.get("host");
+  return `${forwardedProto}://${forwardedHost}`;
+}
+
+const oauthCallbackHtml = (success: boolean, message: string) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${success ? "Login Successful" : "Login Failed"}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: linear-gradient(135deg, #053B2F 0%, #0A6847 100%);
+      color: #fff; text-align: center; padding: 20px;
+    }
+    .card {
+      background: rgba(255,255,255,0.12); backdrop-filter: blur(10px);
+      border-radius: 20px; padding: 40px 30px; max-width: 380px; width: 100%;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .icon { font-size: 56px; margin-bottom: 16px; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    p { font-size: 14px; opacity: 0.85; line-height: 1.5; margin-bottom: 20px; }
+    .btn {
+      display: inline-block; background: #D4A843; color: #053B2F;
+      padding: 14px 32px; border-radius: 12px; font-weight: 600;
+      text-decoration: none; font-size: 15px; cursor: pointer; border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">${success ? "&#10003;" : "&#10007;"}</div>
+    <h1>${success ? "Welcome to 47daPunjab!" : "Login Failed"}</h1>
+    <p>${message}</p>
+    <p style="font-size:12px;opacity:0.7;">You can close this window and return to the app.</p>
+    <script>
+      ${success ? "setTimeout(function(){ window.close(); }, 2000);" : ""}
+    </script>
+  </div>
+</body>
+</html>`;
 
 router.post("/api/auth/register", async (req: Request, res: Response) => {
   try {
@@ -11,22 +61,33 @@ router.post("/api/auth/register", async (req: Request, res: Response) => {
     if (!email || !password || !name) {
       return res.status(400).json({ error: "Email, password, and name are required" });
     }
-    const existing = await pool.query("SELECT id FROM auth_users WHERE email = $1", [email.toLowerCase()]);
+    if (password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Please enter a valid email address" });
+    }
+    const existing = await pool.query("SELECT id, provider FROM auth_users WHERE email = $1", [email.toLowerCase()]);
     if (existing.rows.length > 0) {
-      return res.status(409).json({ error: "An account with this email already exists" });
+      const existingProvider = existing.rows[0].provider;
+      if (existingProvider !== "email") {
+        return res.status(409).json({ error: `An account with this email already exists via ${existingProvider}. Please use ${existingProvider} login.` });
+      }
+      return res.status(409).json({ error: "An account with this email already exists. Please sign in instead." });
     }
     const passwordHash = await bcrypt.hash(password, 10);
     const result = await pool.query(
       `INSERT INTO auth_users (email, password_hash, name, phone, role, provider) 
-       VALUES ($1, $2, $3, $4, 'user', 'email') RETURNING id, email, name, phone, role, avatar_url, created_at`,
+       VALUES ($1, $2, $3, $4, 'user', 'email') RETURNING id, email, name, phone, role, avatar_url, provider, created_at`,
       [email.toLowerCase(), passwordHash, name, phone || ""]
     );
     const user = result.rows[0];
     (req.session as any).userId = user.id;
-    res.json({ user });
+    res.json({ user, message: "Account created successfully! Welcome to 47daPunjab." });
   } catch (e: any) {
     console.error("Register error:", e);
-    res.status(500).json({ error: "Registration failed" });
+    res.status(500).json({ error: "Registration failed. Please try again." });
   }
 });
 
@@ -41,22 +102,66 @@ router.post("/api/auth/login", async (req: Request, res: Response) => {
       [email.toLowerCase()]
     );
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({ error: "No account found with this email. Please sign up first." });
     }
     const user = result.rows[0];
-    if (user.provider !== "email" || !user.password_hash) {
-      return res.status(401).json({ error: `This account uses ${user.provider} login` });
+    if (user.provider !== "email" && !user.password_hash) {
+      return res.status(401).json({ error: `This account was created with ${user.provider}. Please use the ${user.provider} button to sign in.` });
     }
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({ error: "Incorrect password. Please try again." });
     }
     (req.session as any).userId = user.id;
     const { password_hash, ...safeUser } = user;
-    res.json({ user: safeUser });
+    res.json({ user: safeUser, message: "Welcome back!" });
   } catch (e: any) {
     console.error("Login error:", e);
-    res.status(500).json({ error: "Login failed" });
+    res.status(500).json({ error: "Login failed. Please try again." });
+  }
+});
+
+router.post("/api/auth/smart-login", async (req: Request, res: Response) => {
+  try {
+    const { email, password, name, phone } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+    const existing = await pool.query(
+      "SELECT id, email, password_hash, name, phone, city, country, purpose, role, avatar_url, provider FROM auth_users WHERE email = $1",
+      [email.toLowerCase()]
+    );
+    if (existing.rows.length > 0) {
+      const user = existing.rows[0];
+      if (user.provider !== "email" && !user.password_hash) {
+        return res.status(401).json({ error: `This account uses ${user.provider} login. Please use the ${user.provider} button instead.` });
+      }
+      const valid = await bcrypt.compare(password, user.password_hash);
+      if (!valid) {
+        return res.status(401).json({ error: "Incorrect password. Please try again." });
+      }
+      (req.session as any).userId = user.id;
+      const { password_hash, ...safeUser } = user;
+      return res.json({ user: safeUser, message: "Welcome back!", isNewUser: false });
+    }
+    if (!name) {
+      return res.status(404).json({ error: "No account found. Please provide your name to create one.", needsSignup: true });
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    const result = await pool.query(
+      `INSERT INTO auth_users (email, password_hash, name, phone, role, provider) 
+       VALUES ($1, $2, $3, $4, 'user', 'email') RETURNING id, email, name, phone, role, avatar_url, provider, created_at`,
+      [email.toLowerCase(), passwordHash, name, phone || ""]
+    );
+    const newUser = result.rows[0];
+    (req.session as any).userId = newUser.id;
+    res.json({ user: newUser, message: "Account created! Welcome to 47daPunjab.", isNewUser: true });
+  } catch (e: any) {
+    console.error("Smart login error:", e);
+    res.status(500).json({ error: "Authentication failed. Please try again." });
   }
 });
 
@@ -77,6 +182,7 @@ router.post("/api/auth/social", async (req: Request, res: Response) => {
         "UPDATE auth_users SET provider = $2, provider_id = $3, avatar_url = COALESCE($4, avatar_url), updated_at = NOW() WHERE id = $1",
         [user.id, provider, providerId || null, avatarUrl || null]
       );
+      user.provider = provider;
       user.avatar_url = avatarUrl || user.avatar_url;
     } else {
       const result = await pool.query(
@@ -92,6 +198,190 @@ router.post("/api/auth/social", async (req: Request, res: Response) => {
     console.error("Social login error:", e);
     res.status(500).json({ error: "Social login failed" });
   }
+});
+
+router.get("/api/auth/google", (req: Request, res: Response) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    return res.status(503).json({ error: "Google login is not configured yet. Please use email login." });
+  }
+  const baseUrl = getBaseUrl(req);
+  const redirectUri = `${baseUrl}/api/auth/google/callback`;
+  const state = crypto.randomBytes(16).toString("hex");
+  (req.session as any).oauthState = state;
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: "openid email profile",
+    access_type: "offline",
+    state,
+    prompt: "select_account",
+  });
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+});
+
+router.get("/api/auth/google/callback", async (req: Request, res: Response) => {
+  try {
+    const { code, state, error } = req.query;
+    if (error) {
+      return res.send(oauthCallbackHtml(false, `Google login was cancelled or failed: ${error}`));
+    }
+    if (!code) {
+      return res.send(oauthCallbackHtml(false, "No authorization code received from Google."));
+    }
+    const savedState = (req.session as any)?.oauthState;
+    if (state && savedState && state !== savedState) {
+      return res.send(oauthCallbackHtml(false, "Security check failed. Please try again."));
+    }
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      return res.send(oauthCallbackHtml(false, "Google OAuth is not fully configured."));
+    }
+    const baseUrl = getBaseUrl(req);
+    const redirectUri = `${baseUrl}/api/auth/google/callback`;
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code: code as string,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
+    const tokenData = await tokenRes.json() as any;
+    if (!tokenRes.ok || !tokenData.access_token) {
+      console.error("Google token error:", tokenData);
+      return res.send(oauthCallbackHtml(false, "Failed to get access token from Google."));
+    }
+    const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const googleUser = await userInfoRes.json() as any;
+    if (!googleUser.email) {
+      return res.send(oauthCallbackHtml(false, "Could not get your email from Google."));
+    }
+    const existing = await pool.query(
+      "SELECT id, email, name, phone, city, country, purpose, role, avatar_url, provider FROM auth_users WHERE email = $1",
+      [googleUser.email.toLowerCase()]
+    );
+    let user;
+    if (existing.rows.length > 0) {
+      user = existing.rows[0];
+      await pool.query(
+        "UPDATE auth_users SET provider = 'google', provider_id = $2, avatar_url = COALESCE($3, avatar_url), name = COALESCE(NULLIF(name, ''), $4), updated_at = NOW() WHERE id = $1",
+        [user.id, googleUser.id, googleUser.picture, googleUser.name]
+      );
+      user.avatar_url = googleUser.picture || user.avatar_url;
+    } else {
+      const result = await pool.query(
+        `INSERT INTO auth_users (email, name, provider, provider_id, avatar_url, role)
+         VALUES ($1, $2, 'google', $3, $4, 'user') RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
+        [googleUser.email.toLowerCase(), googleUser.name || "", googleUser.id, googleUser.picture || null]
+      );
+      user = result.rows[0];
+    }
+    (req.session as any).userId = user.id;
+    delete (req.session as any).oauthState;
+    res.send(oauthCallbackHtml(true, `Signed in as ${user.name || user.email}. You can return to the app now.`));
+  } catch (e: any) {
+    console.error("Google callback error:", e);
+    res.send(oauthCallbackHtml(false, "An error occurred during Google login. Please try again."));
+  }
+});
+
+router.get("/api/auth/facebook", (req: Request, res: Response) => {
+  const appId = process.env.FACEBOOK_APP_ID;
+  if (!appId) {
+    return res.status(503).json({ error: "Facebook login is not configured yet. Please use email login." });
+  }
+  const baseUrl = getBaseUrl(req);
+  const redirectUri = `${baseUrl}/api/auth/facebook/callback`;
+  const state = crypto.randomBytes(16).toString("hex");
+  (req.session as any).oauthState = state;
+  const params = new URLSearchParams({
+    client_id: appId,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: "email,public_profile",
+    state,
+  });
+  res.redirect(`https://www.facebook.com/v19.0/dialog/oauth?${params.toString()}`);
+});
+
+router.get("/api/auth/facebook/callback", async (req: Request, res: Response) => {
+  try {
+    const { code, error, error_description } = req.query;
+    if (error) {
+      return res.send(oauthCallbackHtml(false, `Facebook login failed: ${error_description || error}`));
+    }
+    if (!code) {
+      return res.send(oauthCallbackHtml(false, "No authorization code received from Facebook."));
+    }
+    const appId = process.env.FACEBOOK_APP_ID;
+    const appSecret = process.env.FACEBOOK_APP_SECRET;
+    if (!appId || !appSecret) {
+      return res.send(oauthCallbackHtml(false, "Facebook OAuth is not fully configured."));
+    }
+    const baseUrl = getBaseUrl(req);
+    const redirectUri = `${baseUrl}/api/auth/facebook/callback`;
+    const tokenUrl = `https://graph.facebook.com/v19.0/oauth/access_token?${new URLSearchParams({
+      client_id: appId,
+      redirect_uri: redirectUri,
+      client_secret: appSecret,
+      code: code as string,
+    })}`;
+    const tokenRes = await fetch(tokenUrl);
+    const tokenData = await tokenRes.json() as any;
+    if (!tokenRes.ok || !tokenData.access_token) {
+      console.error("Facebook token error:", tokenData);
+      return res.send(oauthCallbackHtml(false, "Failed to get access token from Facebook."));
+    }
+    const userInfoRes = await fetch(
+      `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${tokenData.access_token}`
+    );
+    const fbUser = await userInfoRes.json() as any;
+    if (!fbUser.email) {
+      return res.send(oauthCallbackHtml(false, "Could not get your email from Facebook. Please ensure your Facebook account has an email."));
+    }
+    const avatarUrl = fbUser.picture?.data?.url || null;
+    const existing = await pool.query(
+      "SELECT id, email, name, phone, city, country, purpose, role, avatar_url, provider FROM auth_users WHERE email = $1",
+      [fbUser.email.toLowerCase()]
+    );
+    let user;
+    if (existing.rows.length > 0) {
+      user = existing.rows[0];
+      await pool.query(
+        "UPDATE auth_users SET provider = 'facebook', provider_id = $2, avatar_url = COALESCE($3, avatar_url), name = COALESCE(NULLIF(name, ''), $4), updated_at = NOW() WHERE id = $1",
+        [user.id, fbUser.id, avatarUrl, fbUser.name]
+      );
+      user.avatar_url = avatarUrl || user.avatar_url;
+    } else {
+      const result = await pool.query(
+        `INSERT INTO auth_users (email, name, provider, provider_id, avatar_url, role)
+         VALUES ($1, $2, 'facebook', $3, $4, 'user') RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
+        [fbUser.email.toLowerCase(), fbUser.name || "", fbUser.id, avatarUrl]
+      );
+      user = result.rows[0];
+    }
+    (req.session as any).userId = user.id;
+    delete (req.session as any).oauthState;
+    res.send(oauthCallbackHtml(true, `Signed in as ${user.name || user.email}. You can return to the app now.`));
+  } catch (e: any) {
+    console.error("Facebook callback error:", e);
+    res.send(oauthCallbackHtml(false, "An error occurred during Facebook login. Please try again."));
+  }
+});
+
+router.get("/api/auth/oauth/status", (_req: Request, res: Response) => {
+  res.json({
+    google: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
+    facebook: !!process.env.FACEBOOK_APP_ID && !!process.env.FACEBOOK_APP_SECRET,
+  });
 });
 
 router.get("/api/auth/me", async (req: Request, res: Response) => {
