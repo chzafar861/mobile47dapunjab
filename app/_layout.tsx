@@ -42,6 +42,7 @@ function AuthGate() {
           <Stack.Screen name="video-request" options={{ headerShown: false }} />
           <Stack.Screen name="protocol-request" options={{ headerShown: false }} />
           <Stack.Screen name="customs-request" options={{ headerShown: false }} />
+          <Stack.Screen name="pakistan-guide" options={{ headerShown: false }} />
           <Stack.Screen name="admin" options={{ headerShown: false }} />
         </>
       )}

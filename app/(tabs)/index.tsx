@@ -166,6 +166,12 @@ export default function HomeScreen() {
             onPress={() => router.push("/history")}
           />
           <FeatureRow
+            icon={<MaterialCommunityIcons name="star-crescent" size={22} color="#1B4332" />}
+            title="Pakistan Guide"
+            description="Services overview & Pakistan info"
+            onPress={() => router.push("/pakistan-guide")}
+          />
+          <FeatureRow
             icon={<Feather name="send" size={22} color={Colors.light.danger} />}
             title="Submit Details"
             description="Share property or land information"
