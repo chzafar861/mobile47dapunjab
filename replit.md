@@ -4,11 +4,13 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, rentals, history, and property detail submissions.
 
 ## Recent Changes
+- 2026-02-14: Migrated all data storage from AsyncStorage to Firebase Firestore
 - 2026-02-13: Initial build - all core screens created
 
 ## Project Architecture
 - **Stack**: Expo Router (React Native) + Express backend
-- **Data**: AsyncStorage for local persistence
+- **Data**: Firebase Firestore (project: dapunjab-replat) for cloud persistence
+- **Firebase Collections**: bookings, cart, propertyDetails, rentalInquiries, users
 - **Font**: Poppins (Google Fonts)
 - **Colors**: Emerald green + Gold accent (Pakistan inspired)
 
