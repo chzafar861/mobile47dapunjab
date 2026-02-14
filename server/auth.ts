@@ -377,6 +377,72 @@ router.get("/api/auth/facebook/callback", async (req: Request, res: Response) =>
   }
 });
 
+router.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Please enter your email address" });
+    }
+    const result = await pool.query(
+      "SELECT id, provider FROM auth_users WHERE email = $1",
+      [email.toLowerCase()]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "No account found with this email. Please sign up first." });
+    }
+    const user = result.rows[0];
+    if (user.provider !== "email") {
+      return res.status(400).json({ error: `This account uses ${user.provider} login. Password reset is not available for social accounts.` });
+    }
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
+    await pool.query(
+      "UPDATE auth_users SET reset_code = $2, reset_code_expires = $3 WHERE id = $1",
+      [user.id, code, expires]
+    );
+    console.log(`[Password Reset] Code for ${email}: ${code}`);
+    res.json({ success: true, message: "A 6-digit reset code has been generated. Check the app for your code.", code });
+  } catch (e: any) {
+    console.error("Forgot password error:", e);
+    res.status(500).json({ error: "Failed to process reset request. Please try again." });
+  }
+});
+
+router.post("/api/auth/reset-password", async (req: Request, res: Response) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ error: "Email, reset code, and new password are required" });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: "New password must be at least 6 characters" });
+    }
+    const result = await pool.query(
+      "SELECT id, reset_code, reset_code_expires FROM auth_users WHERE email = $1",
+      [email.toLowerCase()]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "No account found with this email" });
+    }
+    const user = result.rows[0];
+    if (!user.reset_code || user.reset_code !== code) {
+      return res.status(400).json({ error: "Invalid reset code. Please check and try again." });
+    }
+    if (new Date() > new Date(user.reset_code_expires)) {
+      return res.status(400).json({ error: "Reset code has expired. Please request a new one." });
+    }
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await pool.query(
+      "UPDATE auth_users SET password_hash = $2, reset_code = NULL, reset_code_expires = NULL, updated_at = NOW() WHERE id = $1",
+      [user.id, passwordHash]
+    );
+    res.json({ success: true, message: "Password reset successfully! You can now sign in with your new password." });
+  } catch (e: any) {
+    console.error("Reset password error:", e);
+    res.status(500).json({ error: "Password reset failed. Please try again." });
+  }
+});
+
 router.get("/api/auth/oauth/status", (_req: Request, res: Response) => {
   res.json({
     google: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
