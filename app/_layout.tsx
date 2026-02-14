@@ -31,7 +31,7 @@ function AuthGate() {
   }
 
   return (
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
+    <Stack screenOptions={{ headerShown: false }}>
       {!user ? (
         <Stack.Screen name="login" options={{ headerShown: false }} />
       ) : (
