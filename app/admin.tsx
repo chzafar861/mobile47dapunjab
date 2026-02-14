@@ -13,7 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { db, collection, getDocs, deleteDoc, doc, query } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 
@@ -31,23 +31,26 @@ export default function AdminScreen() {
 
   const loadData = async () => {
     try {
-      const b = await AsyncStorage.getItem("bookings");
-      if (b) setBookings(JSON.parse(b));
-      const p = await AsyncStorage.getItem("propertyDetails");
-      if (p) setPropertyDetails(JSON.parse(p));
+      const bSnap = await getDocs(collection(db, "bookings"));
+      setBookings(bSnap.docs.map((d) => ({ ...d.data(), docId: d.id })));
+      const pSnap = await getDocs(collection(db, "propertyDetails"));
+      setPropertyDetails(pSnap.docs.map((d) => ({ ...d.data(), docId: d.id })));
     } catch {}
   };
 
   const deleteBooking = async (id: string) => {
+    const item = bookings.find((b) => b.docId === id || b.id === id);
+    const docId = item?.docId || id;
     Alert.alert("Delete Booking", "Are you sure?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
-          const updated = bookings.filter((b) => b.id !== id);
-          setBookings(updated);
-          await AsyncStorage.setItem("bookings", JSON.stringify(updated));
+          try {
+            await deleteDoc(doc(db, "bookings", docId));
+          } catch {}
+          setBookings((prev) => prev.filter((b) => (b.docId || b.id) !== (item?.docId || id)));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         },
       },
@@ -55,15 +58,18 @@ export default function AdminScreen() {
   };
 
   const deleteProperty = async (id: string) => {
+    const item = propertyDetails.find((p) => p.docId === id || p.id === id);
+    const docId = item?.docId || id;
     Alert.alert("Delete Property", "Are you sure?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
-          const updated = propertyDetails.filter((p) => p.id !== id);
-          setPropertyDetails(updated);
-          await AsyncStorage.setItem("propertyDetails", JSON.stringify(updated));
+          try {
+            await deleteDoc(doc(db, "propertyDetails", docId));
+          } catch {}
+          setPropertyDetails((prev) => prev.filter((p) => (p.docId || p.id) !== (item?.docId || id)));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         },
       },
@@ -193,7 +199,7 @@ export default function AdminScreen() {
                     <View style={styles.itemBadge}>
                       <Text style={styles.itemBadgeText}>{b.type}</Text>
                     </View>
-                    <Pressable onPress={() => deleteBooking(b.id)}>
+                    <Pressable onPress={() => deleteBooking(b.docId || b.id)}>
                       <Ionicons name="trash-outline" size={18} color={Colors.light.danger} />
                     </Pressable>
                   </View>
@@ -223,7 +229,7 @@ export default function AdminScreen() {
                     <View style={[styles.itemBadge, { backgroundColor: Colors.light.accent + "20" }]}>
                       <Text style={[styles.itemBadgeText, { color: Colors.light.accent }]}>{p.propertyType}</Text>
                     </View>
-                    <Pressable onPress={() => deleteProperty(p.id)}>
+                    <Pressable onPress={() => deleteProperty(p.docId || p.id)}>
                       <Ionicons name="trash-outline" size={18} color={Colors.light.danger} />
                     </Pressable>
                   </View>

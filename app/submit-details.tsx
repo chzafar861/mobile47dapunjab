@@ -12,7 +12,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { db, collection, addDoc } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 
@@ -59,10 +59,7 @@ export default function SubmitDetailsScreen() {
     };
 
     try {
-      const existing = await AsyncStorage.getItem("propertyDetails");
-      const details: PropertyDetail[] = existing ? JSON.parse(existing) : [];
-      details.push(detail);
-      await AsyncStorage.setItem("propertyDetails", JSON.stringify(details));
+      await addDoc(collection(db, "propertyDetails"), detail);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSubmitted(true);
     } catch {

@@ -14,7 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { db, collection, getDocs, doc, setDoc, getDoc, deleteDoc, query } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 
@@ -50,15 +50,18 @@ export default function ProfileScreen() {
 
   const loadProfile = async () => {
     try {
-      const stored = await AsyncStorage.getItem("userProfile");
-      if (stored) setProfile(JSON.parse(stored));
+      const docSnap = await getDoc(doc(db, "users", "defaultUser"));
+      if (docSnap.exists()) {
+        setProfile(docSnap.data() as UserProfile);
+      }
     } catch {}
   };
 
   const loadBookings = async () => {
     try {
-      const stored = await AsyncStorage.getItem("bookings");
-      if (stored) setBookings(JSON.parse(stored));
+      const snapshot = await getDocs(collection(db, "bookings"));
+      const items = snapshot.docs.map((d) => ({ ...d.data(), docId: d.id }));
+      setBookings(items);
     } catch {}
   };
 
@@ -68,7 +71,7 @@ export default function ProfileScreen() {
       return;
     }
     try {
-      await AsyncStorage.setItem("userProfile", JSON.stringify(profile));
+      await setDoc(doc(db, "users", "defaultUser"), profile);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setIsEditing(false);
       Alert.alert("Saved", "Your profile has been updated.");
@@ -87,7 +90,17 @@ export default function ProfileScreen() {
           text: "Clear",
           style: "destructive",
           onPress: async () => {
-            await AsyncStorage.clear();
+            try {
+              await setDoc(doc(db, "users", "defaultUser"), { name: "", phone: "", email: "", city: "", country: "", purpose: "" });
+              const bookSnap = await getDocs(collection(db, "bookings"));
+              for (const d of bookSnap.docs) {
+                await deleteDoc(doc(db, "bookings", d.id));
+              }
+              const cartSnap = await getDocs(collection(db, "cart"));
+              for (const d of cartSnap.docs) {
+                await deleteDoc(doc(db, "cart", d.id));
+              }
+            } catch {}
             setProfile({ name: "", phone: "", email: "", city: "", country: "", purpose: "" });
             setBookings([]);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);

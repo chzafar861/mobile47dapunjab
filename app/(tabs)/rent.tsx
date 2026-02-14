@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { db, collection, addDoc } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 
@@ -190,12 +190,21 @@ export default function RentScreen() {
     (r) => selectedType === "All" || r.type === selectedType.toLowerCase()
   );
 
-  const handleInquire = (item: RentalItem) => {
+  const handleInquire = async (item: RentalItem) => {
     if (!item.available) {
       Alert.alert("Not Available", "This item is currently booked. Please check back later.");
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await addDoc(collection(db, "rentalInquiries"), {
+        rentalId: item.id,
+        title: item.title,
+        type: item.type,
+        price: item.price,
+        date: new Date().toISOString(),
+      });
+    } catch {}
     Alert.alert(
       "Inquiry Sent",
       `Your inquiry for "${item.title}" has been sent. We will contact you soon with availability and details.`

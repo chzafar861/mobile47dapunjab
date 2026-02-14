@@ -12,7 +12,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { db, collection, addDoc } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 
@@ -50,10 +50,7 @@ function BookingForm({ serviceType, onClose, onSubmit }: BookingFormProps) {
       date: new Date().toISOString(),
     };
     try {
-      const existing = await AsyncStorage.getItem("bookings");
-      const bookings: ServiceBooking[] = existing ? JSON.parse(existing) : [];
-      bookings.push(booking);
-      await AsyncStorage.setItem("bookings", JSON.stringify(bookings));
+      await addDoc(collection(db, "bookings"), booking);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSubmit(booking);
     } catch {
