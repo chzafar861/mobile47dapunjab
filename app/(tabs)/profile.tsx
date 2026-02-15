@@ -580,6 +580,28 @@ export default function ProfileScreen() {
               <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
             </Pressable>
             <Pressable
+              onPress={() => router.push("/privacy-policy")}
+              style={({ pressed }) => [
+                styles.linkRow,
+                { opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <Ionicons name="shield-checkmark-outline" size={20} color={Colors.light.primary} />
+              <Text style={styles.linkText}>Privacy Policy</Text>
+              <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/terms")}
+              style={({ pressed }) => [
+                styles.linkRow,
+                { opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <Ionicons name="document-text-outline" size={20} color={Colors.light.primary} />
+              <Text style={styles.linkText}>Terms of Service</Text>
+              <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
+            </Pressable>
+            <Pressable
               onPress={handleLogout}
               style={({ pressed }) => [
                 styles.linkRow,
