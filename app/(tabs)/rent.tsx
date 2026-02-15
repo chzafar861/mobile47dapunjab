@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
@@ -48,17 +49,15 @@ const DISTRICTS = [
 ];
 
 function RecordCard({ item }: { item: MigrationRecord }) {
-  const [expanded, setExpanded] = useState(false);
-
   return (
     <Pressable
       onPress={() => {
-        setExpanded(!expanded);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push({ pathname: "/migration-detail", params: { id: String(item.id) } });
       }}
       style={({ pressed }) => [
         styles.recordCard,
-        { opacity: pressed ? 0.95 : 1 },
+        { opacity: pressed ? 0.95 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
       <View style={styles.cardHeader}>
@@ -85,11 +84,7 @@ function RecordCard({ item }: { item: MigrationRecord }) {
             </Text>
           </View>
         </View>
-        <Ionicons
-          name={expanded ? "chevron-up" : "chevron-down"}
-          size={20}
-          color={Colors.light.textSecondary}
-        />
+        <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary} />
       </View>
 
       <View style={styles.cardBody}>
@@ -114,31 +109,17 @@ function RecordCard({ item }: { item: MigrationRecord }) {
           </View>
         </View>
 
-        <View style={styles.districtTag}>
-          <Ionicons name="map-outline" size={12} color={Colors.light.primary} />
-          <Text style={styles.districtTagText}>{item.district}</Text>
+        <View style={styles.cardFooter}>
+          <View style={styles.districtTag}>
+            <Ionicons name="map-outline" size={12} color={Colors.light.primary} />
+            <Text style={styles.districtTagText}>{item.district}</Text>
+          </View>
+          <View style={styles.viewDetailHint}>
+            <Ionicons name="chatbubble-outline" size={12} color={Colors.light.textSecondary} />
+            <Text style={styles.viewDetailText}>View & Comment</Text>
+          </View>
         </View>
       </View>
-
-      {expanded && (
-        <View style={styles.expandedSection}>
-          {item.contact_info && (
-            <View style={styles.expandedRow}>
-              <Ionicons name="call-outline" size={14} color={Colors.light.textSecondary} />
-              <Text style={styles.expandedText}>{item.contact_info}</Text>
-            </View>
-          )}
-          {item.notes && (
-            <View style={styles.expandedRow}>
-              <Ionicons name="document-text-outline" size={14} color={Colors.light.textSecondary} />
-              <Text style={styles.expandedText}>{item.notes}</Text>
-            </View>
-          )}
-          {!item.contact_info && !item.notes && (
-            <Text style={styles.noExtraInfo}>No additional details available.</Text>
-          )}
-        </View>
-      )}
     </Pressable>
   );
 }
@@ -810,11 +791,26 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     maxWidth: 120,
   },
+  cardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  viewDetailHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  viewDetailText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 11,
+    color: Colors.light.textSecondary,
+  },
   districtTag: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginTop: 10,
     backgroundColor: Colors.light.primary + "10",
     paddingHorizontal: 10,
     paddingVertical: 4,
