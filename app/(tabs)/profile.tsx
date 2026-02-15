@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Image,
+  Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
@@ -18,7 +19,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { firebaseApi } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
+import { apiRequest, queryClient } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import Colors from "@/constants/colors";
 
 function InputField({
@@ -82,6 +85,19 @@ export default function ProfileScreen() {
     purpose: user?.purpose || "",
   });
   const [bookings, setBookings] = useState<any[]>([]);
+  const [showPersonForm, setShowPersonForm] = useState(false);
+  const [personSubmitting, setPersonSubmitting] = useState(false);
+  const [personImageUrl, setPersonImageUrl] = useState("");
+  const [personForm, setPersonForm] = useState({
+    full_name: "",
+    village_of_origin: "",
+    district: "",
+    current_location: "",
+    year_of_migration: "",
+    migration_period: "after_1947" as "before_1947" | "after_1947",
+    contact_info: "",
+    notes: "",
+  });
 
   useEffect(() => {
     loadBookings();
@@ -155,6 +171,84 @@ export default function ProfileScreen() {
       }
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const resetPersonForm = () => {
+    setPersonForm({
+      full_name: "",
+      village_of_origin: "",
+      district: "",
+      current_location: "",
+      year_of_migration: "",
+      migration_period: "after_1947",
+      contact_info: "",
+      notes: "",
+    });
+    setPersonImageUrl("");
+  };
+
+  const handleSubmitPerson = async () => {
+    if (!personForm.full_name.trim()) {
+      Alert.alert("Required", "Please enter the full name.");
+      return;
+    }
+    if (!personForm.village_of_origin.trim()) {
+      Alert.alert("Required", "Please enter the village of origin.");
+      return;
+    }
+    if (!personForm.district.trim()) {
+      Alert.alert("Required", "Please enter the district.");
+      return;
+    }
+    if (!personForm.current_location.trim()) {
+      Alert.alert("Required", "Please enter the current location.");
+      return;
+    }
+    if (personForm.year_of_migration && (isNaN(parseInt(personForm.year_of_migration)) || parseInt(personForm.year_of_migration) < 1900 || parseInt(personForm.year_of_migration) > 2026)) {
+      Alert.alert("Invalid Year", "Please enter a valid year.");
+      return;
+    }
+
+    setPersonSubmitting(true);
+    try {
+      await apiRequest("POST", "/api/migration-records", {
+        full_name: personForm.full_name.trim(),
+        image_url: personImageUrl || null,
+        village_of_origin: personForm.village_of_origin.trim(),
+        district: personForm.district.trim(),
+        year_of_migration: personForm.year_of_migration ? parseInt(personForm.year_of_migration) : null,
+        migration_period: personForm.migration_period,
+        current_location: personForm.current_location.trim(),
+        contact_info: personForm.contact_info.trim() || null,
+        notes: personForm.notes.trim() || null,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/migration-records"] });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      resetPersonForm();
+      setShowPersonForm(false);
+      Alert.alert("Success", "Person info submitted successfully!");
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to submit. Please try again.");
+    } finally {
+      setPersonSubmitting(false);
+    }
+  };
+
+  const pickPersonImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Please allow photo library access.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      base64: true,
+    });
+    if (!result.canceled && result.assets[0]?.base64) {
+      setPersonImageUrl(`data:image/jpeg;base64,${result.assets[0].base64}`);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   };
 
@@ -411,6 +505,36 @@ export default function ProfileScreen() {
                 <Ionicons name="arrow-forward-circle" size={24} color="rgba(255,255,255,0.85)" />
               </LinearGradient>
             </Pressable>
+
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setShowPersonForm(true);
+              }}
+              style={({ pressed }) => [
+                styles.submitDetailsCard,
+                { transform: [{ scale: pressed ? 0.97 : 1 }], marginTop: 12 },
+              ]}
+              testID="submit-person-btn"
+            >
+              <LinearGradient
+                colors={[Colors.light.primary, Colors.light.primaryDark]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.submitDetailsGradient}
+              >
+                <View style={styles.submitDetailsIconWrap}>
+                  <Ionicons name="people" size={28} color={Colors.light.primary} />
+                </View>
+                <View style={styles.submitDetailsContent}>
+                  <Text style={styles.submitDetailsTitle}>Submit Person Info</Text>
+                  <Text style={styles.submitDetailsDesc}>
+                    Add a person to HumanFind - share family or community member details
+                  </Text>
+                </View>
+                <Ionicons name="arrow-forward-circle" size={24} color="rgba(255,255,255,0.85)" />
+              </LinearGradient>
+            </Pressable>
           </View>
         )}
 
@@ -454,6 +578,164 @@ export default function ProfileScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Modal visible={showPersonForm} animationType="slide" presentationStyle="pageSheet">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalHeaderTitle}>Submit Person Info</Text>
+            <Pressable onPress={() => { setShowPersonForm(false); resetPersonForm(); }}>
+              <Ionicons name="close" size={24} color={Colors.light.text} />
+            </Pressable>
+          </View>
+
+          <ScrollView
+            contentContainerStyle={styles.modalFormScroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.personFormSection}>
+              <Text style={styles.personFormLabel}>Full Name <Text style={{ color: Colors.light.danger }}>*</Text></Text>
+              <TextInput
+                style={styles.personFormInput}
+                placeholder="e.g. Muhammad Aslam Khan"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={personForm.full_name}
+                onChangeText={(t) => setPersonForm({ ...personForm, full_name: t })}
+                testID="person-name"
+              />
+            </View>
+
+            <View style={styles.personFormSection}>
+              <Text style={styles.personFormLabel}>Photo (optional)</Text>
+              {personImageUrl ? (
+                <View style={styles.personImageWrap}>
+                  <Image source={{ uri: personImageUrl }} style={styles.personImage} />
+                  <Pressable onPress={() => setPersonImageUrl("")} style={styles.personImageRemove}>
+                    <Ionicons name="close-circle" size={24} color={Colors.light.danger} />
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable onPress={pickPersonImage} style={styles.personImagePicker}>
+                  <Ionicons name="images" size={24} color={Colors.light.primary} />
+                  <Text style={styles.personImagePickerText}>Choose Photo</Text>
+                </Pressable>
+              )}
+            </View>
+
+            <View style={styles.personFormSection}>
+              <Text style={styles.personFormLabel}>Village of Origin <Text style={{ color: Colors.light.danger }}>*</Text></Text>
+              <TextInput
+                style={styles.personFormInput}
+                placeholder="e.g. Amritsar, Jullundur"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={personForm.village_of_origin}
+                onChangeText={(t) => setPersonForm({ ...personForm, village_of_origin: t })}
+              />
+            </View>
+
+            <View style={styles.personFormSection}>
+              <Text style={styles.personFormLabel}>District <Text style={{ color: Colors.light.danger }}>*</Text></Text>
+              <TextInput
+                style={styles.personFormInput}
+                placeholder="e.g. Jalandhar, Amritsar"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={personForm.district}
+                onChangeText={(t) => setPersonForm({ ...personForm, district: t })}
+              />
+            </View>
+
+            <View style={styles.personFormSection}>
+              <Text style={styles.personFormLabel}>Current Location <Text style={{ color: Colors.light.danger }}>*</Text></Text>
+              <TextInput
+                style={styles.personFormInput}
+                placeholder="e.g. Lahore, Pakistan"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={personForm.current_location}
+                onChangeText={(t) => setPersonForm({ ...personForm, current_location: t })}
+              />
+            </View>
+
+            <View style={styles.personFormSection}>
+              <Text style={styles.personFormLabel}>Year of Migration</Text>
+              <TextInput
+                style={styles.personFormInput}
+                placeholder="e.g. 1947"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={personForm.year_of_migration}
+                onChangeText={(t) => setPersonForm({ ...personForm, year_of_migration: t })}
+                keyboardType="numeric"
+                maxLength={4}
+              />
+            </View>
+
+            <View style={styles.personFormSection}>
+              <Text style={styles.personFormLabel}>Migration Period</Text>
+              <View style={styles.periodRow}>
+                <Pressable
+                  onPress={() => setPersonForm({ ...personForm, migration_period: "before_1947" })}
+                  style={[styles.periodChip, personForm.migration_period === "before_1947" && styles.periodChipActive]}
+                >
+                  <Text style={[styles.periodChipText, personForm.migration_period === "before_1947" && styles.periodChipTextActive]}>Before 1947</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setPersonForm({ ...personForm, migration_period: "after_1947" })}
+                  style={[styles.periodChip, personForm.migration_period === "after_1947" && styles.periodChipActive]}
+                >
+                  <Text style={[styles.periodChipText, personForm.migration_period === "after_1947" && styles.periodChipTextActive]}>After 1947</Text>
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={styles.personFormSection}>
+              <Text style={styles.personFormLabel}>Contact Info (optional)</Text>
+              <TextInput
+                style={styles.personFormInput}
+                placeholder="Phone or email"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={personForm.contact_info}
+                onChangeText={(t) => setPersonForm({ ...personForm, contact_info: t })}
+              />
+            </View>
+
+            <View style={styles.personFormSection}>
+              <Text style={styles.personFormLabel}>Notes / Story (optional)</Text>
+              <TextInput
+                style={[styles.personFormInput, { height: 90, textAlignVertical: "top" }]}
+                placeholder="Share their story..."
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={personForm.notes}
+                onChangeText={(t) => setPersonForm({ ...personForm, notes: t })}
+                multiline
+                numberOfLines={4}
+              />
+            </View>
+
+            <Pressable
+              onPress={handleSubmitPerson}
+              disabled={personSubmitting}
+              style={({ pressed }) => [
+                styles.personSubmitBtn,
+                { opacity: pressed || personSubmitting ? 0.75 : 1 },
+              ]}
+              testID="submit-person-confirm"
+            >
+              <LinearGradient
+                colors={[Colors.light.primary, Colors.light.primaryDark]}
+                style={styles.personSubmitGradient}
+              >
+                {personSubmitting ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
+                    <Text style={styles.personSubmitText}>Submit Person</Text>
+                  </>
+                )}
+              </LinearGradient>
+            </Pressable>
+          </ScrollView>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -790,5 +1072,127 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.text,
     flex: 1,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: Colors.light.background,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === "web" ? 20 : 56,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  modalHeaderTitle: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 20,
+    color: Colors.light.text,
+  },
+  modalFormScroll: {
+    padding: 20,
+    paddingBottom: 60,
+  },
+  personFormSection: {
+    marginBottom: 16,
+  },
+  personFormLabel: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 13,
+    color: Colors.light.text,
+    marginBottom: 6,
+  },
+  personFormInput: {
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontFamily: "Poppins_400Regular",
+    fontSize: 14,
+    color: Colors.light.text,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  personImageWrap: {
+    width: 90,
+    height: 90,
+    borderRadius: 14,
+    overflow: "hidden",
+    position: "relative" as const,
+  },
+  personImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 14,
+  },
+  personImageRemove: {
+    position: "absolute" as const,
+    top: 4,
+    right: 4,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+  },
+  personImagePicker: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.light.border,
+    borderStyle: "dashed" as const,
+    backgroundColor: Colors.light.backgroundSecondary,
+  },
+  personImagePickerText: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+  },
+  periodRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  periodChip: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: Colors.light.backgroundSecondary,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  periodChipActive: {
+    backgroundColor: Colors.light.primary + "15",
+    borderColor: Colors.light.primary,
+  },
+  periodChipText: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+  },
+  periodChipTextActive: {
+    color: Colors.light.primary,
+  },
+  personSubmitBtn: {
+    borderRadius: 14,
+    overflow: "hidden",
+    marginTop: 8,
+  },
+  personSubmitGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 14,
+  },
+  personSubmitText: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 16,
+    color: "#fff",
   },
 });
