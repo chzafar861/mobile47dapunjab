@@ -32,19 +32,28 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 async function authFetch(path: string, options: RequestInit = {}) {
   const baseUrl = getApiUrl();
   const url = new URL(path, baseUrl);
-  const res = await globalThis.fetch(url.toString(), {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-    credentials: "include",
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "Request failed");
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await globalThis.fetch(url.toString(), {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+      credentials: "include",
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Request failed");
+    }
+    return data;
+  } catch (e: any) {
+    clearTimeout(timeoutId);
+    throw e;
   }
-  return data;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

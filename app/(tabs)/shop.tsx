@@ -99,7 +99,7 @@ const defaultProducts: ShopItem[] = [
     price: 30,
     category: "Home",
     description: "Luxurious velvet prayer rug with intricate design",
-    icon: "rug",
+    icon: "texture",
     iconSet: "material",
   },
 ];
