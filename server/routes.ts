@@ -285,12 +285,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/blog-posts", async (req: Request, res: Response) => {
     try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const adminCheck = await dbPool.query("SELECT role FROM auth_users WHERE id = $1", [userId]);
+      if (adminCheck.rows.length === 0 || adminCheck.rows[0].role !== "admin") {
+        return res.status(403).json({ error: "Admin access required to write blog posts" });
+      }
       const { title, content, author_name, author_email, image_url, category } = req.body;
       if (!title || !content || !author_name) {
         return res.status(400).json({ error: "title, content, and author_name are required" });
       }
-      const pool = (await import("pg")).default;
-      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
       const result = await dbPool.query(
         `INSERT INTO blog_posts (title, content, author_name, author_email, image_url, category) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
         [title, content, author_name, author_email || null, image_url || null, category || "General"]

@@ -23,6 +23,7 @@ import { apiRequest, queryClient } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import Colors from "@/constants/colors";
+import { useAuth } from "@/lib/auth-context";
 
 const { width } = Dimensions.get("window");
 
@@ -134,6 +135,7 @@ export default function BlogScreen() {
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
+  const { isAdmin } = useAuth();
   const [activeCategory, setActiveCategory] = useState("All");
   const [showWriteModal, setShowWriteModal] = useState(false);
   const [title, setTitle] = useState("");
@@ -286,23 +288,25 @@ export default function BlogScreen() {
         )}
       </ScrollView>
 
-      <Pressable
-        onPress={() => setShowWriteModal(true)}
-        style={({ pressed }) => [
-          styles.fab,
-          {
-            transform: [{ scale: pressed ? 0.9 : 1 }],
-            bottom: insets.bottom + webBottomInset + 20,
-          },
-        ]}
-      >
-        <LinearGradient
-          colors={[Colors.light.accent, "#C4972E"]}
-          style={styles.fabGradient}
+      {isAdmin && (
+        <Pressable
+          onPress={() => setShowWriteModal(true)}
+          style={({ pressed }) => [
+            styles.fab,
+            {
+              transform: [{ scale: pressed ? 0.9 : 1 }],
+              bottom: insets.bottom + webBottomInset + 20,
+            },
+          ]}
         >
-          <Feather name="edit-3" size={24} color="#fff" />
-        </LinearGradient>
-      </Pressable>
+          <LinearGradient
+            colors={[Colors.light.accent, "#C4972E"]}
+            style={styles.fabGradient}
+          >
+            <Feather name="edit-3" size={24} color="#fff" />
+          </LinearGradient>
+        </Pressable>
+      )}
 
       <Modal visible={showWriteModal} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView
