@@ -20,6 +20,7 @@ import { router } from "expo-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import Colors from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -395,16 +396,66 @@ export default function MigrationPortalScreen() {
               </View>
 
               <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Photo URL (optional)</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="https://... image link"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={formImageUrl}
-                  onChangeText={setFormImageUrl}
-                  autoCapitalize="none"
-                  keyboardType="url"
-                />
+                <Text style={styles.fieldLabel}>Photo (optional)</Text>
+                {formImageUrl ? (
+                  <View style={styles.pickedImageWrap}>
+                    <Image source={{ uri: formImageUrl }} style={styles.pickedImage} />
+                    <Pressable
+                      onPress={() => setFormImageUrl("")}
+                      style={styles.pickedImageRemove}
+                    >
+                      <Ionicons name="close-circle" size={24} color={Colors.light.danger} />
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={styles.imagePickerRow}>
+                    <Pressable
+                      onPress={async () => {
+                        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                        if (status !== "granted") {
+                          Alert.alert("Permission Required", "Please allow photo library access.");
+                          return;
+                        }
+                        const result = await ImagePicker.launchImageLibraryAsync({
+                          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                          quality: 0.7,
+                          base64: true,
+                        });
+                        if (!result.canceled && result.assets[0]?.base64) {
+                          setFormImageUrl(`data:image/jpeg;base64,${result.assets[0].base64}`);
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        }
+                      }}
+                      style={({ pressed }) => [styles.imagePickBtn, { opacity: pressed ? 0.7 : 1 }]}
+                    >
+                      <Ionicons name="images" size={22} color={Colors.light.primary} />
+                      <Text style={styles.imagePickText}>Gallery</Text>
+                    </Pressable>
+                    {Platform.OS !== "web" && (
+                      <Pressable
+                        onPress={async () => {
+                          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                          if (status !== "granted") {
+                            Alert.alert("Permission Required", "Please allow camera access.");
+                            return;
+                          }
+                          const result = await ImagePicker.launchCameraAsync({
+                            quality: 0.7,
+                            base64: true,
+                          });
+                          if (!result.canceled && result.assets[0]?.base64) {
+                            setFormImageUrl(`data:image/jpeg;base64,${result.assets[0].base64}`);
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }
+                        }}
+                        style={({ pressed }) => [styles.imagePickBtn, { opacity: pressed ? 0.7 : 1 }]}
+                      >
+                        <Ionicons name="camera" size={22} color={Colors.light.accent} />
+                        <Text style={styles.imagePickText}>Camera</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                )}
               </View>
             </View>
 
@@ -922,6 +973,46 @@ const styles = StyleSheet.create({
     height: 100,
     textAlignVertical: "top",
     paddingTop: 12,
+  },
+  imagePickerRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  imagePickBtn: {
+    flex: 1,
+    height: 80,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.light.border,
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    backgroundColor: Colors.light.backgroundSecondary,
+  },
+  imagePickText: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+  },
+  pickedImageWrap: {
+    width: 100,
+    height: 100,
+    borderRadius: 14,
+    overflow: "hidden",
+    position: "relative" as const,
+  },
+  pickedImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 14,
+  },
+  pickedImageRemove: {
+    position: "absolute" as const,
+    top: 4,
+    right: 4,
+    backgroundColor: "#fff",
+    borderRadius: 12,
   },
   periodToggle: {
     flexDirection: "row",
