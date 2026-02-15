@@ -51,6 +51,7 @@ function AuthGate() {
       <Stack.Screen name="pakistan-guide" options={{ headerShown: false }} />
       <Stack.Screen name="admin" options={{ headerShown: false }} />
       <Stack.Screen name="migration-detail" options={{ headerShown: false }} />
+      <Stack.Screen name="blog" options={{ headerShown: false }} />
     </Stack>
   );
 }
