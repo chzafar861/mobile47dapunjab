@@ -204,6 +204,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/migration-records/:id", async (req: Request, res: Response) => {
+    try {
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const result = await dbPool.query(`SELECT * FROM migration_records WHERE id = $1`, [parseInt(req.params.id)]);
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Record not found" });
+      }
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/migration-records/:id/comments", async (req: Request, res: Response) => {
+    try {
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const result = await dbPool.query(
+        `SELECT * FROM migration_comments WHERE record_id = $1 ORDER BY created_at DESC`,
+        [parseInt(req.params.id)]
+      );
+      res.json(result.rows);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/migration-records/:id/comments", async (req: Request, res: Response) => {
+    try {
+      const { user_name, user_email, comment } = req.body;
+      if (!user_name || !comment) {
+        return res.status(400).json({ error: "Name and comment are required." });
+      }
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const result = await dbPool.query(
+        `INSERT INTO migration_comments (record_id, user_name, user_email, comment) VALUES ($1, $2, $3, $4) RETURNING *`,
+        [parseInt(req.params.id), user_name, user_email || null, comment]
+      );
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.post("/api/clear-all", async (_req: Request, res: Response) => {
     try {
       await setDocument("users", "defaultUser", { name: "", phone: "", email: "", city: "", country: "", purpose: "" });
