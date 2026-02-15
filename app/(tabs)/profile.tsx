@@ -84,6 +84,7 @@ export default function ProfileScreen() {
     country: user?.country || "",
     purpose: user?.purpose || "",
   });
+  const [showProfileDetails, setShowProfileDetails] = useState(false);
   const [bookings, setBookings] = useState<any[]>([]);
   const [showPersonForm, setShowPersonForm] = useState(false);
   const [personSubmitting, setPersonSubmitting] = useState(false);
@@ -408,20 +409,35 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Profile Details</Text>
-            <View style={styles.profileDetails}>
-              <ProfileRow icon="person-outline" label="Name" value={user?.name || ""} />
-              <View style={styles.rowDivider} />
-              <ProfileRow icon="call-outline" label="Phone" value={user?.phone || ""} />
-              <View style={styles.rowDivider} />
-              <ProfileRow icon="mail-outline" label="Email" value={user?.email || ""} />
-              <View style={styles.rowDivider} />
-              <ProfileRow icon="location-outline" label="City" value={user?.city || ""} />
-              <View style={styles.rowDivider} />
-              <ProfileRow icon="globe-outline" label="Country" value={user?.country || ""} />
-              <View style={styles.rowDivider} />
-              <ProfileRow icon="airplane-outline" label="Purpose" value={user?.purpose || ""} />
-            </View>
+            <Pressable
+              onPress={() => {
+                setShowProfileDetails(!showProfileDetails);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              style={styles.profileDetailsToggle}
+            >
+              <Text style={styles.sectionTitle}>Profile Details</Text>
+              <Ionicons
+                name={showProfileDetails ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={Colors.light.textSecondary}
+              />
+            </Pressable>
+            {showProfileDetails && (
+              <View style={styles.profileDetails}>
+                <ProfileRow icon="person-outline" label="Name" value={user?.name || ""} />
+                <View style={styles.rowDivider} />
+                <ProfileRow icon="call-outline" label="Phone" value={user?.phone || ""} />
+                <View style={styles.rowDivider} />
+                <ProfileRow icon="mail-outline" label="Email" value={user?.email || ""} />
+                <View style={styles.rowDivider} />
+                <ProfileRow icon="location-outline" label="City" value={user?.city || ""} />
+                <View style={styles.rowDivider} />
+                <ProfileRow icon="globe-outline" label="Country" value={user?.country || ""} />
+                <View style={styles.rowDivider} />
+                <ProfileRow icon="airplane-outline" label="Purpose" value={user?.purpose || ""} />
+              </View>
+            )}
           </View>
         )}
 
@@ -833,6 +849,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: Colors.light.text,
     marginBottom: 12,
+  },
+  profileDetailsToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingRight: 4,
   },
   formCard: {
     backgroundColor: Colors.light.backgroundSecondary,
