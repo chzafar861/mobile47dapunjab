@@ -9,22 +9,19 @@ import {
   Alert,
   FlatList,
   TextInput,
-  Modal,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Image,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/query-client";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
-import * as ImagePicker from "expo-image-picker";
 import Colors from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 
-interface MigrationRecord {
+interface PersonRecord {
   id: number;
   full_name: string;
   image_url: string | null;
@@ -39,17 +36,26 @@ interface MigrationRecord {
   created_at: string;
 }
 
-type ActiveTab = "search" | "submit";
-type PeriodFilter = "all" | "before_1947" | "after_1947";
+interface PropertyRecord {
+  id: number;
+  data: {
+    owner_name?: string;
+    property_type?: string;
+    location?: string;
+    district?: string;
+    city?: string;
+    area?: string;
+    description?: string;
+    images?: string[];
+    contact?: string;
+    [key: string]: any;
+  };
+  created_at: string;
+}
 
-const DISTRICTS = [
-  "All Districts",
-  "Amritsar", "Jalandhar", "Ludhiana", "Hoshiarpur", "Gurdaspur",
-  "Ferozepur", "Patiala", "Kapurthala", "Narowal", "Sialkot",
-  "Lahore", "Rawalpindi", "Multan", "Faisalabad", "Gujranwala",
-];
+type ActiveSection = "people" | "property";
 
-function RecordCard({ item }: { item: MigrationRecord }) {
+function PersonCard({ item }: { item: PersonRecord }) {
   return (
     <Pressable
       onPress={() => {
@@ -57,11 +63,11 @@ function RecordCard({ item }: { item: MigrationRecord }) {
         router.push({ pathname: "/migration-detail", params: { id: String(item.id) } });
       }}
       style={({ pressed }) => [
-        styles.recordCard,
+        styles.card,
         { opacity: pressed ? 0.95 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <View style={styles.cardHeader}>
+      <View style={styles.cardRow}>
         <View style={styles.avatarContainer}>
           {item.image_url ? (
             <Image source={{ uri: item.image_url }} style={styles.avatarImage} />
@@ -76,163 +82,124 @@ function RecordCard({ item }: { item: MigrationRecord }) {
             </LinearGradient>
           )}
         </View>
-        <View style={styles.cardHeaderInfo}>
-          <Text style={styles.recordName} numberOfLines={1}>{item.full_name}</Text>
-          <View style={styles.yearBadge}>
-            <Ionicons name="calendar-outline" size={11} color={Colors.light.accent} />
-            <Text style={styles.yearText}>
-              {item.year_of_migration || "Unknown"} - {item.migration_period === "before_1947" ? "Pre-Partition" : "Post-Partition"}
-            </Text>
+        <View style={styles.cardInfo}>
+          <Text style={styles.cardName} numberOfLines={1}>{item.full_name}</Text>
+          <View style={styles.detailRow}>
+            <Ionicons name="location-outline" size={13} color={Colors.light.accent} />
+            <Text style={styles.detailText} numberOfLines={1}>{item.village_of_origin}, {item.district}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Ionicons name="navigate-outline" size={13} color={Colors.light.primary} />
+            <Text style={styles.detailText} numberOfLines={1}>{item.current_location}</Text>
           </View>
         </View>
         <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary} />
       </View>
+    </Pressable>
+  );
+}
 
-      <View style={styles.cardBody}>
-        <View style={styles.infoRow}>
-          <View style={styles.infoItem}>
-            <View style={[styles.infoIcon, { backgroundColor: Colors.light.primary + "15" }]}>
-              <MaterialCommunityIcons name="home-map-marker" size={14} color={Colors.light.primary} />
-            </View>
-            <View>
-              <Text style={styles.infoLabel}>Origin Village</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>{item.village_of_origin}</Text>
-            </View>
-          </View>
-          <View style={styles.infoItem}>
-            <View style={[styles.infoIcon, { backgroundColor: Colors.light.accent + "20" }]}>
-              <Ionicons name="location" size={14} color={Colors.light.accent} />
-            </View>
-            <View>
-              <Text style={styles.infoLabel}>Current Location</Text>
-              <Text style={styles.infoValue} numberOfLines={1}>{item.current_location}</Text>
-            </View>
-          </View>
-        </View>
+function PropertyCard({ item }: { item: PropertyRecord }) {
+  const d = item.data || {};
+  const firstImage = d.images && d.images.length > 0 ? d.images[0] : null;
 
-        <View style={styles.cardFooter}>
-          <View style={styles.districtTag}>
-            <Ionicons name="map-outline" size={12} color={Colors.light.primary} />
-            <Text style={styles.districtTagText}>{item.district}</Text>
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.card,
+        { opacity: pressed ? 0.95 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+      ]}
+    >
+      <View style={styles.cardRow}>
+        {firstImage ? (
+          <Image source={{ uri: firstImage }} style={styles.propertyThumb} />
+        ) : (
+          <View style={[styles.propertyThumb, styles.propertyThumbPlaceholder]}>
+            <MaterialCommunityIcons name="home-city-outline" size={22} color={Colors.light.textSecondary} />
           </View>
-          <View style={styles.viewDetailHint}>
-            <Ionicons name="chatbubble-outline" size={12} color={Colors.light.textSecondary} />
-            <Text style={styles.viewDetailText}>View & Comment</Text>
-          </View>
+        )}
+        <View style={styles.cardInfo}>
+          <Text style={styles.cardName} numberOfLines={1}>
+            {d.owner_name || d.property_type || "Property"}
+          </Text>
+          {(d.location || d.city) && (
+            <View style={styles.detailRow}>
+              <Ionicons name="location-outline" size={13} color={Colors.light.accent} />
+              <Text style={styles.detailText} numberOfLines={1}>{d.location || d.city}{d.district ? `, ${d.district}` : ""}</Text>
+            </View>
+          )}
+          {d.property_type && (
+            <View style={styles.detailRow}>
+              <MaterialCommunityIcons name="home-outline" size={13} color={Colors.light.primary} />
+              <Text style={styles.detailText} numberOfLines={1}>{d.property_type}{d.area ? ` - ${d.area}` : ""}</Text>
+            </View>
+          )}
+          {d.description && (
+            <Text style={styles.descriptionText} numberOfLines={2}>{d.description}</Text>
+          )}
         </View>
       </View>
     </Pressable>
   );
 }
 
-export default function MigrationPortalScreen() {
+export default function HumanFindScreen() {
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>("search");
+  const [activeSection, setActiveSection] = useState<ActiveSection>("people");
   const [searchQuery, setSearchQuery] = useState("");
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
-  const [districtFilter, setDistrictFilter] = useState("All Districts");
-  const [showDistrictPicker, setShowDistrictPicker] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
 
-  const [formName, setFormName] = useState("");
-  const [formImageUrl, setFormImageUrl] = useState("");
-  const [formVillage, setFormVillage] = useState("");
-  const [formDistrict, setFormDistrict] = useState("");
-  const [formYear, setFormYear] = useState("");
-  const [formPeriod, setFormPeriod] = useState<"before_1947" | "after_1947">("after_1947");
-  const [formLocation, setFormLocation] = useState("");
-  const [formContact, setFormContact] = useState("");
-  const [formNotes, setFormNotes] = useState("");
-
-  const buildSearchUrl = useCallback(() => {
+  const buildPeopleUrl = useCallback(() => {
     const params = new URLSearchParams();
     if (searchQuery.trim()) params.append("search", searchQuery.trim());
-    if (periodFilter !== "all") params.append("period", periodFilter);
-    if (districtFilter !== "All Districts") params.append("district", districtFilter);
     const qs = params.toString();
     return `/api/migration-records${qs ? `?${qs}` : ""}`;
-  }, [searchQuery, periodFilter, districtFilter]);
+  }, [searchQuery]);
 
-  const { data: records = [], isLoading, refetch } = useQuery<MigrationRecord[]>({
-    queryKey: ["/api/migration-records", searchQuery, periodFilter, districtFilter],
+  const { data: people = [], isLoading: peopleLoading, refetch: refetchPeople } = useQuery<PersonRecord[]>({
+    queryKey: ["/api/migration-records", searchQuery],
     queryFn: async () => {
-      const url = buildSearchUrl();
+      const url = buildPeopleUrl();
       const res = await apiRequest("GET", url);
       return res.json();
     },
+    enabled: activeSection === "people",
   });
 
-  const submitMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const res = await apiRequest("POST", "/api/migration-records", data);
+  const { data: properties = [], isLoading: propertiesLoading } = useQuery<PropertyRecord[]>({
+    queryKey: ["/api/property-details"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/property-details");
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/migration-records"] });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setShowSuccess(true);
-      resetForm();
-      setTimeout(() => setShowSuccess(false), 3000);
-    },
-    onError: (err: any) => {
-      Alert.alert("Error", err.message || "Failed to submit record. Please try again.");
-    },
+    enabled: activeSection === "property",
   });
 
-  const resetForm = () => {
-    setFormName("");
-    setFormImageUrl("");
-    setFormVillage("");
-    setFormDistrict("");
-    setFormYear("");
-    setFormPeriod("after_1947");
-    setFormLocation("");
-    setFormContact("");
-    setFormNotes("");
-  };
-
-  const handleSubmit = () => {
-    if (!formName.trim()) {
-      Alert.alert("Required", "Please enter the full name.");
-      return;
-    }
-    if (!formVillage.trim()) {
-      Alert.alert("Required", "Please enter the village of origin.");
-      return;
-    }
-    if (!formDistrict.trim()) {
-      Alert.alert("Required", "Please enter the district.");
-      return;
-    }
-    if (!formLocation.trim()) {
-      Alert.alert("Required", "Please enter the current location.");
-      return;
-    }
-    if (formYear && (isNaN(parseInt(formYear)) || parseInt(formYear) < 1900 || parseInt(formYear) > 1960)) {
-      Alert.alert("Invalid Year", "Please enter a valid year between 1900 and 1960.");
-      return;
-    }
-
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    submitMutation.mutate({
-      full_name: formName.trim(),
-      image_url: formImageUrl.trim() || null,
-      village_of_origin: formVillage.trim(),
-      district: formDistrict.trim(),
-      year_of_migration: formYear ? parseInt(formYear) : null,
-      migration_period: formPeriod,
-      current_location: formLocation.trim(),
-      contact_info: formContact.trim() || null,
-      notes: formNotes.trim() || null,
-    });
-  };
+  const filteredProperties = properties.filter((p) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const d = p.data || {};
+    return (
+      (d.owner_name && d.owner_name.toLowerCase().includes(q)) ||
+      (d.location && d.location.toLowerCase().includes(q)) ||
+      (d.city && d.city.toLowerCase().includes(q)) ||
+      (d.district && d.district.toLowerCase().includes(q)) ||
+      (d.property_type && d.property_type.toLowerCase().includes(q)) ||
+      (d.description && d.description.toLowerCase().includes(q))
+    );
+  });
 
   const handleSearch = () => {
-    refetch();
+    if (activeSection === "people") {
+      refetchPeople();
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
+
+  const isLoading = activeSection === "people" ? peopleLoading : propertiesLoading;
+  const displayData = activeSection === "people" ? people : filteredProperties;
 
   return (
     <View style={styles.container}>
@@ -244,379 +211,113 @@ export default function MigrationPortalScreen() {
       >
         <View style={styles.headerContent}>
           <View style={styles.headerTitleRow}>
-            <MaterialCommunityIcons name="account-search" size={26} color={Colors.light.accent} />
-            <Text style={styles.headerTitle}>Migration Portal</Text>
+            <Ionicons name="people" size={26} color={Colors.light.accent} />
+            <Text style={styles.headerTitle}>HumanFind</Text>
           </View>
-          <Text style={styles.headerSubtitle}>Bronze Migration & Family Search - 1947 Partition Records</Text>
+          <Text style={styles.headerSubtitle}>Find people & property details across Punjab</Text>
         </View>
 
         <View style={styles.tabRow}>
           <Pressable
-            onPress={() => setActiveTab("search")}
-            style={[styles.tabBtn, activeTab === "search" && styles.tabBtnActive]}
+            onPress={() => { setActiveSection("people"); setSearchQuery(""); }}
+            style={[styles.tabBtn, activeSection === "people" && styles.tabBtnActive]}
           >
-            <Ionicons name="search" size={16} color={activeTab === "search" ? Colors.light.primaryDark : "rgba(255,255,255,0.6)"} />
-            <Text style={[styles.tabText, activeTab === "search" && styles.tabTextActive]}>Search Records</Text>
+            <Ionicons name="person-outline" size={16} color={activeSection === "people" ? Colors.light.primaryDark : "rgba(255,255,255,0.6)"} />
+            <Text style={[styles.tabText, activeSection === "people" && styles.tabTextActive]}>Find People</Text>
           </Pressable>
           <Pressable
-            onPress={() => setActiveTab("submit")}
-            style={[styles.tabBtn, activeTab === "submit" && styles.tabBtnActive]}
+            onPress={() => { setActiveSection("property"); setSearchQuery(""); }}
+            style={[styles.tabBtn, activeSection === "property" && styles.tabBtnActive]}
           >
-            <Ionicons name="add-circle-outline" size={16} color={activeTab === "submit" ? Colors.light.primaryDark : "rgba(255,255,255,0.6)"} />
-            <Text style={[styles.tabText, activeTab === "submit" && styles.tabTextActive]}>Submit Info</Text>
+            <MaterialCommunityIcons name="home-search-outline" size={16} color={activeSection === "property" ? Colors.light.primaryDark : "rgba(255,255,255,0.6)"} />
+            <Text style={[styles.tabText, activeSection === "property" && styles.tabTextActive]}>Property Details</Text>
           </Pressable>
         </View>
       </LinearGradient>
 
-      {activeTab === "search" ? (
-        <View style={{ flex: 1 }}>
-          <View style={styles.searchSection}>
-            <View style={styles.searchBarRow}>
-              <View style={styles.searchInputWrap}>
-                <Ionicons name="search" size={18} color={Colors.light.textSecondary} />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search name, village, district..."
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  onSubmitEditing={handleSearch}
-                  returnKeyType="search"
-                  testID="migration-search-input"
-                />
-                {searchQuery.length > 0 && (
-                  <Pressable onPress={() => { setSearchQuery(""); }}>
-                    <Ionicons name="close-circle" size={18} color={Colors.light.textSecondary} />
-                  </Pressable>
-                )}
-              </View>
-              <Pressable
-                onPress={handleSearch}
-                style={styles.searchBtn}
-                testID="migration-search-btn"
-              >
-                <Ionicons name="search" size={18} color="#fff" />
-              </Pressable>
-            </View>
-
-            <View style={styles.filterRow}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-                {(["all", "before_1947", "after_1947"] as PeriodFilter[]).map((p) => (
-                  <Pressable
-                    key={p}
-                    onPress={() => setPeriodFilter(p)}
-                    style={[styles.filterChip, periodFilter === p && styles.filterChipActive]}
-                  >
-                    <Text style={[styles.filterChipText, periodFilter === p && styles.filterChipTextActive]}>
-                      {p === "all" ? "All Years" : p === "before_1947" ? "Before 1947" : "After 1947"}
-                    </Text>
-                  </Pressable>
-                ))}
-                <Pressable
-                  onPress={() => setShowDistrictPicker(true)}
-                  style={[styles.filterChip, districtFilter !== "All Districts" && styles.filterChipActive]}
-                >
-                  <Ionicons
-                    name="funnel-outline"
-                    size={12}
-                    color={districtFilter !== "All Districts" ? Colors.light.primaryDark : Colors.light.textSecondary}
-                  />
-                  <Text style={[styles.filterChipText, districtFilter !== "All Districts" && styles.filterChipTextActive]}>
-                    {districtFilter === "All Districts" ? "District" : districtFilter}
-                  </Text>
-                </Pressable>
-              </ScrollView>
-            </View>
-          </View>
-
-          {isLoading ? (
-            <View style={styles.loadingWrap}>
-              <ActivityIndicator size="large" color={Colors.light.primary} />
-              <Text style={styles.loadingText}>Searching records...</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={records}
-              keyExtractor={(item) => String(item.id)}
-              contentContainerStyle={{
-                paddingHorizontal: 16,
-                paddingBottom: insets.bottom + webBottomInset + 100,
-                paddingTop: 4,
-              }}
-              ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-              renderItem={({ item }) => <RecordCard item={item} />}
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <MaterialCommunityIcons name="file-search-outline" size={48} color={Colors.light.tabIconDefault} />
-                  <Text style={styles.emptyTitle}>No Records Found</Text>
-                  <Text style={styles.emptyText}>Try different search terms or filters. You can also submit your family's migration information.</Text>
-                </View>
-              }
-              ListHeaderComponent={
-                records.length > 0 ? (
-                  <View style={styles.resultCount}>
-                    <Text style={styles.resultCountText}>{records.length} record{records.length !== 1 ? "s" : ""} found</Text>
-                  </View>
-                ) : null
-              }
-              scrollEnabled={records.length > 0}
+      <View style={styles.searchSection}>
+        <View style={styles.searchBarRow}>
+          <View style={styles.searchInputWrap}>
+            <Ionicons name="search" size={18} color={Colors.light.textSecondary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={activeSection === "people" ? "Search by name, village, location..." : "Search by owner, location, type..."}
+              placeholderTextColor={Colors.light.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={handleSearch}
+              returnKeyType="search"
+              testID="humanfind-search-input"
             />
-          )}
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery("")}>
+                <Ionicons name="close-circle" size={18} color={Colors.light.textSecondary} />
+              </Pressable>
+            )}
+          </View>
+          <Pressable
+            onPress={handleSearch}
+            style={styles.searchBtn}
+            testID="humanfind-search-btn"
+          >
+            <Ionicons name="search" size={18} color="#fff" />
+          </Pressable>
+        </View>
+      </View>
+
+      {isLoading ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <Text style={styles.loadingText}>
+            {activeSection === "people" ? "Searching people..." : "Loading properties..."}
+          </Text>
         </View>
       ) : (
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={90}
-        >
-          <ScrollView
-            contentContainerStyle={[styles.formContainer, { paddingBottom: insets.bottom + webBottomInset + 120 }]}
-            keyboardShouldPersistTaps="handled"
-          >
-            {showSuccess && (
-              <View style={styles.successBanner}>
-                <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                <Text style={styles.successText}>Record submitted successfully!</Text>
-              </View>
-            )}
-
-            <View style={styles.formSection}>
-              <Text style={styles.formSectionTitle}>Personal Details</Text>
-
-              <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Full Name <Text style={styles.required}>*</Text></Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="e.g. Muhammad Aslam Khan"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={formName}
-                  onChangeText={setFormName}
-                  testID="form-name"
-                />
-              </View>
-
-              <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Photo (optional)</Text>
-                {formImageUrl ? (
-                  <View style={styles.pickedImageWrap}>
-                    <Image source={{ uri: formImageUrl }} style={styles.pickedImage} />
-                    <Pressable
-                      onPress={() => setFormImageUrl("")}
-                      style={styles.pickedImageRemove}
-                    >
-                      <Ionicons name="close-circle" size={24} color={Colors.light.danger} />
-                    </Pressable>
-                  </View>
-                ) : (
-                  <View style={styles.imagePickerRow}>
-                    <Pressable
-                      onPress={async () => {
-                        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-                        if (status !== "granted") {
-                          Alert.alert("Permission Required", "Please allow photo library access.");
-                          return;
-                        }
-                        const result = await ImagePicker.launchImageLibraryAsync({
-                          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                          quality: 0.7,
-                          base64: true,
-                        });
-                        if (!result.canceled && result.assets[0]?.base64) {
-                          setFormImageUrl(`data:image/jpeg;base64,${result.assets[0].base64}`);
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        }
-                      }}
-                      style={({ pressed }) => [styles.imagePickBtn, { opacity: pressed ? 0.7 : 1 }]}
-                    >
-                      <Ionicons name="images" size={22} color={Colors.light.primary} />
-                      <Text style={styles.imagePickText}>Gallery</Text>
-                    </Pressable>
-                    {Platform.OS !== "web" && (
-                      <Pressable
-                        onPress={async () => {
-                          const { status } = await ImagePicker.requestCameraPermissionsAsync();
-                          if (status !== "granted") {
-                            Alert.alert("Permission Required", "Please allow camera access.");
-                            return;
-                          }
-                          const result = await ImagePicker.launchCameraAsync({
-                            quality: 0.7,
-                            base64: true,
-                          });
-                          if (!result.canceled && result.assets[0]?.base64) {
-                            setFormImageUrl(`data:image/jpeg;base64,${result.assets[0].base64}`);
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          }
-                        }}
-                        style={({ pressed }) => [styles.imagePickBtn, { opacity: pressed ? 0.7 : 1 }]}
-                      >
-                        <Ionicons name="camera" size={22} color={Colors.light.accent} />
-                        <Text style={styles.imagePickText}>Camera</Text>
-                      </Pressable>
-                    )}
-                  </View>
-                )}
-              </View>
+        <FlatList
+          data={displayData as any[]}
+          keyExtractor={(item) => String(item.id)}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingBottom: insets.bottom + webBottomInset + 100,
+            paddingTop: 4,
+          }}
+          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          renderItem={({ item }) =>
+            activeSection === "people" ? (
+              <PersonCard item={item as PersonRecord} />
+            ) : (
+              <PropertyCard item={item as PropertyRecord} />
+            )
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons
+                name={activeSection === "people" ? "people-outline" : "home-outline"}
+                size={48}
+                color={Colors.light.tabIconDefault}
+              />
+              <Text style={styles.emptyTitle}>
+                {activeSection === "people" ? "No People Found" : "No Properties Found"}
+              </Text>
+              <Text style={styles.emptyText}>
+                {activeSection === "people"
+                  ? "Try searching by name, village, or location to find people."
+                  : "No property details submitted yet. You can submit property details from your Profile page."}
+              </Text>
             </View>
-
-            <View style={styles.formSection}>
-              <Text style={styles.formSectionTitle}>Migration Details</Text>
-
-              <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Village of Origin <Text style={styles.required}>*</Text></Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="e.g. Amritsar, Jullundur"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={formVillage}
-                  onChangeText={setFormVillage}
-                  testID="form-village"
-                />
+          }
+          ListHeaderComponent={
+            displayData.length > 0 ? (
+              <View style={styles.resultCount}>
+                <Text style={styles.resultCountText}>
+                  {displayData.length} {activeSection === "people" ? "person" : "propert"}{displayData.length !== 1 ? (activeSection === "people" ? "s" : "ies") : (activeSection === "people" ? "" : "y")} found
+                </Text>
               </View>
-
-              <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>District <Text style={styles.required}>*</Text></Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="e.g. Jalandhar, Amritsar"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={formDistrict}
-                  onChangeText={setFormDistrict}
-                  testID="form-district"
-                />
-              </View>
-
-              <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Year of Migration</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="e.g. 1947"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={formYear}
-                  onChangeText={setFormYear}
-                  keyboardType="numeric"
-                  maxLength={4}
-                  testID="form-year"
-                />
-              </View>
-
-              <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Migration Period</Text>
-                <View style={styles.periodToggle}>
-                  <Pressable
-                    onPress={() => setFormPeriod("before_1947")}
-                    style={[styles.periodOption, formPeriod === "before_1947" && styles.periodOptionActive]}
-                  >
-                    <Text style={[styles.periodOptionText, formPeriod === "before_1947" && styles.periodOptionTextActive]}>Before 1947</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => setFormPeriod("after_1947")}
-                    style={[styles.periodOption, formPeriod === "after_1947" && styles.periodOptionActive]}
-                  >
-                    <Text style={[styles.periodOptionText, formPeriod === "after_1947" && styles.periodOptionTextActive]}>After 1947</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.formSection}>
-              <Text style={styles.formSectionTitle}>Current Information</Text>
-
-              <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Current Location <Text style={styles.required}>*</Text></Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="e.g. Lahore, Pakistan"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={formLocation}
-                  onChangeText={setFormLocation}
-                  testID="form-location"
-                />
-              </View>
-
-              <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Contact Info (optional)</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="Phone or email"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={formContact}
-                  onChangeText={setFormContact}
-                />
-              </View>
-
-              <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Notes / Family Story (optional)</Text>
-                <TextInput
-                  style={[styles.fieldInput, styles.textArea]}
-                  placeholder="Share your family's migration story..."
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={formNotes}
-                  onChangeText={setFormNotes}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
-              </View>
-            </View>
-
-            <Pressable
-              onPress={handleSubmit}
-              disabled={submitMutation.isPending}
-              style={({ pressed }) => [
-                styles.submitBtn,
-                { opacity: pressed || submitMutation.isPending ? 0.8 : 1 },
-              ]}
-              testID="submit-migration-btn"
-            >
-              <LinearGradient
-                colors={[Colors.light.primary, Colors.light.primaryDark]}
-                style={styles.submitGradient}
-              >
-                {submitMutation.isPending ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <>
-                    <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
-                    <Text style={styles.submitBtnText}>Submit Record</Text>
-                  </>
-                )}
-              </LinearGradient>
-            </Pressable>
-          </ScrollView>
-        </KeyboardAvoidingView>
+            ) : null
+          }
+          scrollEnabled={displayData.length > 0}
+        />
       )}
-
-      <Modal visible={showDistrictPicker} transparent animationType="slide">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowDistrictPicker(false)}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Select District</Text>
-            <FlatList
-              data={DISTRICTS}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <Pressable
-                  onPress={() => {
-                    setDistrictFilter(item);
-                    setShowDistrictPicker(false);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }}
-                  style={[styles.districtOption, districtFilter === item && styles.districtOptionActive]}
-                >
-                  <Text style={[styles.districtOptionText, districtFilter === item && styles.districtOptionTextActive]}>
-                    {item}
-                  </Text>
-                  {districtFilter === item && (
-                    <Ionicons name="checkmark" size={18} color={Colors.light.primary} />
-                  )}
-                </Pressable>
-              )}
-              scrollEnabled={true}
-            />
-          </View>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -709,35 +410,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  filterRow: {
-    marginTop: 10,
-  },
-  filterScroll: {
-    gap: 8,
-    paddingRight: 16,
-  },
-  filterChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: Colors.light.backgroundSecondary,
-  },
-  filterChipActive: {
-    backgroundColor: Colors.light.accent + "25",
-    borderWidth: 1,
-    borderColor: Colors.light.accent,
-  },
-  filterChipText: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-  },
-  filterChipTextActive: {
-    color: Colors.light.primaryDark,
-  },
   loadingWrap: {
     flex: 1,
     alignItems: "center",
@@ -757,33 +429,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.light.textSecondary,
   },
-  recordCard: {
+  card: {
     backgroundColor: Colors.light.background,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
     borderColor: Colors.light.border,
   },
-  cardHeader: {
+  cardRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
   avatarContainer: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     overflow: "hidden",
   },
   avatarImage: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
   avatarGradient: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -792,111 +464,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#fff",
   },
-  cardHeaderInfo: {
-    flex: 1,
+  propertyThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
   },
-  recordName: {
+  propertyThumbPlaceholder: {
+    backgroundColor: Colors.light.backgroundSecondary,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  cardInfo: {
+    flex: 1,
+    gap: 3,
+  },
+  cardName: {
     fontFamily: "Poppins_600SemiBold",
     fontSize: 15,
     color: Colors.light.text,
   },
-  yearBadge: {
+  detailRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 5,
+  },
+  detailText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    flex: 1,
+  },
+  descriptionText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 11,
+    color: Colors.light.textSecondary,
     marginTop: 2,
-  },
-  yearText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 11,
-    color: Colors.light.textSecondary,
-  },
-  cardBody: {
-    marginTop: 12,
-  },
-  infoRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  infoItem: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  infoIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  infoLabel: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 10,
-    color: Colors.light.textSecondary,
-  },
-  infoValue: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 12,
-    color: Colors.light.text,
-    maxWidth: 120,
-  },
-  cardFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
-  viewDetailHint: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  viewDetailText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 11,
-    color: Colors.light.textSecondary,
-  },
-  districtTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: Colors.light.primary + "10",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-  },
-  districtTagText: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 11,
-    color: Colors.light.primary,
-  },
-  expandedSection: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
-    gap: 8,
-  },
-  expandedRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-  },
-  expandedText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 13,
-    color: Colors.light.text,
-    flex: 1,
-    lineHeight: 20,
-  },
-  noExtraInfo: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-    fontStyle: "italic",
+    lineHeight: 16,
   },
   emptyState: {
     alignItems: "center",
@@ -917,193 +522,5 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
     textAlign: "center",
     lineHeight: 20,
-  },
-  formContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-  },
-  successBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: Colors.light.success,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    marginBottom: 14,
-  },
-  successText: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 14,
-    color: "#fff",
-  },
-  formSection: {
-    marginBottom: 20,
-  },
-  formSectionTitle: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 16,
-    color: Colors.light.text,
-    marginBottom: 12,
-  },
-  formField: {
-    marginBottom: 14,
-  },
-  fieldLabel: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 13,
-    color: Colors.light.text,
-    marginBottom: 6,
-  },
-  required: {
-    color: Colors.light.danger,
-  },
-  fieldInput: {
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontFamily: "Poppins_400Regular",
-    fontSize: 14,
-    color: Colors.light.text,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: "top",
-    paddingTop: 12,
-  },
-  imagePickerRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  imagePickBtn: {
-    flex: 1,
-    height: 80,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: Colors.light.border,
-    borderStyle: "dashed",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    backgroundColor: Colors.light.backgroundSecondary,
-  },
-  imagePickText: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-  },
-  pickedImageWrap: {
-    width: 100,
-    height: 100,
-    borderRadius: 14,
-    overflow: "hidden",
-    position: "relative" as const,
-  },
-  pickedImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 14,
-  },
-  pickedImageRemove: {
-    position: "absolute" as const,
-    top: 4,
-    right: 4,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-  },
-  periodToggle: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  periodOption: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: Colors.light.backgroundSecondary,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-  },
-  periodOptionActive: {
-    backgroundColor: Colors.light.primary + "15",
-    borderColor: Colors.light.primary,
-  },
-  periodOptionText: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-  },
-  periodOptionTextActive: {
-    color: Colors.light.primary,
-  },
-  submitBtn: {
-    borderRadius: 14,
-    overflow: "hidden",
-    marginTop: 4,
-  },
-  submitGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 16,
-    borderRadius: 14,
-  },
-  submitBtnText: {
-    fontFamily: "Poppins_700Bold",
-    fontSize: 16,
-    color: "#fff",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: "60%",
-    paddingBottom: 30,
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: Colors.light.border,
-    borderRadius: 2,
-    alignSelf: "center",
-    marginTop: 12,
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 18,
-    color: Colors.light.text,
-    paddingHorizontal: 20,
-    marginBottom: 12,
-  },
-  districtOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border + "50",
-  },
-  districtOptionActive: {
-    backgroundColor: Colors.light.primary + "08",
-  },
-  districtOptionText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 15,
-    color: Colors.light.text,
-  },
-  districtOptionTextActive: {
-    fontFamily: "Poppins_600SemiBold",
-    color: Colors.light.primary,
   },
 });
