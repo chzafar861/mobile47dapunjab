@@ -8,12 +8,15 @@ import {
   Platform,
   Alert,
   TextInput,
+  Image,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { firebaseApi } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import Colors from "@/constants/colors";
 
 interface PropertyDetail {
@@ -25,6 +28,7 @@ interface PropertyDetail {
   area: string;
   description: string;
   date: string;
+  images: string[];
 }
 
 const propertyTypes = ["Land", "House", "Shop", "Farm", "Other"];
@@ -39,7 +43,63 @@ export default function SubmitDetailsScreen() {
   const [location, setLocation] = useState("");
   const [area, setArea] = useState("");
   const [description, setDescription] = useState("");
+  const [images, setImages] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const pickImages = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission Required",
+        "Please allow access to your photo library to upload property images."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.7,
+      base64: true,
+      selectionLimit: 5,
+    });
+
+    if (!result.canceled && result.assets) {
+      const newImages = result.assets
+        .filter((a) => a.base64)
+        .map((a) => `data:image/jpeg;base64,${a.base64}`);
+      setImages((prev) => [...prev, ...newImages].slice(0, 5));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission Required",
+        "Please allow camera access to take property photos."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.7,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets[0]?.base64) {
+      const newImage = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      setImages((prev) => [...prev, newImage].slice(0, 5));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
 
   const handleSubmit = async () => {
     if (!ownerName.trim() || !phone.trim() || !location.trim()) {
@@ -47,6 +107,7 @@ export default function SubmitDetailsScreen() {
       return;
     }
 
+    setSubmitting(true);
     const detail: PropertyDetail = {
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       ownerName: ownerName.trim(),
@@ -56,6 +117,7 @@ export default function SubmitDetailsScreen() {
       area: area.trim(),
       description: description.trim(),
       date: new Date().toISOString(),
+      images: images,
     };
 
     try {
@@ -64,6 +126,8 @@ export default function SubmitDetailsScreen() {
       setSubmitted(true);
     } catch {
       Alert.alert("Error", "Could not save details.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -81,7 +145,7 @@ export default function SubmitDetailsScreen() {
           </View>
           <Text style={styles.successTitle}>Details Submitted</Text>
           <Text style={styles.successDesc}>
-            Your property details have been saved. Our team will review and contact you soon.
+            Your property details and photos have been saved. Our team will review and contact you soon.
           </Text>
           <Pressable
             onPress={() => {
@@ -91,6 +155,7 @@ export default function SubmitDetailsScreen() {
               setLocation("");
               setArea("");
               setDescription("");
+              setImages([]);
             }}
             style={({ pressed }) => [
               styles.anotherBtn,
@@ -127,7 +192,7 @@ export default function SubmitDetailsScreen() {
         <View style={styles.infoCard}>
           <MaterialCommunityIcons name="file-document-edit" size={24} color={Colors.light.primary} />
           <Text style={styles.infoText}>
-            If you left Pakistan and want to give details about your property, land, or any memorable place, submit the information here. We will assist you with documentation and management.
+            If you left Pakistan and want to give details about your property, land, or any memorable place, submit the information here with photos. We will assist you with documentation and management.
           </Text>
         </View>
 
@@ -192,6 +257,52 @@ export default function SubmitDetailsScreen() {
             onChangeText={setArea}
           />
 
+          <Text style={styles.formLabel}>Property Photos (up to 5)</Text>
+          <View style={styles.imageSection}>
+            <View style={styles.imageGrid}>
+              {images.map((uri, index) => (
+                <View key={index} style={styles.imageThumbWrap}>
+                  <Image source={{ uri }} style={styles.imageThumb} />
+                  <Pressable
+                    onPress={() => removeImage(index)}
+                    style={styles.imageRemoveBtn}
+                  >
+                    <Ionicons name="close-circle" size={22} color={Colors.light.danger} />
+                  </Pressable>
+                </View>
+              ))}
+              {images.length < 5 && (
+                <View style={styles.addImageBtns}>
+                  <Pressable
+                    onPress={pickImages}
+                    style={({ pressed }) => [
+                      styles.addImageBtn,
+                      { opacity: pressed ? 0.7 : 1 },
+                    ]}
+                  >
+                    <Ionicons name="images" size={24} color={Colors.light.primary} />
+                    <Text style={styles.addImageText}>Gallery</Text>
+                  </Pressable>
+                  {Platform.OS !== "web" && (
+                    <Pressable
+                      onPress={takePhoto}
+                      style={({ pressed }) => [
+                        styles.addImageBtn,
+                        { opacity: pressed ? 0.7 : 1 },
+                      ]}
+                    >
+                      <Ionicons name="camera" size={24} color={Colors.light.accent} />
+                      <Text style={styles.addImageText}>Camera</Text>
+                    </Pressable>
+                  )}
+                </View>
+              )}
+            </View>
+            {images.length > 0 && (
+              <Text style={styles.imageCount}>{images.length}/5 photos added</Text>
+            )}
+          </View>
+
           <Text style={styles.formLabel}>Description</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
@@ -206,13 +317,20 @@ export default function SubmitDetailsScreen() {
 
           <Pressable
             onPress={handleSubmit}
+            disabled={submitting}
             style={({ pressed }) => [
               styles.submitBtn,
-              { opacity: pressed ? 0.9 : 1 },
+              { opacity: pressed || submitting ? 0.8 : 1 },
             ]}
           >
-            <Ionicons name="send" size={18} color="#fff" />
-            <Text style={styles.submitBtnText}>Submit Details</Text>
+            {submitting ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <Ionicons name="send" size={18} color="#fff" />
+                <Text style={styles.submitBtnText}>Submit Details</Text>
+              </>
+            )}
           </Pressable>
         </View>
       </ScrollView>
@@ -300,6 +418,60 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 120,
+  },
+  imageSection: {
+    marginBottom: 14,
+  },
+  imageGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  imageThumbWrap: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+    overflow: "hidden",
+    position: "relative" as const,
+  },
+  imageThumb: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 12,
+  },
+  imageRemoveBtn: {
+    position: "absolute" as const,
+    top: 2,
+    right: 2,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+  },
+  addImageBtns: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  addImageBtn: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.light.border,
+    borderStyle: "dashed" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 4,
+    backgroundColor: Colors.light.backgroundSecondary,
+  },
+  addImageText: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 11,
+    color: Colors.light.textSecondary,
+  },
+  imageCount: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    marginTop: 8,
   },
   submitBtn: {
     flexDirection: "row",
