@@ -250,6 +250,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/blog-posts", async (req: Request, res: Response) => {
+    try {
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const category = req.query.category as string | undefined;
+      let query = "SELECT * FROM blog_posts";
+      const params: any[] = [];
+      if (category && category !== "All") {
+        query += " WHERE category = $1";
+        params.push(category);
+      }
+      query += " ORDER BY created_at DESC";
+      const result = await dbPool.query(query, params);
+      res.json(result.rows);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/blog-posts/:id", async (req: Request, res: Response) => {
+    try {
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const result = await dbPool.query("SELECT * FROM blog_posts WHERE id = $1", [parseInt(req.params.id as string)]);
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/blog-posts", async (req: Request, res: Response) => {
+    try {
+      const { title, content, author_name, author_email, image_url, category } = req.body;
+      if (!title || !content || !author_name) {
+        return res.status(400).json({ error: "title, content, and author_name are required" });
+      }
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const result = await dbPool.query(
+        `INSERT INTO blog_posts (title, content, author_name, author_email, image_url, category) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [title, content, author_name, author_email || null, image_url || null, category || "General"]
+      );
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.patch("/api/blog-posts/:id/like", async (req: Request, res: Response) => {
+    try {
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const result = await dbPool.query(
+        "UPDATE blog_posts SET likes = likes + 1 WHERE id = $1 RETURNING *",
+        [parseInt(req.params.id as string)]
+      );
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.post("/api/clear-all", async (_req: Request, res: Response) => {
     try {
       await setDocument("users", "defaultUser", { name: "", phone: "", email: "", city: "", country: "", purpose: "" });
