@@ -171,6 +171,12 @@ export default function HomeScreen() {
             description="Services overview & Pakistan info"
             onPress={() => router.push("/pakistan-guide")}
           />
+          <FeatureRow
+            icon={<Feather name="edit-3" size={22} color={Colors.light.accent} />}
+            title="Blog"
+            description="Stories, tips & insights from Punjab"
+            onPress={() => router.push("/blog")}
+          />
         </View>
 
         <View style={styles.section}>
