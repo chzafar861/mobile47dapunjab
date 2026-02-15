@@ -10,6 +10,7 @@ import {
   TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
@@ -381,6 +382,40 @@ export default function ProfileScreen() {
 
         {!isEditing && (
           <View style={styles.section}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push("/submit-details");
+              }}
+              style={({ pressed }) => [
+                styles.submitDetailsCard,
+                { transform: [{ scale: pressed ? 0.97 : 1 }] },
+              ]}
+              testID="submit-details-btn"
+            >
+              <LinearGradient
+                colors={[Colors.light.accent, "#E8C96A"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.submitDetailsGradient}
+              >
+                <View style={styles.submitDetailsIconWrap}>
+                  <MaterialCommunityIcons name="file-document-edit" size={28} color={Colors.light.accent} />
+                </View>
+                <View style={styles.submitDetailsContent}>
+                  <Text style={styles.submitDetailsTitle}>Submit Property Details</Text>
+                  <Text style={styles.submitDetailsDesc}>
+                    Submit details about your property, land, or memorable places in Pakistan with photos
+                  </Text>
+                </View>
+                <Ionicons name="arrow-forward-circle" size={24} color="rgba(255,255,255,0.85)" />
+              </LinearGradient>
+            </Pressable>
+          </View>
+        )}
+
+        {!isEditing && (
+          <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Links</Text>
             <Pressable
               onPress={() => router.push("/history")}
@@ -394,14 +429,14 @@ export default function ProfileScreen() {
               <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
             </Pressable>
             <Pressable
-              onPress={() => router.push("/submit-details")}
+              onPress={() => router.push("/pakistan-guide")}
               style={({ pressed }) => [
                 styles.linkRow,
                 { opacity: pressed ? 0.8 : 1 },
               ]}
             >
-              <Feather name="send" size={20} color={Colors.light.accent} />
-              <Text style={styles.linkText}>Submit Property Details</Text>
+              <MaterialCommunityIcons name="star-crescent" size={20} color={Colors.light.primary} />
+              <Text style={styles.linkText}>Pakistan Guide & Services</Text>
               <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
             </Pressable>
             <Pressable
@@ -706,6 +741,40 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_600SemiBold",
     fontSize: 14,
     color: "#fff",
+  },
+  submitDetailsCard: {
+    borderRadius: 18,
+    overflow: "hidden",
+    marginBottom: 4,
+  },
+  submitDetailsGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 18,
+    gap: 14,
+  },
+  submitDetailsIconWrap: {
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  submitDetailsContent: {
+    flex: 1,
+  },
+  submitDetailsTitle: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 15,
+    color: "#fff",
+  },
+  submitDetailsDesc: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 11,
+    color: "rgba(255,255,255,0.85)",
+    lineHeight: 16,
+    marginTop: 2,
   },
   linkRow: {
     flexDirection: "row",
