@@ -4,6 +4,10 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, Bronze Migration & Family Search Portal, history, and property detail submissions.
 
 ## Recent Changes
+- 2026-02-15: Migration Portal records now open full-page detail view with comments system
+- 2026-02-15: Added migration_comments table, comment API endpoints (GET/POST)
+- 2026-02-15: Profile page now has prominent gold gradient Submit Property Details card with image upload
+- 2026-02-15: Submit Details form supports photo uploads (up to 5 images via expo-image-picker)
 - 2026-02-14: Enhanced History page with image-based cards, hero banner, expandable details, location/year metadata, significance badges, 11 detailed entries with stock images
 - 2026-02-14: Enhanced Pakistan Guide with image sections, hero banners, image place cards for tourism destinations, richer content across all sections (Partition, Old History, Modern History, Capital, Economy, Tourism)
 - 2026-02-14: Added 16 stock images for landmarks (Lahore Fort, Badshahi Mosque, Faisal Mosque, Mohenjo-daro, Hunza Valley, K2, Swat Valley, Shalimar Gardens, Taxila, etc.)
@@ -30,14 +34,17 @@ A mobile service platform for Punjab, Pakistan visitors. Features protocol servi
 - `app/history.tsx` - Historical/destroyed places + modern Pakistan
 - `app/submit-details.tsx` - Property/land detail submission form
 - `app/admin.tsx` - Full admin dashboard with booking/property management
+- `app/migration-detail.tsx` - Full-page migration record detail with comments system
 
 ### Migration Portal Features
 - Search by name, village, district, year, location (ILIKE full-text search)
 - Filter by migration period (before/after 1947) and district
 - Submit family migration records with validation
-- Expandable result cards showing origin village, current location, notes
+- Click record cards to open full-page detail view with hero section
+- Comment system on each migration record (post and view comments)
 - 10 seed records with real historical migration data
-- API: GET/POST /api/migration-records, DELETE /api/migration-records/:id, PATCH /api/migration-records/:id/status
+- Database: migration_records, migration_comments tables
+- API: GET/POST /api/migration-records, GET /api/migration-records/:id, DELETE /api/migration-records/:id, PATCH /api/migration-records/:id/status, GET/POST /api/migration-records/:id/comments
 
 ### Tab Navigation
 5 tabs: Home, Services, Shop, Explore (Migration Portal), Profile
