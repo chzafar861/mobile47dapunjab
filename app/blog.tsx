@@ -39,6 +39,15 @@ interface BlogPost {
   created_at: string;
 }
 
+interface BlogComment {
+  id: number;
+  post_id: number;
+  user_name: string;
+  user_email?: string;
+  comment: string;
+  created_at: string;
+}
+
 const CATEGORIES = ["All", "Migration Stories", "Travel Tips", "Culture", "General"];
 
 const CATEGORY_ICONS: Record<string, { name: string; color: string }> = {
@@ -59,9 +68,15 @@ function getReadTime(content: string) {
   return Math.max(1, Math.ceil(words / 200));
 }
 
-function BlogCard({ post, onLike }: { post: BlogPost; onLike: (id: number) => void }) {
+function getCategoryGradient(category: string): [string, string] {
+  if (category === "Migration Stories") return ["#5D4037", "#8D6E63"];
+  if (category === "Travel Tips") return ["#1565C0", "#42A5F5"];
+  if (category === "Culture") return ["#7B1FA2", "#CE93D8"];
+  return [Colors.light.primaryDark, Colors.light.primary];
+}
+
+function BlogCard({ post, onLike, onReadMore }: { post: BlogPost; onLike: (id: number) => void; onReadMore: (post: BlogPost) => void }) {
   const catInfo = CATEGORY_ICONS[post.category] || CATEGORY_ICONS["General"];
-  const [expanded, setExpanded] = useState(false);
 
   return (
     <View style={styles.blogCard}>
@@ -69,15 +84,7 @@ function BlogCard({ post, onLike }: { post: BlogPost; onLike: (id: number) => vo
         <Image source={{ uri: post.image_url }} style={styles.blogCardImage} />
       ) : (
         <LinearGradient
-          colors={
-            post.category === "Migration Stories"
-              ? ["#5D4037", "#8D6E63"]
-              : post.category === "Travel Tips"
-              ? ["#1565C0", "#42A5F5"]
-              : post.category === "Culture"
-              ? ["#7B1FA2", "#CE93D8"]
-              : [Colors.light.primaryDark, Colors.light.primary]
-          }
+          colors={getCategoryGradient(post.category)}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.blogCardImagePlaceholder}
@@ -93,18 +100,11 @@ function BlogCard({ post, onLike }: { post: BlogPost; onLike: (id: number) => vo
           </View>
           <Text style={styles.blogDate}>{formatDate(post.created_at)}</Text>
         </View>
-        <Text style={styles.blogTitle} numberOfLines={expanded ? undefined : 2}>{post.title}</Text>
-        <Text style={styles.blogExcerpt} numberOfLines={expanded ? undefined : 3}>{post.content}</Text>
-        {!expanded && post.content.length > 150 && (
-          <Pressable onPress={() => setExpanded(true)}>
-            <Text style={styles.readMoreText}>Read more</Text>
-          </Pressable>
-        )}
-        {expanded && (
-          <Pressable onPress={() => setExpanded(false)}>
-            <Text style={styles.readMoreText}>Show less</Text>
-          </Pressable>
-        )}
+        <Text style={styles.blogTitle} numberOfLines={2}>{post.title}</Text>
+        <Text style={styles.blogExcerpt} numberOfLines={3}>{post.content}</Text>
+        <Pressable onPress={() => onReadMore(post)}>
+          <Text style={styles.readMoreText}>Read more</Text>
+        </Pressable>
         <View style={styles.blogCardFooter}>
           <View style={styles.authorRow}>
             <View style={styles.authorAvatar}>
@@ -131,6 +131,187 @@ function BlogCard({ post, onLike }: { post: BlogPost; onLike: (id: number) => vo
   );
 }
 
+function BlogDetailModal({
+  post,
+  visible,
+  onClose,
+  onLike,
+}: {
+  post: BlogPost | null;
+  visible: boolean;
+  onClose: () => void;
+  onLike: (id: number) => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const webTopInset = Platform.OS === "web" ? 67 : 0;
+  const webBottomInset = Platform.OS === "web" ? 34 : 0;
+  const { user } = useAuth();
+  const [commentText, setCommentText] = useState("");
+
+  const catInfo = post ? (CATEGORY_ICONS[post.category] || CATEGORY_ICONS["General"]) : CATEGORY_ICONS["General"];
+
+  const { data: comments = [], isLoading: commentsLoading } = useQuery<BlogComment[]>({
+    queryKey: ["/api/blog-posts", String(post?.id), "comments"],
+    enabled: !!post,
+  });
+
+  const commentMutation = useMutation({
+    mutationFn: async (data: { postId: number; comment: string }) => {
+      await apiRequest("POST", `/api/blog-posts/${data.postId}/comments`, { comment: data.comment });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts", String(post?.id), "comments"] });
+      setCommentText("");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    onError: (err: any) => {
+      Alert.alert("Error", err.message || "Could not post comment");
+    },
+  });
+
+  const handleComment = () => {
+    if (!commentText.trim() || !post) return;
+    commentMutation.mutate({ postId: post.id, comment: commentText.trim() });
+  };
+
+  if (!post) return null;
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <View
+          style={[
+            styles.detailContainer,
+            {
+              paddingTop: insets.top + webTopInset,
+            },
+          ]}
+        >
+          <View style={styles.detailHeader}>
+            <Pressable onPress={onClose}>
+              <Ionicons name="arrow-back" size={26} color={Colors.light.text} />
+            </Pressable>
+            <Text style={styles.detailHeaderTitle} numberOfLines={1}>Blog Post</Text>
+            <View style={{ width: 26 }} />
+          </View>
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: insets.bottom + webBottomInset + 80 }}
+          >
+            {post.image_url ? (
+              <Image source={{ uri: post.image_url }} style={styles.detailImage} />
+            ) : (
+              <LinearGradient
+                colors={getCategoryGradient(post.category)}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.detailImagePlaceholder}
+              >
+                <Ionicons name={catInfo.name as any} size={48} color="rgba(255,255,255,0.5)" />
+              </LinearGradient>
+            )}
+
+            <View style={styles.detailBody}>
+              <View style={[styles.categoryBadge, { backgroundColor: catInfo.color + "18", alignSelf: "flex-start" as const }]}>
+                <Ionicons name={catInfo.name as any} size={12} color={catInfo.color} />
+                <Text style={[styles.categoryBadgeText, { color: catInfo.color }]}>{post.category}</Text>
+              </View>
+
+              <Text style={styles.detailTitle}>{post.title}</Text>
+
+              <View style={styles.detailAuthorRow}>
+                <View style={styles.authorAvatar}>
+                  <Text style={styles.authorAvatarText}>{post.author_name.charAt(0).toUpperCase()}</Text>
+                </View>
+                <View>
+                  <Text style={styles.authorName}>{post.author_name}</Text>
+                  <Text style={styles.readTime}>{formatDate(post.created_at)} - {getReadTime(post.content)} min read</Text>
+                </View>
+              </View>
+
+              <Text style={styles.detailContent}>{post.content}</Text>
+
+              <View style={styles.detailActions}>
+                <Pressable
+                  onPress={() => {
+                    onLike(post.id);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  style={({ pressed }) => [styles.detailLikeBtn, { opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <Ionicons name="heart" size={20} color="#E53935" />
+                  <Text style={styles.detailLikeText}>{post.likes} Likes</Text>
+                </Pressable>
+                <View style={styles.detailCommentCount}>
+                  <Ionicons name="chatbubble-outline" size={18} color={Colors.light.textSecondary} />
+                  <Text style={styles.detailCommentCountText}>{comments.length} Comments</Text>
+                </View>
+              </View>
+
+              <View style={styles.commentSection}>
+                <Text style={styles.commentSectionTitle}>Comments</Text>
+
+                <View style={styles.commentInputRow}>
+                  <View style={[styles.authorAvatar, { width: 30, height: 30, borderRadius: 15 }]}>
+                    <Text style={[styles.authorAvatarText, { fontSize: 12 }]}>{(user?.name || "U").charAt(0).toUpperCase()}</Text>
+                  </View>
+                  <TextInput
+                    style={styles.commentInput}
+                    placeholder="Write a comment..."
+                    placeholderTextColor={Colors.light.textSecondary}
+                    value={commentText}
+                    onChangeText={setCommentText}
+                    multiline
+                  />
+                  <Pressable
+                    onPress={handleComment}
+                    disabled={!commentText.trim() || commentMutation.isPending}
+                    style={({ pressed }) => [
+                      styles.commentSendBtn,
+                      { opacity: (!commentText.trim() || commentMutation.isPending || pressed) ? 0.4 : 1 },
+                    ]}
+                  >
+                    {commentMutation.isPending ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Ionicons name="send" size={16} color="#fff" />
+                    )}
+                  </Pressable>
+                </View>
+
+                {commentsLoading ? (
+                  <ActivityIndicator size="small" color={Colors.light.primary} style={{ marginTop: 16 }} />
+                ) : comments.length === 0 ? (
+                  <Text style={styles.noCommentsText}>No comments yet. Be the first!</Text>
+                ) : (
+                  comments.map((c) => (
+                    <View key={c.id} style={styles.commentCard}>
+                      <View style={styles.commentHeader}>
+                        <View style={[styles.authorAvatar, { width: 28, height: 28, borderRadius: 14 }]}>
+                          <Text style={[styles.authorAvatarText, { fontSize: 11 }]}>{c.user_name.charAt(0).toUpperCase()}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.commentUser}>{c.user_name}</Text>
+                          <Text style={styles.commentDate}>{formatDate(c.created_at)}</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.commentBody}>{c.comment}</Text>
+                    </View>
+                  ))
+                )}
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
 export default function BlogScreen() {
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
@@ -138,6 +319,7 @@ export default function BlogScreen() {
   const { isAdmin, user } = useAuth();
   const [activeCategory, setActiveCategory] = useState("All");
   const [showWriteModal, setShowWriteModal] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("General");
@@ -281,7 +463,7 @@ export default function BlogScreen() {
         ) : (
           <View style={styles.postsContainer}>
             {filteredPosts.map((post) => (
-              <BlogCard key={post.id} post={post} onLike={(id) => likeMutation.mutate(id)} />
+              <BlogCard key={post.id} post={post} onLike={(id) => likeMutation.mutate(id)} onReadMore={(p) => setSelectedPost(p)} />
             ))}
           </View>
         )}
@@ -306,6 +488,13 @@ export default function BlogScreen() {
           </LinearGradient>
         </Pressable>
       )}
+
+      <BlogDetailModal
+        post={selectedPost}
+        visible={!!selectedPost}
+        onClose={() => setSelectedPost(null)}
+        onLike={(id) => likeMutation.mutate(id)}
+      />
 
       <Modal visible={showWriteModal} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView
@@ -789,5 +978,163 @@ const styles = StyleSheet.create({
     right: 8,
     backgroundColor: "#fff",
     borderRadius: 14,
+  },
+  detailContainer: {
+    flex: 1,
+    backgroundColor: Colors.light.background,
+  },
+  detailHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  detailHeaderTitle: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 16,
+    color: Colors.light.text,
+    flex: 1,
+    textAlign: "center" as const,
+  },
+  detailImage: {
+    width: "100%",
+    height: 200,
+  },
+  detailImagePlaceholder: {
+    width: "100%",
+    height: 160,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  detailBody: {
+    padding: 20,
+    gap: 14,
+  },
+  detailTitle: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 22,
+    color: Colors.light.text,
+    lineHeight: 30,
+  },
+  detailAuthorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  detailContent: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 15,
+    color: Colors.light.text,
+    lineHeight: 24,
+  },
+  detailActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 20,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  detailLikeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#FFEBEE",
+  },
+  detailLikeText: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 13,
+    color: "#E53935",
+  },
+  detailCommentCount: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  detailCommentCountText: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+  },
+  commentSection: {
+    marginTop: 8,
+  },
+  commentSectionTitle: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 17,
+    color: Colors.light.text,
+    marginBottom: 14,
+  },
+  commentInputRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 10,
+    marginBottom: 18,
+  },
+  commentInput: {
+    flex: 1,
+    fontFamily: "Poppins_400Regular",
+    fontSize: 14,
+    color: Colors.light.text,
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    maxHeight: 80,
+  },
+  commentSendBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.light.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  noCommentsText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    textAlign: "center" as const,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  commentCard: {
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+  },
+  commentHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 8,
+  },
+  commentUser: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 12,
+    color: Colors.light.text,
+  },
+  commentDate: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 10,
+    color: Colors.light.textSecondary,
+  },
+  commentBody: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 13,
+    color: Colors.light.text,
+    lineHeight: 20,
+    marginLeft: 38,
   },
 });
