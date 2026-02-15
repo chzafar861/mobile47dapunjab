@@ -48,7 +48,8 @@ export default function AdminScreen() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [propertyDetails, setPropertyDetails] = useState<any[]>([]);
   const [users, setUsers] = useState<AuthUser[]>([]);
-  const [activeSection, setActiveSection] = useState<"overview" | "bookings" | "properties" | "users">("overview");
+  const [writeRequests, setWriteRequests] = useState<any[]>([]);
+  const [activeSection, setActiveSection] = useState<"overview" | "bookings" | "properties" | "users" | "writers">("overview");
 
   useEffect(() => {
     if (!isAdmin) {
@@ -71,6 +72,10 @@ export default function AdminScreen() {
     try {
       const u = await adminFetch("/api/auth/users");
       if (Array.isArray(u)) setUsers(u);
+    } catch {}
+    try {
+      const wr = await adminFetch("/api/blog-write-requests");
+      if (Array.isArray(wr)) setWriteRequests(wr);
     } catch {}
   };
 
@@ -153,7 +158,42 @@ export default function AdminScreen() {
     ]);
   };
 
-  const sections = ["overview", "bookings", "properties", "users"] as const;
+  const approveWriteRequest = async (reqId: number) => {
+    try {
+      await adminFetch(`/api/blog-write-requests/${reqId}/approve`, {
+        method: "PATCH",
+        body: JSON.stringify({ admin_note: null }),
+      });
+      setWriteRequests((prev) => prev.map((r) => r.id === reqId ? { ...r, status: "approved" } : r));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert("Error", "Failed to approve request");
+    }
+  };
+
+  const rejectWriteRequest = async (reqId: number) => {
+    Alert.alert("Reject Request", "Are you sure you want to reject this writing request?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Reject",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await adminFetch(`/api/blog-write-requests/${reqId}/reject`, {
+              method: "PATCH",
+              body: JSON.stringify({ admin_note: null }),
+            });
+            setWriteRequests((prev) => prev.map((r) => r.id === reqId ? { ...r, status: "rejected" } : r));
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          } catch {
+            Alert.alert("Error", "Failed to reject request");
+          }
+        },
+      },
+    ]);
+  };
+
+  const sections = ["overview", "bookings", "properties", "users", "writers"] as const;
 
   return (
     <View style={styles.container}>
@@ -191,6 +231,11 @@ export default function AdminScreen() {
           <View style={styles.statItem}>
             <Text style={styles.statNum}>{users.length}</Text>
             <Text style={styles.statLabel}>Users</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNum}>{writeRequests.filter(r => r.status === "pending").length}</Text>
+            <Text style={styles.statLabel}>Pending</Text>
           </View>
         </LinearGradient>
 
@@ -231,6 +276,14 @@ export default function AdminScreen() {
               <View style={styles.actionInfo}>
                 <Text style={styles.actionTitle}>User Management</Text>
                 <Text style={styles.actionDesc}>{users.length} registered users</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
+            </Pressable>
+            <Pressable onPress={() => setActiveSection("writers")} style={styles.actionCard}>
+              <MaterialCommunityIcons name="pencil-lock" size={28} color="#9C27B0" />
+              <View style={styles.actionInfo}>
+                <Text style={styles.actionTitle}>Writer Requests</Text>
+                <Text style={styles.actionDesc}>{writeRequests.filter(r => r.status === "pending").length} pending requests</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
             </Pressable>
@@ -344,6 +397,55 @@ export default function AdminScreen() {
                   </View>
                   <Text style={styles.itemDate}>
                     Joined {new Date(u.created_at).toLocaleDateString()}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
+        {activeSection === "writers" && (
+          <View style={styles.content}>
+            {writeRequests.length === 0 ? (
+              <View style={styles.emptyState}>
+                <MaterialCommunityIcons name="pencil-lock-outline" size={48} color={Colors.light.tabIconDefault} />
+                <Text style={styles.emptyText}>No writer requests yet</Text>
+              </View>
+            ) : (
+              writeRequests.map((r) => (
+                <View key={r.id} style={styles.itemCard}>
+                  <View style={styles.itemHeader}>
+                    <View style={[styles.itemBadge, 
+                      r.status === "approved" ? { backgroundColor: Colors.light.primary + "20" } : 
+                      r.status === "rejected" ? { backgroundColor: "#EF5350" + "20" } :
+                      { backgroundColor: "#F9A825" + "20" }
+                    ]}>
+                      <Text style={[styles.itemBadgeText, 
+                        r.status === "approved" ? { color: Colors.light.primary } : 
+                        r.status === "rejected" ? { color: "#EF5350" } :
+                        { color: "#F9A825" }
+                      ]}>
+                        {r.status.toUpperCase()}
+                      </Text>
+                    </View>
+                    {r.status === "pending" && (
+                      <View style={styles.userActions}>
+                        <Pressable onPress={() => approveWriteRequest(r.id)} style={styles.userActionBtn}>
+                          <Ionicons name="checkmark-circle" size={22} color={Colors.light.primary} />
+                        </Pressable>
+                        <Pressable onPress={() => rejectWriteRequest(r.id)} style={styles.userActionBtn}>
+                          <Ionicons name="close-circle" size={22} color="#EF5350" />
+                        </Pressable>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.itemName}>{r.user_name}</Text>
+                  {r.user_email && <Text style={styles.itemDetail}>{r.user_email}</Text>}
+                  <Text style={[styles.itemDetail, { marginTop: 6, color: Colors.light.text }]}>Reason: {r.reason}</Text>
+                  {r.topics && <Text style={styles.itemDetail}>Topics: {r.topics}</Text>}
+                  {r.sample_title && <Text style={styles.itemDetail}>Sample: {r.sample_title}</Text>}
+                  <Text style={styles.itemDate}>
+                    Requested {new Date(r.created_at).toLocaleDateString()}
                   </Text>
                 </View>
               ))
