@@ -292,8 +292,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pool = (await import("pg")).default;
       const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
       const adminCheck = await dbPool.query("SELECT role FROM auth_users WHERE id = $1", [userId]);
-      if (adminCheck.rows.length === 0 || adminCheck.rows[0].role !== "admin") {
-        return res.status(403).json({ error: "Admin access required to write blog posts" });
+      const isAdmin = adminCheck.rows.length > 0 && adminCheck.rows[0].role === "admin";
+      if (!isAdmin) {
+        const writerCheck = await dbPool.query(
+          "SELECT id FROM blog_write_requests WHERE user_id = $1 AND status = 'approved' LIMIT 1",
+          [userId]
+        );
+        if (writerCheck.rows.length === 0) {
+          return res.status(403).json({ error: "You need writing permission. Please submit a request from the blog page." });
+        }
       }
       const { title, content, author_name, author_email, image_url, category } = req.body;
       if (!title || !content || !author_name) {
@@ -359,6 +366,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "INSERT INTO blog_comments (post_id, user_name, user_email, comment) VALUES ($1, $2, $3, $4) RETURNING *",
         [parseInt(req.params.id as string), userName, userEmail, comment.trim()]
       );
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/blog-write-requests", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const { reason, topics, sample_title } = req.body;
+      if (!reason || !reason.trim()) {
+        return res.status(400).json({ error: "Please provide a reason for your request" });
+      }
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const userResult = await dbPool.query("SELECT name, email FROM auth_users WHERE id = $1", [userId]);
+      const userName = userResult.rows[0]?.name || "User";
+      const userEmail = userResult.rows[0]?.email || null;
+      const existing = await dbPool.query(
+        "SELECT id, status FROM blog_write_requests WHERE user_id = $1 AND status = 'pending' LIMIT 1",
+        [userId]
+      );
+      if (existing.rows.length > 0) {
+        return res.status(400).json({ error: "You already have a pending request" });
+      }
+      const result = await dbPool.query(
+        `INSERT INTO blog_write_requests (user_id, user_name, user_email, reason, topics, sample_title) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [userId, userName, userEmail, reason.trim(), topics?.trim() || null, sample_title?.trim() || null]
+      );
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/blog-write-requests", async (req: Request, res: Response) => {
+    try {
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const status = req.query.status as string | undefined;
+      let query = "SELECT * FROM blog_write_requests";
+      const params: any[] = [];
+      if (status) {
+        query += " WHERE status = $1";
+        params.push(status);
+      }
+      query += " ORDER BY created_at DESC";
+      const result = await dbPool.query(query, params);
+      res.json(result.rows);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/blog-write-requests/my-status", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const result = await dbPool.query(
+        "SELECT * FROM blog_write_requests WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1",
+        [userId]
+      );
+      res.json(result.rows[0] || null);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.patch("/api/blog-write-requests/:id/approve", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const adminCheck = await dbPool.query("SELECT role FROM auth_users WHERE id = $1", [userId]);
+      if (adminCheck.rows.length === 0 || adminCheck.rows[0].role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const { admin_note } = req.body;
+      const result = await dbPool.query(
+        "UPDATE blog_write_requests SET status = 'approved', admin_note = $1, reviewed_at = NOW() WHERE id = $2 RETURNING *",
+        [admin_note || null, parseInt(req.params.id as string)]
+      );
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Request not found" });
+      }
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.patch("/api/blog-write-requests/:id/reject", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const adminCheck = await dbPool.query("SELECT role FROM auth_users WHERE id = $1", [userId]);
+      if (adminCheck.rows.length === 0 || adminCheck.rows[0].role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const { admin_note } = req.body;
+      const result = await dbPool.query(
+        "UPDATE blog_write_requests SET status = 'rejected', admin_note = $1, reviewed_at = NOW() WHERE id = $2 RETURNING *",
+        [admin_note || null, parseInt(req.params.id as string)]
+      );
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Request not found" });
+      }
       res.json(result.rows[0]);
     } catch (e: any) {
       res.status(500).json({ error: e.message });
