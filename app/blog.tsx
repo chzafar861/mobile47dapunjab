@@ -135,12 +135,11 @@ export default function BlogScreen() {
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [activeCategory, setActiveCategory] = useState("All");
   const [showWriteModal, setShowWriteModal] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [authorName, setAuthorName] = useState("");
   const [category, setCategory] = useState("General");
   const [imageUrl, setImageUrl] = useState("");
 
@@ -168,7 +167,6 @@ export default function BlogScreen() {
       setShowWriteModal(false);
       setTitle("");
       setContent("");
-      setAuthorName("");
       setCategory("General");
       setImageUrl("");
       Alert.alert("Published!", "Your blog post is now live.");
@@ -180,14 +178,15 @@ export default function BlogScreen() {
   });
 
   const handleSubmit = () => {
-    if (!title.trim() || !content.trim() || !authorName.trim()) {
-      Alert.alert("Required", "Please fill in title, content, and your name.");
+    if (!title.trim() || !content.trim()) {
+      Alert.alert("Required", "Please fill in title and content.");
       return;
     }
     submitMutation.mutate({
       title: title.trim(),
       content: content.trim(),
-      author_name: authorName.trim(),
+      author_name: user?.name || "Admin",
+      author_email: user?.email || null,
       category,
       image_url: imageUrl || null,
     });
@@ -345,14 +344,13 @@ export default function BlogScreen() {
 
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
               <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Your Name</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="Enter your name"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={authorName}
-                  onChangeText={setAuthorName}
-                />
+                <Text style={styles.fieldLabel}>Posting as</Text>
+                <View style={styles.authorDisplay}>
+                  <View style={styles.authorDisplayAvatar}>
+                    <Text style={styles.authorDisplayAvatarText}>{(user?.name || "A").charAt(0).toUpperCase()}</Text>
+                  </View>
+                  <Text style={styles.authorDisplayName}>{user?.name || "Admin"}</Text>
+                </View>
               </View>
 
               <View style={styles.formField}>
@@ -729,6 +727,34 @@ const styles = StyleSheet.create({
   },
   catOptionTextActive: {
     color: "#fff",
+  },
+  authorDisplay: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  authorDisplayAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.light.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  authorDisplayAvatarText: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 16,
+    color: "#fff",
+  },
+  authorDisplayName: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 15,
+    color: Colors.light.text,
   },
   coverPickBtn: {
     height: 100,
