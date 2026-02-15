@@ -4,6 +4,8 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, Bronze Migration & Family Search Portal, history, and property detail submissions.
 
 ## Recent Changes
+- 2026-02-15: Added Blog page with post cards, category filters, like system, write post modal with image upload
+- 2026-02-15: Blog accessible from Home page Explore section, 6 seed posts
 - 2026-02-15: Migration Portal records now open full-page detail view with comments system
 - 2026-02-15: Added migration_comments table, comment API endpoints (GET/POST)
 - 2026-02-15: Profile page now has prominent gold gradient Submit Property Details card with image upload
@@ -20,7 +22,7 @@ A mobile service platform for Punjab, Pakistan visitors. Features protocol servi
 ## Project Architecture
 - **Stack**: Expo Router (React Native) + Express backend
 - **Data**: PostgreSQL (built-in) for cloud persistence via JSONB columns
-- **Database Tables**: bookings, cart, property_details, rental_inquiries, users, auth_users, migration_records
+- **Database Tables**: bookings, cart, property_details, rental_inquiries, users, auth_users, migration_records, migration_comments, blog_posts
 - **API Layer**: server/firebase.ts abstracts DB operations; server/routes.ts defines REST endpoints; server/auth.ts handles authentication
 - **Font**: Poppins (Google Fonts)
 - **Colors**: Emerald green + Gold accent (Pakistan inspired)
@@ -35,6 +37,7 @@ A mobile service platform for Punjab, Pakistan visitors. Features protocol servi
 - `app/submit-details.tsx` - Property/land detail submission form
 - `app/admin.tsx` - Full admin dashboard with booking/property management
 - `app/migration-detail.tsx` - Full-page migration record detail with comments system
+- `app/blog.tsx` - Blog page with post cards, category filters, write post modal
 
 ### Migration Portal Features
 - Search by name, village, district, year, location (ILIKE full-text search)
