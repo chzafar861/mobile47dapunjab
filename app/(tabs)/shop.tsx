@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useQuery } from "@tanstack/react-query";
 import { firebaseApi } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
@@ -27,84 +28,9 @@ interface ShopItem {
   description: string;
   icon: string;
   iconSet: "ionicons" | "material";
+  image_url?: string;
 }
 
-const defaultProducts: ShopItem[] = [
-  {
-    id: "1",
-    name: "Punjabi Juttis",
-    price: 35,
-    category: "Clothing",
-    description: "Handcrafted traditional Punjabi footwear with beautiful embroidery",
-    icon: "footsteps",
-    iconSet: "ionicons",
-  },
-  {
-    id: "2",
-    name: "Phulkari Dupatta",
-    price: 55,
-    category: "Clothing",
-    description: "Authentic hand-embroidered Phulkari from Punjab villages",
-    icon: "color-palette",
-    iconSet: "ionicons",
-  },
-  {
-    id: "3",
-    name: "Lassi Glass Set",
-    price: 20,
-    category: "Kitchen",
-    description: "Traditional brass Lassi glasses, set of 4",
-    icon: "beer",
-    iconSet: "ionicons",
-  },
-  {
-    id: "4",
-    name: "Truck Art Frame",
-    price: 45,
-    category: "Art",
-    description: "Beautiful Pakistani truck art painting in wooden frame",
-    icon: "bus",
-    iconSet: "ionicons",
-  },
-  {
-    id: "5",
-    name: "Ajrak Shawl",
-    price: 40,
-    category: "Clothing",
-    description: "Traditional block-printed Sindhi Ajrak in pure cotton",
-    icon: "shirt",
-    iconSet: "ionicons",
-  },
-  {
-    id: "6",
-    name: "Spice Box",
-    price: 25,
-    category: "Kitchen",
-    description: "Premium Pakistani spice collection - 8 authentic spices",
-    icon: "leaf",
-    iconSet: "ionicons",
-  },
-  {
-    id: "7",
-    name: "Marble Handicraft",
-    price: 60,
-    category: "Art",
-    description: "Hand-carved marble vase from Swat Valley",
-    icon: "diamond",
-    iconSet: "ionicons",
-  },
-  {
-    id: "8",
-    name: "Prayer Rug",
-    price: 30,
-    category: "Home",
-    description: "Luxurious velvet prayer rug with intricate design",
-    icon: "rug",
-    iconSet: "material",
-  },
-];
-
-const categories = ["All", "Clothing", "Kitchen", "Art", "Home"];
 
 interface ProductCardProps {
   item: ShopItem;
@@ -162,6 +88,10 @@ export default function ShopScreen() {
   const [cart, setCart] = useState<ShopItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const { data: products = [], isLoading: productsLoading } = useQuery<ShopItem[]>({
+    queryKey: ["/api/products"],
+  });
+
   useEffect(() => {
     loadCart();
   }, []);
@@ -184,7 +114,9 @@ export default function ShopScreen() {
     }
   };
 
-  const filteredProducts = defaultProducts.filter((p) => {
+  const categories = ["All", ...Array.from(new Set(products.map((p) => p.category)))];
+
+  const filteredProducts = products.filter((p) => {
     const matchesCategory = selectedCategory === "All" || p.category === selectedCategory;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -243,28 +175,34 @@ export default function ShopScreen() {
         </ScrollView>
       </View>
 
-      <FlatList
-        data={filteredProducts}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        contentContainerStyle={{
-          paddingHorizontal: 12,
-          paddingBottom: insets.bottom + webBottomInset + 100,
-          paddingTop: 8,
-        }}
-        columnWrapperStyle={{ gap: 10 }}
-        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-        renderItem={({ item }) => (
-          <ProductCard item={item} onAddToCart={() => addToCart(item)} />
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="bag-outline" size={48} color={Colors.light.tabIconDefault} />
-            <Text style={styles.emptyText}>No products found</Text>
-          </View>
-        }
-        scrollEnabled={filteredProducts.length > 0}
-      />
+      {productsLoading ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading products...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredProducts}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          contentContainerStyle={{
+            paddingHorizontal: 12,
+            paddingBottom: insets.bottom + webBottomInset + 100,
+            paddingTop: 8,
+          }}
+          columnWrapperStyle={{ gap: 10 }}
+          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          renderItem={({ item }) => (
+            <ProductCard item={item} onAddToCart={() => addToCart(item)} />
+          )}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="bag-outline" size={48} color={Colors.light.tabIconDefault} />
+              <Text style={styles.emptyText}>No products found</Text>
+            </View>
+          }
+          scrollEnabled={filteredProducts.length > 0}
+        />
+      )}
     </View>
   );
 }
@@ -401,6 +339,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
     fontFamily: "Poppins_400Regular",
     fontSize: 14,
     color: Colors.light.textSecondary,
