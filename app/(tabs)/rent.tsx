@@ -13,31 +13,16 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Image,
-  Dimensions,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/query-client";
-import { useAuth } from "@/lib/auth-context";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import Colors from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-interface BlogPost {
-  id: number;
-  title: string;
-  content: string;
-  image_url: string | null;
-  location: string | null;
-  category: string;
-  author_name: string;
-  created_at: string;
-}
 
 interface MigrationRecord {
   id: number;
@@ -54,7 +39,6 @@ interface MigrationRecord {
   created_at: string;
 }
 
-type ExploreSection = "blog" | "migration";
 type ActiveTab = "search" | "submit";
 type PeriodFilter = "all" | "before_1947" | "after_1947";
 
@@ -64,67 +48,6 @@ const DISTRICTS = [
   "Ferozepur", "Patiala", "Kapurthala", "Narowal", "Sialkot",
   "Lahore", "Rawalpindi", "Multan", "Faisalabad", "Gujranwala",
 ];
-
-function BlogPostCard({ post }: { post: BlogPost }) {
-  const timeAgo = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const days = Math.floor(diff / 86400000);
-    if (days > 30) return `${Math.floor(days / 30)} month${Math.floor(days / 30) > 1 ? "s" : ""} ago`;
-    if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
-    const hours = Math.floor(diff / 3600000);
-    if (hours > 0) return `${hours}h ago`;
-    return "Just now";
-  };
-
-  return (
-    <Pressable
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push({ pathname: "/blog-detail", params: { id: String(post.id) } });
-      }}
-      style={({ pressed }) => [
-        blogStyles.postCard,
-        { opacity: pressed ? 0.95 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
-      {post.image_url ? (
-        <Image source={{ uri: post.image_url }} style={blogStyles.postImage} />
-      ) : (
-        <LinearGradient
-          colors={[Colors.light.primaryDark, Colors.light.primary]}
-          style={blogStyles.postImagePlaceholder}
-        >
-          <Ionicons name="image-outline" size={40} color="rgba(255,255,255,0.4)" />
-        </LinearGradient>
-      )}
-      <View style={blogStyles.postContent}>
-        <View style={blogStyles.postMeta}>
-          {post.location && (
-            <View style={blogStyles.locationTag}>
-              <Ionicons name="location" size={11} color={Colors.light.primary} />
-              <Text style={blogStyles.locationText} numberOfLines={1}>{post.location}</Text>
-            </View>
-          )}
-          <Text style={blogStyles.postTime}>{timeAgo(post.created_at)}</Text>
-        </View>
-        <Text style={blogStyles.postTitle} numberOfLines={2}>{post.title}</Text>
-        <Text style={blogStyles.postExcerpt} numberOfLines={2}>{post.content}</Text>
-        <View style={blogStyles.postFooter}>
-          <View style={blogStyles.authorRow}>
-            <View style={blogStyles.authorAvatar}>
-              <Text style={blogStyles.authorInitial}>{post.author_name?.[0] || "A"}</Text>
-            </View>
-            <Text style={blogStyles.authorName}>{post.author_name}</Text>
-          </View>
-          <View style={blogStyles.readMore}>
-            <Text style={blogStyles.readMoreText}>Read</Text>
-            <Ionicons name="arrow-forward" size={14} color={Colors.light.primary} />
-          </View>
-        </View>
-      </View>
-    </Pressable>
-  );
-}
 
 function RecordCard({ item }: { item: MigrationRecord }) {
   return (
@@ -206,9 +129,7 @@ export default function MigrationPortalScreen() {
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
-  const { isAdmin } = useAuth();
 
-  const [exploreSection, setExploreSection] = useState<ExploreSection>("blog");
   const [activeTab, setActiveTab] = useState<ActiveTab>("search");
   const [searchQuery, setSearchQuery] = useState("");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
@@ -225,10 +146,6 @@ export default function MigrationPortalScreen() {
   const [formLocation, setFormLocation] = useState("");
   const [formContact, setFormContact] = useState("");
   const [formNotes, setFormNotes] = useState("");
-
-  const { data: blogPosts = [], isLoading: blogLoading } = useQuery<BlogPost[]>({
-    queryKey: ["/api/blog-posts"],
-  });
 
   const buildSearchUrl = useCallback(() => {
     const params = new URLSearchParams();
@@ -327,103 +244,31 @@ export default function MigrationPortalScreen() {
       >
         <View style={styles.headerContent}>
           <View style={styles.headerTitleRow}>
-            <Ionicons name="compass" size={26} color={Colors.light.accent} />
-            <Text style={styles.headerTitle}>Explore</Text>
+            <MaterialCommunityIcons name="account-search" size={26} color={Colors.light.accent} />
+            <Text style={styles.headerTitle}>Migration Portal</Text>
           </View>
-          <Text style={styles.headerSubtitle}>
-            {exploreSection === "blog" ? "47daPunjab Visit Places - Travel Blog" : "Bronze Migration & Family Search Portal"}
-          </Text>
+          <Text style={styles.headerSubtitle}>Bronze Migration & Family Search - 1947 Partition Records</Text>
         </View>
 
-        <View style={styles.sectionToggle}>
+        <View style={styles.tabRow}>
           <Pressable
-            onPress={() => setExploreSection("blog")}
-            style={[styles.sectionBtn, exploreSection === "blog" && styles.sectionBtnActive]}
+            onPress={() => setActiveTab("search")}
+            style={[styles.tabBtn, activeTab === "search" && styles.tabBtnActive]}
           >
-            <Ionicons name="newspaper" size={15} color={exploreSection === "blog" ? Colors.light.primaryDark : "rgba(255,255,255,0.6)"} />
-            <Text style={[styles.sectionBtnText, exploreSection === "blog" && styles.sectionBtnTextActive]}>Visit Places</Text>
+            <Ionicons name="search" size={16} color={activeTab === "search" ? Colors.light.primaryDark : "rgba(255,255,255,0.6)"} />
+            <Text style={[styles.tabText, activeTab === "search" && styles.tabTextActive]}>Search Records</Text>
           </Pressable>
           <Pressable
-            onPress={() => setExploreSection("migration")}
-            style={[styles.sectionBtn, exploreSection === "migration" && styles.sectionBtnActive]}
+            onPress={() => setActiveTab("submit")}
+            style={[styles.tabBtn, activeTab === "submit" && styles.tabBtnActive]}
           >
-            <MaterialCommunityIcons name="account-search" size={15} color={exploreSection === "migration" ? Colors.light.primaryDark : "rgba(255,255,255,0.6)"} />
-            <Text style={[styles.sectionBtnText, exploreSection === "migration" && styles.sectionBtnTextActive]}>Migration</Text>
+            <Ionicons name="add-circle-outline" size={16} color={activeTab === "submit" ? Colors.light.primaryDark : "rgba(255,255,255,0.6)"} />
+            <Text style={[styles.tabText, activeTab === "submit" && styles.tabTextActive]}>Submit Info</Text>
           </Pressable>
         </View>
-
-        {exploreSection === "migration" && (
-          <View style={styles.tabRow}>
-            <Pressable
-              onPress={() => setActiveTab("search")}
-              style={[styles.tabBtn, activeTab === "search" && styles.tabBtnActive]}
-            >
-              <Ionicons name="search" size={16} color={activeTab === "search" ? Colors.light.primaryDark : "rgba(255,255,255,0.6)"} />
-              <Text style={[styles.tabText, activeTab === "search" && styles.tabTextActive]}>Search Records</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setActiveTab("submit")}
-              style={[styles.tabBtn, activeTab === "submit" && styles.tabBtnActive]}
-            >
-              <Ionicons name="add-circle-outline" size={16} color={activeTab === "submit" ? Colors.light.primaryDark : "rgba(255,255,255,0.6)"} />
-              <Text style={[styles.tabText, activeTab === "submit" && styles.tabTextActive]}>Submit Info</Text>
-            </Pressable>
-          </View>
-        )}
       </LinearGradient>
 
-      {exploreSection === "blog" ? (
-        <View style={{ flex: 1 }}>
-          {isAdmin && (
-            <Pressable
-              onPress={() => router.push("/admin")}
-              style={blogStyles.writePostBtn}
-            >
-              <LinearGradient
-                colors={[Colors.light.accent, "#B8922E"]}
-                style={blogStyles.writePostGradient}
-              >
-                <Ionicons name="create" size={18} color="#fff" />
-                <Text style={blogStyles.writePostText}>Write New Post</Text>
-              </LinearGradient>
-            </Pressable>
-          )}
-
-          {blogLoading ? (
-            <View style={styles.loadingWrap}>
-              <ActivityIndicator size="large" color={Colors.light.primary} />
-              <Text style={styles.loadingText}>Loading posts...</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={blogPosts}
-              keyExtractor={(item) => String(item.id)}
-              contentContainerStyle={{
-                paddingHorizontal: 16,
-                paddingBottom: insets.bottom + webBottomInset + 100,
-                paddingTop: 8,
-              }}
-              ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
-              renderItem={({ item }) => <BlogPostCard post={item} />}
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <Ionicons name="newspaper-outline" size={48} color={Colors.light.tabIconDefault} />
-                  <Text style={styles.emptyTitle}>No Posts Yet</Text>
-                  <Text style={styles.emptyText}>Visit places blog posts will appear here. Admins can write and publish posts about places to visit in Punjab.</Text>
-                </View>
-              }
-              ListHeaderComponent={
-                blogPosts.length > 0 ? (
-                  <View style={styles.resultCount}>
-                    <Text style={styles.resultCountText}>{blogPosts.length} post{blogPosts.length !== 1 ? "s" : ""}</Text>
-                  </View>
-                ) : null
-              }
-              scrollEnabled={blogPosts.length > 0}
-            />
-          )}
-        </View>
-      ) : activeTab === "search" ? (
+      {activeTab === "search" ? (
         <View style={{ flex: 1 }}>
           <View style={styles.searchSection}>
             <View style={styles.searchBarRow}>
@@ -780,32 +625,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.background,
-  },
-  sectionToggle: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 10,
-  },
-  sectionBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 9,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.12)",
-  },
-  sectionBtnActive: {
-    backgroundColor: Colors.light.accent,
-  },
-  sectionBtnText: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 13,
-    color: "rgba(255,255,255,0.6)",
-  },
-  sectionBtnTextActive: {
-    color: "#fff",
   },
   headerGradient: {
     paddingHorizontal: 16,
@@ -1285,131 +1104,6 @@ const styles = StyleSheet.create({
   },
   districtOptionTextActive: {
     fontFamily: "Poppins_600SemiBold",
-    color: Colors.light.primary,
-  },
-});
-
-const blogStyles = StyleSheet.create({
-  writePostBtn: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  writePostGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  writePostText: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 14,
-    color: "#fff",
-  },
-  postCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-  },
-  postImage: {
-    width: "100%",
-    height: 180,
-    backgroundColor: Colors.light.backgroundSecondary,
-  },
-  postImagePlaceholder: {
-    width: "100%",
-    height: 180,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  postContent: {
-    padding: 14,
-  },
-  postMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  locationTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: Colors.light.primary + "10",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  locationText: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 11,
-    color: Colors.light.primary,
-    maxWidth: 150,
-  },
-  postTime: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 11,
-    color: Colors.light.textSecondary,
-  },
-  postTitle: {
-    fontFamily: "Poppins_700Bold",
-    fontSize: 17,
-    color: Colors.light.text,
-    marginBottom: 6,
-    lineHeight: 24,
-  },
-  postExcerpt: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  postFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.border + "50",
-    paddingTop: 10,
-  },
-  authorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  authorAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.light.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  authorInitial: {
-    fontFamily: "Poppins_700Bold",
-    fontSize: 12,
-    color: "#fff",
-  },
-  authorName: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 12,
-    color: Colors.light.text,
-  },
-  readMore: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  readMoreText: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 12,
     color: Colors.light.primary,
   },
 });

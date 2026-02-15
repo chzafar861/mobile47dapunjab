@@ -181,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const pool = (await import("pg")).default;
       const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      await dbPool.query(`DELETE FROM migration_records WHERE id = $1`, [parseInt(req.params.id as string)]);
+      await dbPool.query(`DELETE FROM migration_records WHERE id = $1`, [parseInt(req.params.id)]);
       res.json({ success: true });
     } catch (e: any) {
       console.error("Error deleting migration record:", e);
@@ -196,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
       const result = await dbPool.query(
         `UPDATE migration_records SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
-        [status, parseInt(req.params.id as string)]
+        [status, parseInt(req.params.id)]
       );
       res.json(result.rows[0]);
     } catch (e: any) {
@@ -208,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const pool = (await import("pg")).default;
       const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      const result = await dbPool.query(`SELECT * FROM migration_records WHERE id = $1`, [parseInt(req.params.id as string)]);
+      const result = await dbPool.query(`SELECT * FROM migration_records WHERE id = $1`, [parseInt(req.params.id)]);
       if (result.rows.length === 0) {
         return res.status(404).json({ error: "Record not found" });
       }
@@ -224,7 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
       const result = await dbPool.query(
         `SELECT * FROM migration_comments WHERE record_id = $1 ORDER BY created_at DESC`,
-        [parseInt(req.params.id as string)]
+        [parseInt(req.params.id)]
       );
       res.json(result.rows);
     } catch (e: any) {
@@ -242,140 +242,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
       const result = await dbPool.query(
         `INSERT INTO migration_comments (record_id, user_name, user_email, comment) VALUES ($1, $2, $3, $4) RETURNING *`,
-        [parseInt(req.params.id as string), user_name, user_email || null, comment]
+        [parseInt(req.params.id), user_name, user_email || null, comment]
       );
       res.json(result.rows[0]);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  // ── Blog Posts ──
-  app.get("/api/blog-posts", async (_req: Request, res: Response) => {
-    try {
-      const pool = (await import("pg")).default;
-      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      const result = await dbPool.query(`SELECT * FROM blog_posts WHERE status = 'published' ORDER BY created_at DESC`);
-      res.json(result.rows);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  app.get("/api/blog-posts/all", async (_req: Request, res: Response) => {
-    try {
-      const pool = (await import("pg")).default;
-      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      const result = await dbPool.query(`SELECT * FROM blog_posts ORDER BY created_at DESC`);
-      res.json(result.rows);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  app.get("/api/blog-posts/:id", async (req: Request, res: Response) => {
-    try {
-      const pool = (await import("pg")).default;
-      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      const result = await dbPool.query(`SELECT * FROM blog_posts WHERE id = $1`, [parseInt(req.params.id as string)]);
-      if (result.rows.length === 0) return res.status(404).json({ error: "Post not found" });
-      res.json(result.rows[0]);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  app.post("/api/blog-posts", async (req: Request, res: Response) => {
-    try {
-      const { title, content, image_url, location, category, author_name, author_id } = req.body;
-      if (!title || !content) return res.status(400).json({ error: "Title and content are required." });
-      const pool = (await import("pg")).default;
-      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      const result = await dbPool.query(
-        `INSERT INTO blog_posts (title, content, image_url, location, category, author_name, author_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [title, content, image_url || null, location || null, category || 'Visit Place', author_name || 'Admin', author_id || null]
-      );
-      res.json(result.rows[0]);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  app.delete("/api/blog-posts/:id", async (req: Request, res: Response) => {
-    try {
-      const pool = (await import("pg")).default;
-      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      await dbPool.query(`DELETE FROM blog_posts WHERE id = $1`, [parseInt(req.params.id as string)]);
-      res.json({ success: true });
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  app.get("/api/blog-posts/:id/comments", async (req: Request, res: Response) => {
-    try {
-      const pool = (await import("pg")).default;
-      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      const result = await dbPool.query(
-        `SELECT * FROM blog_comments WHERE post_id = $1 ORDER BY created_at DESC`,
-        [parseInt(req.params.id as string)]
-      );
-      res.json(result.rows);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  app.post("/api/blog-posts/:id/comments", async (req: Request, res: Response) => {
-    try {
-      const { user_name, user_email, comment } = req.body;
-      if (!user_name || !comment) return res.status(400).json({ error: "Name and comment are required." });
-      const pool = (await import("pg")).default;
-      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      const result = await dbPool.query(
-        `INSERT INTO blog_comments (post_id, user_name, user_email, comment) VALUES ($1, $2, $3, $4) RETURNING *`,
-        [parseInt(req.params.id as string), user_name, user_email || null, comment]
-      );
-      res.json(result.rows[0]);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  // ── Products (admin-managed) ──
-  app.get("/api/products", async (_req: Request, res: Response) => {
-    try {
-      const pool = (await import("pg")).default;
-      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      const result = await dbPool.query(`SELECT * FROM products WHERE status = 'active' ORDER BY created_at DESC`);
-      res.json(result.rows);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  app.post("/api/products", async (req: Request, res: Response) => {
-    try {
-      const { name, price, category, description, image_url, icon, icon_set } = req.body;
-      if (!name || !price || !category) return res.status(400).json({ error: "Name, price, and category are required." });
-      const pool = (await import("pg")).default;
-      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      const result = await dbPool.query(
-        `INSERT INTO products (name, price, category, description, image_url, icon, icon_set) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [name, parseFloat(price), category, description || null, image_url || null, icon || 'bag-handle', icon_set || 'ionicons']
-      );
-      res.json(result.rows[0]);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  app.delete("/api/products/:id", async (req: Request, res: Response) => {
-    try {
-      const pool = (await import("pg")).default;
-      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      await dbPool.query(`DELETE FROM products WHERE id = $1`, [parseInt(req.params.id as string)]);
-      res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
