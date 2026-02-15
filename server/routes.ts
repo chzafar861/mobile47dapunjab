@@ -326,6 +326,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/blog-posts/:id/comments", async (req: Request, res: Response) => {
+    try {
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const result = await dbPool.query(
+        "SELECT * FROM blog_comments WHERE post_id = $1 ORDER BY created_at DESC",
+        [parseInt(req.params.id as string)]
+      );
+      res.json(result.rows);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/blog-posts/:id/comments", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const { comment } = req.body;
+      if (!comment || !comment.trim()) {
+        return res.status(400).json({ error: "Comment is required" });
+      }
+      const pool = (await import("pg")).default;
+      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
+      const userResult = await dbPool.query("SELECT name, email FROM auth_users WHERE id = $1", [userId]);
+      const userName = userResult.rows[0]?.name || "User";
+      const userEmail = userResult.rows[0]?.email || null;
+      const result = await dbPool.query(
+        "INSERT INTO blog_comments (post_id, user_name, user_email, comment) VALUES ($1, $2, $3, $4) RETURNING *",
+        [parseInt(req.params.id as string), userName, userEmail, comment.trim()]
+      );
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.post("/api/clear-all", async (_req: Request, res: Response) => {
     try {
       await setDocument("users", "defaultUser", { name: "", phone: "", email: "", city: "", country: "", purpose: "" });
