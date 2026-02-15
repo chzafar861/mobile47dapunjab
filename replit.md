@@ -4,6 +4,9 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, Bronze Migration & Family Search Portal, history, and property detail submissions.
 
 ## Recent Changes
+- 2026-02-15: Added blog writing permission request form - users can request writing access, admin approves/rejects from dashboard
+- 2026-02-15: blog_write_requests table, API endpoints for submit/approve/reject, admin Writers section
+- 2026-02-15: Approved writers + admins can both write blog posts
 - 2026-02-15: Added Blog page with post cards, category filters, like system, write post modal with image upload
 - 2026-02-15: Blog accessible from Home page Explore section, 6 seed posts
 - 2026-02-15: Migration Portal records now open full-page detail view with comments system
