@@ -1,7 +1,7 @@
 # 47daPunjab
 
 ## Overview
-A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, Bronze Migration & Family Search Portal, history, and property detail submissions.
+A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, HumanFind (people & property search), history, and property detail submissions.
 
 ## Recent Changes
 - 2026-02-15: Added blog writing permission request form - users can request writing access, admin approves/rejects from dashboard
@@ -34,7 +34,7 @@ A mobile service platform for Punjab, Pakistan visitors. Features protocol servi
 - `app/(tabs)/index.tsx` - Home with services overview
 - `app/(tabs)/services.tsx` - Protocol, Video ($100/hr), Customs services with booking
 - `app/(tabs)/shop.tsx` - Product marketplace with cart
-- `app/(tabs)/rent.tsx` - Bronze Migration & Family Search Portal (search/submit 1947 partition records)
+- `app/(tabs)/rent.tsx` - HumanFind page (Find People + Property Details search)
 - `app/(tabs)/profile.tsx` - User profile + admin toggle
 - `app/history.tsx` - Historical/destroyed places + modern Pakistan
 - `app/submit-details.tsx` - Property/land detail submission form
@@ -42,18 +42,16 @@ A mobile service platform for Punjab, Pakistan visitors. Features protocol servi
 - `app/migration-detail.tsx` - Full-page migration record detail with comments system
 - `app/blog.tsx` - Blog page with post cards, category filters, write post modal
 
-### Migration Portal Features
-- Search by name, village, district, year, location (ILIKE full-text search)
-- Filter by migration period (before/after 1947) and district
-- Submit family migration records with validation
-- Click record cards to open full-page detail view with hero section
-- Comment system on each migration record (post and view comments)
-- 10 seed records with real historical migration data
-- Database: migration_records, migration_comments tables
-- API: GET/POST /api/migration-records, GET /api/migration-records/:id, DELETE /api/migration-records/:id, PATCH /api/migration-records/:id/status, GET/POST /api/migration-records/:id/comments
+### HumanFind Features
+- Two tabs: Find People and Property Details
+- People search by name, village, location (uses migration_records table)
+- Property details search by owner, location, type (uses property_details table)
+- Click person cards to open full-page detail view with comments
+- Database: migration_records, migration_comments, property_details tables
+- API: GET/POST /api/migration-records, GET /api/migration-records/:id, GET/POST /api/property-details
 
 ### Tab Navigation
-5 tabs: Home, Services, Shop, Explore (Migration Portal), Profile
+5 tabs: Home, Services, Shop, HumanFind, Profile
 Supports NativeTabs (iOS 26 liquid glass) and classic Tabs with blur
 
 ## User Preferences
