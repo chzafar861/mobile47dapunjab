@@ -25,8 +25,8 @@ function NativeTabLayout() {
         <Label>Shop</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="rent">
-        <Icon sf={{ default: "magnifyingglass", selected: "magnifyingglass" }} />
-        <Label>Explore</Label>
+        <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
+        <Label>HumanFind</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
@@ -104,9 +104,9 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="rent"
         options={{
-          title: "Explore",
+          title: "HumanFind",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search" size={size} color={color} />
+            <Ionicons name="people" size={size} color={color} />
           ),
         }}
       />

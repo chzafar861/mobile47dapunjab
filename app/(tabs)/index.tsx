@@ -154,9 +154,9 @@ export default function HomeScreen() {
             onPress={() => router.push("/(tabs)/shop")}
           />
           <FeatureRow
-            icon={<Ionicons name="key" size={22} color={Colors.light.accent} />}
-            title="Rentals"
-            description="Properties, vehicles & equipment"
+            icon={<Ionicons name="people" size={22} color={Colors.light.accent} />}
+            title="HumanFind"
+            description="Find people & property details"
             onPress={() => router.push("/(tabs)/rent")}
           />
           <FeatureRow
