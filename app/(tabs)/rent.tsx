@@ -105,6 +105,10 @@ function PropertyCard({ item }: { item: PropertyRecord }) {
 
   return (
     <Pressable
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        router.push({ pathname: "/property-detail", params: { id: String(item.id) } });
+      }}
       style={({ pressed }) => [
         styles.card,
         { opacity: pressed ? 0.95 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
@@ -138,6 +142,7 @@ function PropertyCard({ item }: { item: PropertyRecord }) {
             <Text style={styles.descriptionText} numberOfLines={2}>{d.description}</Text>
           )}
         </View>
+        <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary} />
       </View>
     </Pressable>
   );
