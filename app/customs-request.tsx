@@ -53,6 +53,8 @@ function FormField({
   keyboardType,
   multiline,
   optional,
+  required,
+  showErrors,
 }: {
   label: string;
   number: number;
@@ -62,6 +64,8 @@ function FormField({
   keyboardType?: "default" | "phone-pad" | "email-address";
   multiline?: boolean;
   optional?: boolean;
+  required?: boolean;
+  showErrors?: boolean;
 }) {
   return (
     <View style={styles.fieldWrap}>
@@ -75,7 +79,7 @@ function FormField({
         </Text>
       </View>
       <TextInput
-        style={[styles.input, multiline && styles.textArea]}
+        style={[styles.input, multiline && styles.textArea, showErrors && required && !value.trim() && { borderColor: Colors.light.danger }]}
         placeholder={placeholder}
         placeholderTextColor={Colors.light.tabIconDefault}
         value={value}
@@ -95,6 +99,7 @@ export default function CustomsRequestScreen() {
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
 
   const [fullName, setFullName] = useState(user?.name || "");
   const [contactNumber, setContactNumber] = useState(user?.phone || "");
@@ -136,6 +141,7 @@ export default function CustomsRequestScreen() {
   };
 
   const handleSubmit = async () => {
+    setShowErrors(true);
     if (!fullName.trim()) { showAlert("Required", "Please enter your full name."); return; }
     if (!contactNumber.trim()) { showAlert("Required", "Please enter your contact number."); return; }
     if (!countryOfResidence.trim()) { showAlert("Required", "Please enter your country of residence."); return; }
@@ -296,6 +302,8 @@ export default function CustomsRequestScreen() {
               placeholder="Enter your full name"
               value={fullName}
               onChangeText={setFullName}
+              required
+              showErrors={showErrors}
             />
             <FormField
               number={2}
@@ -304,6 +312,8 @@ export default function CustomsRequestScreen() {
               value={contactNumber}
               onChangeText={setContactNumber}
               keyboardType="phone-pad"
+              required
+              showErrors={showErrors}
             />
             <FormField
               number={3}
@@ -320,6 +330,8 @@ export default function CustomsRequestScreen() {
               placeholder="Where are you currently living?"
               value={countryOfResidence}
               onChangeText={setCountryOfResidence}
+              required
+              showErrors={showErrors}
             />
           </View>
 
@@ -388,6 +400,8 @@ export default function CustomsRequestScreen() {
               value={goodsDescription}
               onChangeText={setGoodsDescription}
               multiline
+              required
+              showErrors={showErrors}
             />
             <FormField
               number={7}
@@ -403,6 +417,8 @@ export default function CustomsRequestScreen() {
               placeholder="Enter country name"
               value={originDestination}
               onChangeText={setOriginDestination}
+              required
+              showErrors={showErrors}
             />
           </View>
 

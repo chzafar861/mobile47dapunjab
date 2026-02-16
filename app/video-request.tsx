@@ -48,6 +48,8 @@ function FormField({
   keyboardType,
   multiline,
   optional,
+  required,
+  showErrors,
 }: {
   label: string;
   number: number;
@@ -57,6 +59,8 @@ function FormField({
   keyboardType?: "default" | "phone-pad" | "email-address";
   multiline?: boolean;
   optional?: boolean;
+  required?: boolean;
+  showErrors?: boolean;
 }) {
   return (
     <View style={styles.fieldWrap}>
@@ -70,7 +74,7 @@ function FormField({
         </Text>
       </View>
       <TextInput
-        style={[styles.input, multiline && styles.textArea]}
+        style={[styles.input, multiline && styles.textArea, showErrors && required && !value.trim() && { borderColor: Colors.light.danger }]}
         placeholder={placeholder}
         placeholderTextColor={Colors.light.tabIconDefault}
         value={value}
@@ -90,6 +94,7 @@ export default function VideoRequestScreen() {
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
 
   const [fullName, setFullName] = useState(user?.name || "");
   const [contactNumber, setContactNumber] = useState(user?.phone || "");
@@ -125,6 +130,7 @@ export default function VideoRequestScreen() {
   };
 
   const handleSubmit = async () => {
+    setShowErrors(true);
     if (!fullName.trim()) {
       showAlert("Required", "Please enter your full name.");
       return;
@@ -242,6 +248,8 @@ export default function VideoRequestScreen() {
               placeholder="Enter your full name"
               value={fullName}
               onChangeText={setFullName}
+              required
+              showErrors={showErrors}
             />
             <FormField
               number={2}
@@ -250,6 +258,8 @@ export default function VideoRequestScreen() {
               value={contactNumber}
               onChangeText={setContactNumber}
               keyboardType="phone-pad"
+              required
+              showErrors={showErrors}
             />
             <FormField
               number={3}
@@ -257,6 +267,8 @@ export default function VideoRequestScreen() {
               placeholder="Where are you currently living?"
               value={currentLocation}
               onChangeText={setCurrentLocation}
+              required
+              showErrors={showErrors}
             />
           </View>
 
@@ -268,6 +280,8 @@ export default function VideoRequestScreen() {
               placeholder="Enter the name of the village or place"
               value={villageName}
               onChangeText={setVillageName}
+              required
+              showErrors={showErrors}
             />
             <FormField
               number={5}
@@ -275,6 +289,8 @@ export default function VideoRequestScreen() {
               placeholder="Enter district or nearby area"
               value={district}
               onChangeText={setDistrict}
+              required
+              showErrors={showErrors}
             />
             <FormField
               number={6}

@@ -55,6 +55,7 @@ export default function SubmitDetailsScreen() {
   });
   const [personImageUrl, setPersonImageUrl] = useState("");
   const [personSubmitting, setPersonSubmitting] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
 
   const pickImages = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -96,6 +97,7 @@ export default function SubmitDetailsScreen() {
   };
 
   const handlePropertySubmit = async () => {
+    setShowErrors(true);
     if (!ownerName.trim() || !phone.trim() || !location.trim()) {
       Alert.alert("Required", "Please fill in owner name, phone, and location.");
       return;
@@ -125,6 +127,7 @@ export default function SubmitDetailsScreen() {
   };
 
   const handlePersonSubmit = async () => {
+    setShowErrors(true);
     if (!personForm.full_name.trim()) {
       Alert.alert("Required", "Please enter the full name.");
       return;
@@ -187,6 +190,7 @@ export default function SubmitDetailsScreen() {
   };
 
   const resetAll = () => {
+    setShowErrors(false);
     setOwnerName("");
     setPhone("");
     setLocation("");
@@ -306,7 +310,7 @@ export default function SubmitDetailsScreen() {
 
               <Text style={styles.formLabel}>Owner Name <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, showErrors && !ownerName.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="Full name of the owner"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={ownerName}
@@ -315,7 +319,7 @@ export default function SubmitDetailsScreen() {
 
               <Text style={styles.formLabel}>Contact Phone <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, showErrors && !phone.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="Phone number"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={phone}
@@ -325,7 +329,7 @@ export default function SubmitDetailsScreen() {
 
               <Text style={styles.formLabel}>Location / Address <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, showErrors && !location.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="Village, city, or full address"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={location}
@@ -418,7 +422,7 @@ export default function SubmitDetailsScreen() {
             <View style={styles.formSection}>
               <Text style={styles.formLabel}>Full Name <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, showErrors && !personForm.full_name.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="e.g. Muhammad Aslam Khan"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={personForm.full_name}
@@ -443,7 +447,7 @@ export default function SubmitDetailsScreen() {
 
               <Text style={styles.formLabel}>Village of Origin <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, showErrors && !personForm.village_of_origin.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="e.g. Amritsar, Jullundur"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={personForm.village_of_origin}
@@ -452,7 +456,7 @@ export default function SubmitDetailsScreen() {
 
               <Text style={styles.formLabel}>District <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, showErrors && !personForm.district.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="e.g. Jalandhar, Amritsar"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={personForm.district}
@@ -461,7 +465,7 @@ export default function SubmitDetailsScreen() {
 
               <Text style={styles.formLabel}>Current Location <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, showErrors && !personForm.current_location.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="e.g. Lahore, Pakistan"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={personForm.current_location}

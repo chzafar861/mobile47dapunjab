@@ -264,6 +264,7 @@ export default function ShopScreen() {
   const [placing, setPlacing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "card">("cod");
   const [cardForm, setCardForm] = useState({ number: "", expiry: "", cvv: "", holder: "" });
+  const [showErrors, setShowErrors] = useState(false);
   const [checkoutForm, setCheckoutForm] = useState({
     name: user?.name || "",
     phone: user?.phone || "",
@@ -328,6 +329,7 @@ export default function ShopScreen() {
   };
 
   const placeOrder = async () => {
+    setShowErrors(true);
     if (!checkoutForm.name.trim() || !checkoutForm.phone.trim() || !checkoutForm.address.trim() || !checkoutForm.city.trim()) {
       Alert.alert("Required", "Please fill in all delivery details.");
       return;
@@ -370,6 +372,7 @@ export default function ShopScreen() {
       setCart([]);
       setShowCheckout(false);
       setShowCart(false);
+      setShowErrors(false);
       setOrderPlaced(true);
     } catch (err: any) {
       Alert.alert("Error", err.message || "Could not place order.");
@@ -636,7 +639,7 @@ export default function ShopScreen() {
           <View style={[styles.cartModal, { paddingTop: insets.top + 10 }]}>
             <View style={styles.cartHeader}>
               <Text style={styles.cartTitle}>Checkout</Text>
-              <Pressable onPress={() => setShowCheckout(false)} style={styles.modalCloseBtn}>
+              <Pressable onPress={() => { setShowCheckout(false); setShowErrors(false); }} style={styles.modalCloseBtn}>
                 <Ionicons name="close" size={24} color={Colors.light.text} />
               </Pressable>
             </View>
@@ -660,7 +663,7 @@ export default function ShopScreen() {
                 <Text style={styles.checkoutSectionTitle}>Delivery Details</Text>
                 <Text style={styles.checkoutFieldLabel}>Full Name *</Text>
                 <TextInput
-                  style={styles.checkoutInput}
+                  style={[styles.checkoutInput, showErrors && !checkoutForm.name.trim() && { borderColor: Colors.light.danger }]}
                   value={checkoutForm.name}
                   onChangeText={(t) => setCheckoutForm({ ...checkoutForm, name: t })}
                   placeholder="Your full name"
@@ -668,7 +671,7 @@ export default function ShopScreen() {
                 />
                 <Text style={styles.checkoutFieldLabel}>Phone Number *</Text>
                 <TextInput
-                  style={styles.checkoutInput}
+                  style={[styles.checkoutInput, showErrors && !checkoutForm.phone.trim() && { borderColor: Colors.light.danger }]}
                   value={checkoutForm.phone}
                   onChangeText={(t) => setCheckoutForm({ ...checkoutForm, phone: t })}
                   placeholder="e.g. +92 300 1234567"
@@ -677,7 +680,7 @@ export default function ShopScreen() {
                 />
                 <Text style={styles.checkoutFieldLabel}>Delivery Address *</Text>
                 <TextInput
-                  style={[styles.checkoutInput, { minHeight: 70 }]}
+                  style={[styles.checkoutInput, showErrors && !checkoutForm.address.trim() && { borderColor: Colors.light.danger }, { minHeight: 70 }]}
                   value={checkoutForm.address}
                   onChangeText={(t) => setCheckoutForm({ ...checkoutForm, address: t })}
                   placeholder="Full delivery address"
@@ -687,7 +690,7 @@ export default function ShopScreen() {
                 />
                 <Text style={styles.checkoutFieldLabel}>City *</Text>
                 <TextInput
-                  style={styles.checkoutInput}
+                  style={[styles.checkoutInput, showErrors && !checkoutForm.city.trim() && { borderColor: Colors.light.danger }]}
                   value={checkoutForm.city}
                   onChangeText={(t) => setCheckoutForm({ ...checkoutForm, city: t })}
                   placeholder="e.g. Lahore, Karachi"
@@ -772,7 +775,7 @@ export default function ShopScreen() {
                     </View>
                     <Text style={styles.checkoutFieldLabel}>Card Number *</Text>
                     <TextInput
-                      style={styles.checkoutInput}
+                      style={[styles.checkoutInput, showErrors && paymentMethod === "card" && cardForm.number.replace(/\s/g, "").length < 13 && { borderColor: Colors.light.danger }]}
                       value={cardForm.number}
                       onChangeText={(t) => setCardForm({ ...cardForm, number: formatCardNumber(t) })}
                       placeholder="1234 5678 9012 3456"
@@ -782,7 +785,7 @@ export default function ShopScreen() {
                     />
                     <Text style={styles.checkoutFieldLabel}>Cardholder Name *</Text>
                     <TextInput
-                      style={styles.checkoutInput}
+                      style={[styles.checkoutInput, showErrors && paymentMethod === "card" && !cardForm.holder.trim() && { borderColor: Colors.light.danger }]}
                       value={cardForm.holder}
                       onChangeText={(t) => setCardForm({ ...cardForm, holder: t })}
                       placeholder="Name on card"
@@ -793,7 +796,7 @@ export default function ShopScreen() {
                       <View style={{ flex: 1 }}>
                         <Text style={styles.checkoutFieldLabel}>Expiry *</Text>
                         <TextInput
-                          style={styles.checkoutInput}
+                          style={[styles.checkoutInput, showErrors && paymentMethod === "card" && cardForm.expiry.length < 5 && { borderColor: Colors.light.danger }]}
                           value={cardForm.expiry}
                           onChangeText={(t) => setCardForm({ ...cardForm, expiry: formatExpiry(t) })}
                           placeholder="MM/YY"
@@ -805,7 +808,7 @@ export default function ShopScreen() {
                       <View style={{ flex: 1 }}>
                         <Text style={styles.checkoutFieldLabel}>CVV *</Text>
                         <TextInput
-                          style={styles.checkoutInput}
+                          style={[styles.checkoutInput, showErrors && paymentMethod === "card" && cardForm.cvv.length < 3 && { borderColor: Colors.light.danger }]}
                           value={cardForm.cvv}
                           onChangeText={(t) => setCardForm({ ...cardForm, cvv: t.replace(/\D/g, "").slice(0, 4) })}
                           placeholder="123"

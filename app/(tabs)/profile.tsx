@@ -29,6 +29,8 @@ function InputField({
   keyboardType,
   multiline,
   editable = true,
+  required,
+  showErrors,
 }: {
   icon: string;
   label: string;
@@ -38,6 +40,8 @@ function InputField({
   keyboardType?: "default" | "phone-pad" | "email-address";
   multiline?: boolean;
   editable?: boolean;
+  required?: boolean;
+  showErrors?: boolean;
 }) {
   return (
     <View style={styles.fieldContainer}>
@@ -50,6 +54,7 @@ function InputField({
           styles.input,
           multiline && styles.textArea,
           !editable && styles.inputDisabled,
+          showErrors && required && !value.trim() && { borderColor: Colors.light.danger },
         ]}
         placeholder={placeholder || label}
         placeholderTextColor={Colors.light.tabIconDefault}
@@ -80,6 +85,7 @@ export default function ProfileScreen() {
     country: user?.country || "",
     purpose: user?.purpose || "",
   });
+  const [showErrors, setShowErrors] = useState(false);
   const [showProfileDetails, setShowProfileDetails] = useState(false);
   const [bookings, setBookings] = useState<any[]>([]);
 
@@ -125,10 +131,12 @@ export default function ProfileScreen() {
       country: user?.country || "",
       purpose: user?.purpose || "",
     });
+    setShowErrors(false);
     setIsEditing(false);
   };
 
   const saveProfile = async () => {
+    setShowErrors(true);
     if (!editData.name.trim()) {
       if (Platform.OS === "web") {
         window.alert("Please enter your name.");
@@ -241,6 +249,8 @@ export default function ProfileScreen() {
                 value={editData.name}
                 onChangeText={(t) => setEditData({ ...editData, name: t })}
                 placeholder="Enter your full name"
+                required={true}
+                showErrors={showErrors}
               />
               <InputField
                 icon="mail-outline"

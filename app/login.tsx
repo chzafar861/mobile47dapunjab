@@ -37,6 +37,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [oauthStatus, setOauthStatus] = useState<{ google: boolean; facebook: boolean }>({ google: false, facebook: false });
@@ -75,6 +76,7 @@ export default function LoginScreen() {
 
   const handleSubmit = async () => {
     clearMessages();
+    setShowErrors(true);
     if (mode === "signup" && !name.trim()) {
       setErrorMsg("Please enter your name");
       return;
@@ -153,6 +155,7 @@ export default function LoginScreen() {
 
   const handleRequestCode = async () => {
     setResetError("");
+    setShowErrors(true);
     if (!resetEmail.trim()) {
       setResetError("Please enter your email address");
       return;
@@ -231,6 +234,7 @@ export default function LoginScreen() {
 
   const handleResetPassword = async () => {
     setResetError("");
+    setShowErrors(true);
     if (!newPassword || newPassword.length < 6) {
       setResetError("Password must be at least 6 characters");
       return;
@@ -293,7 +297,7 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
-            <View style={[styles.inputRow, { marginBottom: 20 }]}>
+            <View style={[styles.inputRow, showErrors && !resetEmail.trim() && { borderColor: Colors.light.danger, borderWidth: 1.5 }, { marginBottom: 20 }]}>
               <Ionicons name="mail-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
@@ -416,7 +420,7 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
-            <View style={[styles.inputRow, { marginBottom: 14 }]}>
+            <View style={[styles.inputRow, showErrors && (!newPassword || newPassword.length < 6) && { borderColor: Colors.light.danger, borderWidth: 1.5 }, { marginBottom: 14 }]}>
               <Ionicons name="lock-closed-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
@@ -433,7 +437,7 @@ export default function LoginScreen() {
               </Pressable>
             </View>
 
-            <View style={[styles.inputRow, { marginBottom: 20 }]}>
+            <View style={[styles.inputRow, showErrors && (!confirmPassword || confirmPassword !== newPassword) && { borderColor: Colors.light.danger, borderWidth: 1.5 }, { marginBottom: 20 }]}>
               <Ionicons name="lock-closed-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
@@ -537,7 +541,7 @@ export default function LoginScreen() {
           <View style={styles.formContainer}>
             <View style={styles.modeToggle}>
               <Pressable
-                onPress={() => { setMode("login"); clearMessages(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                onPress={() => { setMode("login"); clearMessages(); setShowErrors(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                 style={[styles.modeBtn, mode === "login" && styles.modeBtnActive]}
               >
                 <Text style={[styles.modeBtnText, mode === "login" && styles.modeBtnTextActive]}>
@@ -545,7 +549,7 @@ export default function LoginScreen() {
                 </Text>
               </Pressable>
               <Pressable
-                onPress={() => { setMode("signup"); clearMessages(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                onPress={() => { setMode("signup"); clearMessages(); setShowErrors(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                 style={[styles.modeBtn, mode === "signup" && styles.modeBtnActive]}
               >
                 <Text style={[styles.modeBtnText, mode === "signup" && styles.modeBtnTextActive]}>
@@ -573,7 +577,7 @@ export default function LoginScreen() {
 
             {mode === "signup" && (
               <>
-                <View style={styles.inputRow}>
+                <View style={[styles.inputRow, showErrors && mode === "signup" && !name.trim() && { borderColor: Colors.light.danger, borderWidth: 1.5 }]}>
                   <Ionicons name="person-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
@@ -600,7 +604,7 @@ export default function LoginScreen() {
               </>
             )}
 
-            <View style={styles.inputRow}>
+            <View style={[styles.inputRow, showErrors && !email.trim() && { borderColor: Colors.light.danger, borderWidth: 1.5 }]}>
               <Ionicons name="mail-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
@@ -615,7 +619,7 @@ export default function LoginScreen() {
               />
             </View>
 
-            <View style={styles.inputRow}>
+            <View style={[styles.inputRow, showErrors && (!password || password.length < 6) && { borderColor: Colors.light.danger, borderWidth: 1.5 }]}>
               <Ionicons name="lock-closed-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
