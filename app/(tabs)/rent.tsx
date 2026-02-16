@@ -39,8 +39,8 @@ interface PersonRecord {
 interface PropertyRecord {
   id: number;
   data: {
-    owner_name?: string;
-    property_type?: string;
+    ownerName?: string;
+    propertyType?: string;
     location?: string;
     district?: string;
     city?: string;
@@ -48,6 +48,7 @@ interface PropertyRecord {
     description?: string;
     images?: string[];
     contact?: string;
+    phone?: string;
     [key: string]: any;
   };
   created_at: string;
@@ -124,18 +125,18 @@ function PropertyCard({ item }: { item: PropertyRecord }) {
         )}
         <View style={styles.cardInfo}>
           <Text style={styles.cardName} numberOfLines={1}>
-            {d.owner_name || d.property_type || "Property"}
+            {d.ownerName || d.propertyType || "Property"}
           </Text>
-          {(d.location || d.city) && (
+          {d.location && (
             <View style={styles.detailRow}>
               <Ionicons name="location-outline" size={13} color={Colors.light.accent} />
-              <Text style={styles.detailText} numberOfLines={1}>{d.location || d.city}{d.district ? `, ${d.district}` : ""}</Text>
+              <Text style={styles.detailText} numberOfLines={1}>{d.location}</Text>
             </View>
           )}
-          {d.property_type && (
+          {d.propertyType && (
             <View style={styles.detailRow}>
               <MaterialCommunityIcons name="home-outline" size={13} color={Colors.light.primary} />
-              <Text style={styles.detailText} numberOfLines={1}>{d.property_type}{d.area ? ` - ${d.area}` : ""}</Text>
+              <Text style={styles.detailText} numberOfLines={1}>{d.propertyType}{d.area ? ` - ${d.area}` : ""}</Text>
             </View>
           )}
           {d.description && (
@@ -187,11 +188,11 @@ export default function HumanFindScreen() {
     const q = searchQuery.toLowerCase();
     const d = p.data || {};
     return (
-      (d.owner_name && d.owner_name.toLowerCase().includes(q)) ||
+      (d.ownerName && d.ownerName.toLowerCase().includes(q)) ||
       (d.location && d.location.toLowerCase().includes(q)) ||
       (d.city && d.city.toLowerCase().includes(q)) ||
       (d.district && d.district.toLowerCase().includes(q)) ||
-      (d.property_type && d.property_type.toLowerCase().includes(q)) ||
+      (d.propertyType && d.propertyType.toLowerCase().includes(q)) ||
       (d.description && d.description.toLowerCase().includes(q))
     );
   });

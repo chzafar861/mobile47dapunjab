@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
-import { addDocument, getDocuments, deleteDocument, setDocument, getDocument } from "./firebase";
+import { addDocument, getDocuments, deleteDocument, setDocument, getDocument, pool } from "./firebase";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/bookings", async (req: Request, res: Response) => {
@@ -80,8 +80,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/property-details", async (_req: Request, res: Response) => {
     try {
-      const items = await getDocuments("propertyDetails");
-      res.json(items);
+      const result = await pool.query(
+        `SELECT id, data, created_at FROM property_details ORDER BY created_at DESC`
+      );
+      res.json(result.rows);
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }

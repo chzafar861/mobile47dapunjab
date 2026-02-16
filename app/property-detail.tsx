@@ -21,8 +21,8 @@ import Colors from "@/constants/colors";
 const screenWidth = Dimensions.get("window").width;
 
 interface PropertyData {
-  owner_name?: string;
-  property_type?: string;
+  ownerName?: string;
+  propertyType?: string;
   location?: string;
   district?: string;
   city?: string;
@@ -75,7 +75,7 @@ export default function PropertyDetailScreen() {
   const property = allProperties.find((p) => String(p.id) === id);
   const d = property?.data || {} as PropertyData;
   const images = d.images || [];
-  const title = d.owner_name || d.property_type || "Property Details";
+  const title = d.ownerName || d.propertyType || "Property Details";
 
   if (isLoading) {
     return (
@@ -142,10 +142,10 @@ export default function PropertyDetailScreen() {
         <View style={styles.contentSection}>
           <Text style={styles.propertyTitle}>{title}</Text>
 
-          {d.property_type && (
+          {d.propertyType && (
             <View style={styles.typeBadge}>
               <MaterialCommunityIcons name="home-outline" size={14} color={Colors.light.primary} />
-              <Text style={styles.typeBadgeText}>{d.property_type}</Text>
+              <Text style={styles.typeBadgeText}>{d.propertyType}</Text>
             </View>
           )}
         </View>
@@ -155,7 +155,7 @@ export default function PropertyDetailScreen() {
         <View style={styles.contentSection}>
           <Text style={styles.sectionHeading}>Details</Text>
           <View style={styles.infoCard}>
-            <InfoRow icon="person-outline" label="Owner" value={d.owner_name || ""} />
+            <InfoRow icon="person-outline" label="Owner" value={d.ownerName || ""} />
             <InfoRow icon="location-outline" label="Location" value={d.location || d.city || ""} />
             <InfoRow icon="map-outline" label="District" value={d.district || ""} />
             <InfoRow icon="resize-outline" label="Area" value={d.area || ""} />
