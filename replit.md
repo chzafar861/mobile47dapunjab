@@ -4,6 +4,13 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, HumanFind (people & property search), history, and property detail submissions.
 
 ## Recent Changes
+- 2026-02-16: Added My Orders page (app/my-orders.tsx) - users can view orders, see order tracking timeline with 6 statuses
+- 2026-02-16: Order tracking statuses: pending, confirmed, processing, shipped, out_for_delivery, delivered (+ cancelled)
+- 2026-02-16: Added tracking_number and status_updated_at columns to orders table
+- 2026-02-16: New API endpoints: GET /api/orders/:id, PUT /api/admin/orders/:id/status, GET /api/admin/orders
+- 2026-02-16: Admin dashboard has Orders section with status management
+- 2026-02-16: Shop order success modal now shows "Track My Order" button linking to My Orders
+- 2026-02-16: Profile page has My Orders card (before My Submissions)
 - 2026-02-16: Added My Submissions page (app/my-submissions.tsx) - users can view, edit, and delete their own property and person submissions
 - 2026-02-16: Added submitted_by column to property_details table for user tracking
 - 2026-02-16: New API endpoints: GET /api/my-submissions, PUT /api/property-details/:id, PUT /api/migration-records/:id, DELETE /api/my-submissions/property/:id, DELETE /api/my-submissions/person/:id
