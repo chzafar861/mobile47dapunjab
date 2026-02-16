@@ -162,8 +162,8 @@ export default function HomeScreen() {
           <FeatureRow
             icon={<MaterialCommunityIcons name="home-city-outline" size={22} color="#8B5E3C" />}
             title="Property Details"
-            description="Submit & browse property information"
-            onPress={() => router.push("/submit-details")}
+            description="Browse property information"
+            onPress={() => router.push("/(tabs)/rent")}
           />
           <FeatureRow
             icon={<MaterialCommunityIcons name="mosque" size={22} color={Colors.light.primaryDark} />}
