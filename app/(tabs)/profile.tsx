@@ -431,6 +431,35 @@ export default function ProfileScreen() {
 
         {!isEditing && (
           <View style={styles.section}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push("/my-submissions");
+              }}
+              style={({ pressed }) => [
+                styles.mySubmissionsCard,
+                { transform: [{ scale: pressed ? 0.97 : 1 }] },
+              ]}
+              testID="my-submissions-btn"
+            >
+              <View style={styles.mySubmissionsInner}>
+                <View style={styles.mySubmissionsIconWrap}>
+                  <Ionicons name="documents" size={24} color={Colors.light.primary} />
+                </View>
+                <View style={styles.mySubmissionsContent}>
+                  <Text style={styles.mySubmissionsTitle}>My Submissions</Text>
+                  <Text style={styles.mySubmissionsDesc}>
+                    View, edit, or delete your submitted properties and people
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
+              </View>
+            </Pressable>
+          </View>
+        )}
+
+        {!isEditing && (
+          <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Links</Text>
             <Pressable
               onPress={() => router.push("/history")}
@@ -834,5 +863,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.text,
     flex: 1,
+  },
+  mySubmissionsCard: {
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  mySubmissionsInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  mySubmissionsIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.light.primary + "15",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mySubmissionsContent: {
+    flex: 1,
+  },
+  mySubmissionsTitle: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 15,
+    color: Colors.light.text,
+  },
+  mySubmissionsDesc: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    marginTop: 2,
   },
 });

@@ -71,8 +71,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/property-details", async (req: Request, res: Response) => {
     try {
-      const docRef = await addDocument("propertyDetails", req.body);
-      res.json({ docId: docRef.id, ...req.body });
+      const userId = (req.session as any)?.userId || null;
+      const result = await pool.query(
+        `INSERT INTO property_details (data, submitted_by) VALUES ($1, $2) RETURNING id`,
+        [JSON.stringify(req.body), userId]
+      );
+      res.json({ docId: String(result.rows[0].id), ...req.body });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -190,11 +194,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Full name, village of origin, district, and current location are required." });
       }
 
-      const pool = (await import("pg")).default;
-      const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      const result = await dbPool.query(
-        `INSERT INTO migration_records (full_name, image_url, village_of_origin, district, year_of_migration, migration_period, current_location, contact_info, notes, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-        [full_name, image_url || null, village_of_origin, district, year_of_migration ? parseInt(year_of_migration) : null, migration_period || 'after_1947', current_location, contact_info || null, notes || null, 'approved']
+      const userId = (req.session as any)?.userId || null;
+      const result = await pool.query(
+        `INSERT INTO migration_records (full_name, image_url, village_of_origin, district, year_of_migration, migration_period, current_location, contact_info, notes, status, submitted_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        [full_name, image_url || null, village_of_origin, district, year_of_migration ? parseInt(year_of_migration) : null, migration_period || 'after_1947', current_location, contact_info || null, notes || null, 'approved', userId]
       );
       res.json(result.rows[0]);
     } catch (e: any) {
@@ -514,6 +517,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Request not found" });
       }
       res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/my-submissions", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const properties = await pool.query(
+        `SELECT id, data, created_at FROM property_details WHERE submitted_by = $1 ORDER BY created_at DESC`,
+        [userId]
+      );
+      const propertyRows = properties.rows.map((row: any) => {
+        const data = { ...row.data };
+        if (data.images && data.images.length > 0) {
+          data.hasImages = true;
+          data.imageCount = data.images.length;
+          delete data.images;
+        }
+        return { id: row.id, type: "property" as const, data, created_at: row.created_at };
+      });
+      const persons = await pool.query(
+        `SELECT * FROM migration_records WHERE submitted_by = $1 ORDER BY created_at DESC`,
+        [userId]
+      );
+      const personRows = persons.rows.map((row: any) => ({
+        id: row.id,
+        type: "person" as const,
+        full_name: row.full_name,
+        village_of_origin: row.village_of_origin,
+        district: row.district,
+        current_location: row.current_location,
+        year_of_migration: row.year_of_migration,
+        migration_period: row.migration_period,
+        contact_info: row.contact_info,
+        notes: row.notes,
+        status: row.status,
+        image_url: row.image_url,
+        created_at: row.created_at,
+      }));
+      res.json({ properties: propertyRows, persons: personRows });
+    } catch (e: any) {
+      console.error("Error fetching my submissions:", e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/property-details/:id", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const check = await pool.query(
+        `SELECT id FROM property_details WHERE id = $1 AND submitted_by = $2`,
+        [parseInt(req.params.id), userId]
+      );
+      if (check.rows.length === 0) {
+        return res.status(403).json({ error: "You can only edit your own submissions" });
+      }
+      await pool.query(
+        `UPDATE property_details SET data = $1 WHERE id = $2`,
+        [JSON.stringify(req.body), parseInt(req.params.id)]
+      );
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/migration-records/:id", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const check = await pool.query(
+        `SELECT id FROM migration_records WHERE id = $1 AND submitted_by = $2`,
+        [parseInt(req.params.id), userId]
+      );
+      if (check.rows.length === 0) {
+        return res.status(403).json({ error: "You can only edit your own submissions" });
+      }
+      const { full_name, village_of_origin, district, current_location, year_of_migration, migration_period, contact_info, notes, image_url } = req.body;
+      await pool.query(
+        `UPDATE migration_records SET full_name = $1, village_of_origin = $2, district = $3, current_location = $4, year_of_migration = $5, migration_period = $6, contact_info = $7, notes = $8, image_url = $9, updated_at = NOW() WHERE id = $10`,
+        [full_name, village_of_origin, district, current_location, year_of_migration ? parseInt(year_of_migration) : null, migration_period, contact_info || null, notes || null, image_url || null, parseInt(req.params.id)]
+      );
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete("/api/my-submissions/property/:id", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const check = await pool.query(
+        `SELECT id FROM property_details WHERE id = $1 AND submitted_by = $2`,
+        [parseInt(req.params.id), userId]
+      );
+      if (check.rows.length === 0) {
+        return res.status(403).json({ error: "You can only delete your own submissions" });
+      }
+      await pool.query(`DELETE FROM property_details WHERE id = $1`, [parseInt(req.params.id)]);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete("/api/my-submissions/person/:id", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const check = await pool.query(
+        `SELECT id FROM migration_records WHERE id = $1 AND submitted_by = $2`,
+        [parseInt(req.params.id), userId]
+      );
+      if (check.rows.length === 0) {
+        return res.status(403).json({ error: "You can only delete your own submissions" });
+      }
+      await pool.query(`DELETE FROM migration_records WHERE id = $1`, [parseInt(req.params.id)]);
+      res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
