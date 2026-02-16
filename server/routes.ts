@@ -522,6 +522,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/orders", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId || null;
+      const { items, total, customer_name, customer_phone, customer_address, customer_city } = req.body;
+      if (!items || !total || !customer_name || !customer_phone || !customer_address || !customer_city) {
+        return res.status(400).json({ error: "All delivery details are required" });
+      }
+      const result = await pool.query(
+        `INSERT INTO orders (user_id, items, total, customer_name, customer_phone, customer_address, customer_city) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [userId, JSON.stringify(items), total, customer_name, customer_phone, customer_address, customer_city]
+      );
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      console.error("Error creating order:", e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/orders", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const result = await pool.query(
+        `SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC`,
+        [userId]
+      );
+      res.json(result.rows);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.get("/api/my-submissions", async (req: Request, res: Response) => {
     try {
       const userId = (req.session as any)?.userId;
