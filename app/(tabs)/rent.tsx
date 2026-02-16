@@ -47,6 +47,8 @@ interface PropertyRecord {
     area?: string;
     description?: string;
     images?: string[];
+    hasImages?: boolean;
+    imageCount?: number;
     contact?: string;
     phone?: string;
     [key: string]: any;
@@ -102,7 +104,6 @@ function PersonCard({ item }: { item: PersonRecord }) {
 
 function PropertyCard({ item }: { item: PropertyRecord }) {
   const d = item.data || {};
-  const firstImage = d.images && d.images.length > 0 ? d.images[0] : null;
 
   return (
     <Pressable
@@ -116,13 +117,14 @@ function PropertyCard({ item }: { item: PropertyRecord }) {
       ]}
     >
       <View style={styles.cardRow}>
-        {firstImage ? (
-          <Image source={{ uri: firstImage }} style={styles.propertyThumb} />
-        ) : (
-          <View style={[styles.propertyThumb, styles.propertyThumbPlaceholder]}>
-            <MaterialCommunityIcons name="home-city-outline" size={22} color={Colors.light.textSecondary} />
-          </View>
-        )}
+        <View style={[styles.propertyThumb, styles.propertyThumbPlaceholder]}>
+          <MaterialCommunityIcons name="home-city-outline" size={22} color={d.hasImages ? Colors.light.primary : Colors.light.textSecondary} />
+          {d.hasImages && (
+            <View style={{ position: "absolute", bottom: 2, right: 2 }}>
+              <Ionicons name="images" size={10} color={Colors.light.accent} />
+            </View>
+          )}
+        </View>
         <View style={styles.cardInfo}>
           <Text style={styles.cardName} numberOfLines={1}>
             {d.ownerName || d.propertyType || "Property"}

@@ -64,15 +64,15 @@ export default function PropertyDetailScreen() {
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
 
-  const { data: allProperties = [], isLoading } = useQuery<PropertyRecord[]>({
-    queryKey: ["/api/property-details"],
+  const { data: property, isLoading } = useQuery<PropertyRecord>({
+    queryKey: ["/api/property-details", id],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/property-details");
+      const res = await apiRequest("GET", `/api/property-details/${id}`);
       return res.json();
     },
+    enabled: !!id,
   });
 
-  const property = allProperties.find((p) => String(p.id) === id);
   const d = property?.data || {} as PropertyData;
   const images = d.images || [];
   const title = d.ownerName || d.propertyType || "Property Details";
