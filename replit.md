@@ -4,6 +4,10 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, HumanFind (people & property search), history, and property detail submissions.
 
 ## Recent Changes
+- 2026-02-16: Added My Submissions page (app/my-submissions.tsx) - users can view, edit, and delete their own property and person submissions
+- 2026-02-16: Added submitted_by column to property_details table for user tracking
+- 2026-02-16: New API endpoints: GET /api/my-submissions, PUT /api/property-details/:id, PUT /api/migration-records/:id, DELETE /api/my-submissions/property/:id, DELETE /api/my-submissions/person/:id
+- 2026-02-16: My Submissions card added to Profile page (between Submit card and Quick Links)
 - 2026-02-15: Added blog writing permission request form - users can request writing access, admin approves/rejects from dashboard
 - 2026-02-15: blog_write_requests table, API endpoints for submit/approve/reject, admin Writers section
 - 2026-02-15: Approved writers + admins can both write blog posts
