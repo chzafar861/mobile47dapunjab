@@ -52,6 +52,8 @@ function AuthGate() {
       <Stack.Screen name="admin" options={{ headerShown: false }} />
       <Stack.Screen name="migration-detail" options={{ headerShown: false }} />
       <Stack.Screen name="blog" options={{ headerShown: false }} />
+      <Stack.Screen name="my-submissions" options={{ headerShown: false }} />
+      <Stack.Screen name="property-detail" options={{ headerShown: false }} />
     </Stack>
   );
 }
