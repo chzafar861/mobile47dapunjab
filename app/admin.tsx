@@ -49,7 +49,8 @@ export default function AdminScreen() {
   const [propertyDetails, setPropertyDetails] = useState<any[]>([]);
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [writeRequests, setWriteRequests] = useState<any[]>([]);
-  const [activeSection, setActiveSection] = useState<"overview" | "bookings" | "properties" | "users" | "writers">("overview");
+  const [orders, setOrders] = useState<any[]>([]);
+  const [activeSection, setActiveSection] = useState<"overview" | "bookings" | "properties" | "users" | "writers" | "orders">("overview");
 
   useEffect(() => {
     if (!isAdmin) {
@@ -76,6 +77,13 @@ export default function AdminScreen() {
     try {
       const wr = await adminFetch("/api/blog-write-requests");
       if (Array.isArray(wr)) setWriteRequests(wr);
+    } catch {}
+    try {
+      const o = await adminFetch("/api/admin/orders");
+      if (Array.isArray(o)) setOrders(o.map((ord: any) => ({
+        ...ord,
+        items: typeof ord.items === "string" ? JSON.parse(ord.items) : ord.items,
+      })));
     } catch {}
   };
 
@@ -193,7 +201,52 @@ export default function AdminScreen() {
     ]);
   };
 
-  const sections = ["overview", "bookings", "properties", "users", "writers"] as const;
+  const updateOrderStatus = async (orderId: number, newStatus: string, trackingNum?: string) => {
+    try {
+      const body: any = { status: newStatus };
+      if (trackingNum) body.tracking_number = trackingNum;
+      const result = await adminFetch(`/api/admin/orders/${orderId}/status`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
+      if (result.error) {
+        Alert.alert("Error", result.error);
+        return;
+      }
+      setOrders((prev) => prev.map((o) => o.id === orderId ? {
+        ...result,
+        items: typeof result.items === "string" ? JSON.parse(result.items) : result.items,
+      } : o));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert("Error", "Failed to update order status");
+    }
+  };
+
+  const showStatusPicker = (order: any) => {
+    const statuses = ["pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled"];
+    const labels: Record<string, string> = {
+      pending: "Pending",
+      confirmed: "Confirmed",
+      processing: "Processing",
+      shipped: "Shipped",
+      out_for_delivery: "Out for Delivery",
+      delivered: "Delivered",
+      cancelled: "Cancelled",
+    };
+    const buttons = statuses
+      .filter((s) => s !== order.status)
+      .map((s) => ({
+        text: labels[s],
+        onPress: () => {
+          updateOrderStatus(order.id, s);
+        },
+      }));
+    buttons.push({ text: "Cancel", onPress: () => {} });
+    Alert.alert("Update Status", `Current: ${labels[order.status]}\nOrder #${order.id}`, buttons);
+  };
+
+  const sections = ["overview", "bookings", "properties", "users", "writers", "orders"] as const;
 
   return (
     <View style={styles.container}>
@@ -234,8 +287,8 @@ export default function AdminScreen() {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statNum}>{writeRequests.filter(r => r.status === "pending").length}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <Text style={styles.statNum}>{orders.length}</Text>
+            <Text style={styles.statLabel}>Orders</Text>
           </View>
         </LinearGradient>
 
@@ -276,6 +329,14 @@ export default function AdminScreen() {
               <View style={styles.actionInfo}>
                 <Text style={styles.actionTitle}>User Management</Text>
                 <Text style={styles.actionDesc}>{users.length} registered users</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
+            </Pressable>
+            <Pressable onPress={() => setActiveSection("orders")} style={styles.actionCard}>
+              <MaterialCommunityIcons name="package-variant" size={28} color="#E65100" />
+              <View style={styles.actionInfo}>
+                <Text style={styles.actionTitle}>Shop Orders</Text>
+                <Text style={styles.actionDesc}>{orders.length} total orders</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
             </Pressable>
@@ -400,6 +461,67 @@ export default function AdminScreen() {
                   </Text>
                 </View>
               ))
+            )}
+          </View>
+        )}
+
+        {activeSection === "orders" && (
+          <View style={styles.content}>
+            {orders.length === 0 ? (
+              <View style={styles.emptyState}>
+                <MaterialCommunityIcons name="package-variant" size={48} color={Colors.light.tabIconDefault} />
+                <Text style={styles.emptyText}>No orders yet</Text>
+              </View>
+            ) : (
+              orders.map((o) => {
+                const statusColors: Record<string, string> = {
+                  pending: "#F59E0B",
+                  confirmed: "#3B82F6",
+                  processing: "#8B5CF6",
+                  shipped: "#06B6D4",
+                  out_for_delivery: "#10B981",
+                  delivered: Colors.light.success,
+                  cancelled: Colors.light.danger,
+                };
+                const sColor = statusColors[o.status] || Colors.light.primary;
+                const items = Array.isArray(o.items) ? o.items : [];
+                const itemCount = items.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0);
+                return (
+                  <View key={o.id} style={styles.itemCard}>
+                    <View style={styles.itemHeader}>
+                      <View style={[styles.itemBadge, { backgroundColor: sColor + "20" }]}>
+                        <Text style={[styles.itemBadgeText, { color: sColor }]}>
+                          {o.status.toUpperCase().replace("_", " ")}
+                        </Text>
+                      </View>
+                      <Pressable onPress={() => showStatusPicker(o)} style={styles.userActionBtn}>
+                        <MaterialCommunityIcons name="pencil-outline" size={18} color={Colors.light.primary} />
+                      </Pressable>
+                    </View>
+                    <Text style={styles.itemName}>Order #{o.id} - {o.customer_name}</Text>
+                    <Text style={styles.itemDetail}>
+                      {itemCount} item{itemCount !== 1 ? "s" : ""} - ${Number(o.total).toFixed(2)}
+                    </Text>
+                    <Text style={styles.itemDetail}>
+                      {items.map((item: any) => `${item.name} x${item.quantity || 1}`).join(", ")}
+                    </Text>
+                    <Text style={styles.itemDetail}>
+                      {o.customer_phone} | {o.customer_city}, {o.customer_country || "Pakistan"}
+                    </Text>
+                    <Text style={styles.itemDetail}>
+                      Payment: {o.payment_method === "cod" ? "Cash on Delivery" : "Card"}
+                    </Text>
+                    {o.tracking_number && (
+                      <Text style={[styles.itemDetail, { color: Colors.light.primary }]}>
+                        Tracking: {o.tracking_number}
+                      </Text>
+                    )}
+                    <Text style={styles.itemDate}>
+                      {new Date(o.created_at).toLocaleDateString()} at {new Date(o.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </Text>
+                  </View>
+                );
+              })
             )}
           </View>
         )}
