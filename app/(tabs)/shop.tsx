@@ -855,14 +855,23 @@ export default function ShopScreen() {
             </View>
             <Text style={styles.orderSuccessTitle}>Order Placed!</Text>
             <Text style={styles.orderSuccessDesc}>
-              Your order has been placed successfully. We'll contact you shortly to confirm delivery details.
+              Your order has been placed successfully. You can track your order status anytime.
             </Text>
-            <Text style={styles.orderSuccessNote}>Payment: Cash on Delivery</Text>
             <Pressable
-              onPress={() => setOrderPlaced(false)}
+              onPress={() => {
+                setOrderPlaced(false);
+                router.push("/my-orders");
+              }}
               style={({ pressed }) => [styles.orderSuccessBtn, { opacity: pressed ? 0.9 : 1 }]}
             >
-              <Text style={styles.orderSuccessBtnText}>Continue Shopping</Text>
+              <Ionicons name="location-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
+              <Text style={styles.orderSuccessBtnText}>Track My Order</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setOrderPlaced(false)}
+              style={({ pressed }) => [styles.continueShopBtn, { opacity: pressed ? 0.9 : 1 }]}
+            >
+              <Text style={styles.continueShopBtnText}>Continue Shopping</Text>
             </Pressable>
           </View>
         </View>
@@ -1562,15 +1571,32 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   orderSuccessBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: Colors.light.primary,
     paddingHorizontal: 28,
     paddingVertical: 14,
     borderRadius: 14,
     marginTop: 24,
+    width: "100%",
   },
   orderSuccessBtnText: {
     fontFamily: "Poppins_600SemiBold",
     fontSize: 15,
     color: "#fff",
+  },
+  continueShopBtn: {
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    borderRadius: 14,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  continueShopBtnText: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 14,
+    color: Colors.light.textSecondary,
   },
 });

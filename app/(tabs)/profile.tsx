@@ -444,11 +444,36 @@ export default function ProfileScreen() {
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push("/my-submissions");
+                router.push("/my-orders");
               }}
               style={({ pressed }) => [
                 styles.mySubmissionsCard,
                 { transform: [{ scale: pressed ? 0.97 : 1 }] },
+              ]}
+              testID="my-orders-btn"
+            >
+              <View style={styles.mySubmissionsInner}>
+                <View style={[styles.mySubmissionsIconWrap, { backgroundColor: Colors.light.primary + "12" }]}>
+                  <MaterialCommunityIcons name="package-variant" size={24} color={Colors.light.primary} />
+                </View>
+                <View style={styles.mySubmissionsContent}>
+                  <Text style={styles.mySubmissionsTitle}>My Orders</Text>
+                  <Text style={styles.mySubmissionsDesc}>
+                    View your orders and track delivery status
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
+              </View>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push("/my-submissions");
+              }}
+              style={({ pressed }) => [
+                styles.mySubmissionsCard,
+                { transform: [{ scale: pressed ? 0.97 : 1 }], marginTop: 10 },
               ]}
               testID="my-submissions-btn"
             >
