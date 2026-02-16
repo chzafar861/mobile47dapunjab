@@ -688,6 +688,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/orders/:id", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      const result = await pool.query(
+        `SELECT * FROM orders WHERE id = $1 AND user_id = $2`,
+        [req.params.id, userId]
+      );
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/admin/orders/:id/status", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userCheck = await pool.query(`SELECT role FROM auth_users WHERE id = $1`, [userId]);
+      if (!userCheck.rows.length || userCheck.rows[0].role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const { status, tracking_number } = req.body;
+      const validStatuses = ["pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+      const updates: string[] = [`status = $1`, `status_updated_at = NOW()`];
+      const values: any[] = [status];
+      let paramIndex = 2;
+      if (tracking_number !== undefined) {
+        updates.push(`tracking_number = $${paramIndex}`);
+        values.push(tracking_number);
+        paramIndex++;
+      }
+      values.push(req.params.id);
+      const result = await pool.query(
+        `UPDATE orders SET ${updates.join(", ")} WHERE id = $${paramIndex} RETURNING *`,
+        values
+      );
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/admin/orders", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userCheck = await pool.query(`SELECT role FROM auth_users WHERE id = $1`, [userId]);
+      if (!userCheck.rows.length || userCheck.rows[0].role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const result = await pool.query(`SELECT * FROM orders ORDER BY created_at DESC`);
+      res.json(result.rows);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.post("/api/clear-all", async (_req: Request, res: Response) => {
     try {
       await setDocument("users", "defaultUser", { name: "", phone: "", email: "", city: "", country: "", purpose: "" });
