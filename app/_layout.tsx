@@ -53,6 +53,7 @@ function AuthGate() {
       <Stack.Screen name="migration-detail" options={{ headerShown: false }} />
       <Stack.Screen name="blog" options={{ headerShown: false }} />
       <Stack.Screen name="my-submissions" options={{ headerShown: false }} />
+      <Stack.Screen name="my-orders" options={{ headerShown: false }} />
       <Stack.Screen name="property-detail" options={{ headerShown: false }} />
     </Stack>
   );
@@ -74,14 +75,24 @@ export default function RootLayout() {
     Poppins_600SemiBold,
     Poppins_700Bold,
   });
+  const [fontTimeout, setFontTimeout] = useState(false);
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
+    const timer = setTimeout(() => {
+      if (!fontsLoaded && !fontError) {
+        setFontTimeout(true);
+      }
+    }, 8000);
+    return () => clearTimeout(timer);
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) return null;
+  useEffect(() => {
+    if (fontsLoaded || fontError || fontTimeout) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError, fontTimeout]);
+
+  if (!fontsLoaded && !fontError && !fontTimeout) return null;
 
   return (
     <ErrorBoundary>
