@@ -8,6 +8,7 @@ async function apiCall(method: string, path: string, data?: any) {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
+    credentials: "include" as any,
   });
   if (!res.ok) {
     const text = await res.text();
