@@ -491,13 +491,26 @@ export default function ShopScreen() {
                 </View>
               </ScrollView>
               <View style={[styles.detailFooter, { paddingBottom: insets.bottom + 10 }]}>
-                <Pressable
-                  onPress={() => { addToCart(showProduct); setShowProduct(null); }}
-                  style={({ pressed }) => [styles.addToCartBtn, { opacity: pressed ? 0.9 : 1 }]}
-                >
-                  <Ionicons name="bag-add" size={20} color="#fff" />
-                  <Text style={styles.addToCartBtnText}>Add to Cart - ${showProduct.price}</Text>
-                </Pressable>
+                <View style={styles.detailBtnRow}>
+                  <Pressable
+                    onPress={() => { addToCart(showProduct); setShowProduct(null); }}
+                    style={({ pressed }) => [styles.addToCartBtn, styles.addToCartHalf, { opacity: pressed ? 0.9 : 1 }]}
+                  >
+                    <Ionicons name="bag-add" size={20} color="#fff" />
+                    <Text style={styles.addToCartBtnText}>Add to Cart</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      addToCart(showProduct);
+                      setShowProduct(null);
+                      setShowCheckout(true);
+                    }}
+                    style={({ pressed }) => [styles.buyNowBtn, { opacity: pressed ? 0.9 : 1 }]}
+                  >
+                    <Ionicons name="flash" size={20} color="#fff" />
+                    <Text style={styles.addToCartBtnText}>Buy Now</Text>
+                  </Pressable>
+                </View>
               </View>
             </View>
           </View>
@@ -989,6 +1002,10 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.light.border,
     backgroundColor: Colors.light.background,
   },
+  detailBtnRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
   addToCartBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -998,9 +1015,22 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
   },
+  addToCartHalf: {
+    flex: 1,
+  },
+  buyNowBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: Colors.light.accent,
+    borderRadius: 14,
+    padding: 16,
+  },
   addToCartBtnText: {
     fontFamily: "Poppins_600SemiBold",
-    fontSize: 16,
+    fontSize: 15,
     color: "#fff",
   },
   cartModal: {
