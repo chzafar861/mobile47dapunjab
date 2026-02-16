@@ -525,13 +525,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders", async (req: Request, res: Response) => {
     try {
       const userId = (req.session as any)?.userId || null;
-      const { items, total, customer_name, customer_phone, customer_address, customer_city } = req.body;
+      const { items, total, customer_name, customer_phone, customer_address, customer_city, customer_country, payment_method } = req.body;
       if (!items || !total || !customer_name || !customer_phone || !customer_address || !customer_city) {
         return res.status(400).json({ error: "All delivery details are required" });
       }
       const result = await pool.query(
-        `INSERT INTO orders (user_id, items, total, customer_name, customer_phone, customer_address, customer_city) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [userId, JSON.stringify(items), total, customer_name, customer_phone, customer_address, customer_city]
+        `INSERT INTO orders (user_id, items, total, customer_name, customer_phone, customer_address, customer_city, customer_country, payment_method) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        [userId, JSON.stringify(items), total, customer_name, customer_phone, customer_address, customer_city, customer_country || "Pakistan", payment_method || "cod"]
       );
       res.json(result.rows[0]);
     } catch (e: any) {

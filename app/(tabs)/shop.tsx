@@ -262,11 +262,14 @@ export default function ShopScreen() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [placing, setPlacing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "card">("cod");
+  const [cardForm, setCardForm] = useState({ number: "", expiry: "", cvv: "", holder: "" });
   const [checkoutForm, setCheckoutForm] = useState({
     name: user?.name || "",
     phone: user?.phone || "",
     address: "",
     city: user?.city || "",
+    country: "Pakistan",
   });
 
   useEffect(() => {
@@ -313,10 +316,40 @@ export default function ShopScreen() {
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  const formatCardNumber = (text: string) => {
+    const cleaned = text.replace(/\D/g, "").slice(0, 16);
+    return cleaned.replace(/(.{4})/g, "$1 ").trim();
+  };
+
+  const formatExpiry = (text: string) => {
+    const cleaned = text.replace(/\D/g, "").slice(0, 4);
+    if (cleaned.length > 2) return cleaned.slice(0, 2) + "/" + cleaned.slice(2);
+    return cleaned;
+  };
+
   const placeOrder = async () => {
     if (!checkoutForm.name.trim() || !checkoutForm.phone.trim() || !checkoutForm.address.trim() || !checkoutForm.city.trim()) {
       Alert.alert("Required", "Please fill in all delivery details.");
       return;
+    }
+    if (paymentMethod === "card") {
+      const num = cardForm.number.replace(/\s/g, "");
+      if (num.length < 13 || num.length > 19) {
+        Alert.alert("Invalid Card", "Please enter a valid card number.");
+        return;
+      }
+      if (cardForm.expiry.length < 5) {
+        Alert.alert("Invalid Expiry", "Please enter a valid expiry date (MM/YY).");
+        return;
+      }
+      if (cardForm.cvv.length < 3) {
+        Alert.alert("Invalid CVV", "Please enter a valid CVV.");
+        return;
+      }
+      if (!cardForm.holder.trim()) {
+        Alert.alert("Required", "Please enter the cardholder name.");
+        return;
+      }
     }
     setPlacing(true);
     try {
@@ -329,6 +362,8 @@ export default function ShopScreen() {
           customer_phone: checkoutForm.phone.trim(),
           customer_address: checkoutForm.address.trim(),
           customer_city: checkoutForm.city.trim(),
+          customer_country: checkoutForm.country.trim(),
+          payment_method: paymentMethod,
         }),
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -661,15 +696,132 @@ export default function ShopScreen() {
               </View>
 
               <View style={styles.checkoutSection}>
-                <Text style={styles.checkoutSectionTitle}>Payment</Text>
-                <View style={styles.codBadge}>
-                  <MaterialCommunityIcons name="cash" size={24} color={Colors.light.success} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.codTitle}>Cash on Delivery</Text>
-                    <Text style={styles.codDesc}>Pay when you receive your order</Text>
-                  </View>
-                  <Ionicons name="checkmark-circle" size={24} color={Colors.light.success} />
+                <Text style={styles.checkoutSectionTitle}>Country</Text>
+                <View style={styles.countryRow}>
+                  <Pressable
+                    onPress={() => {
+                      setCheckoutForm({ ...checkoutForm, country: "Pakistan" });
+                      setPaymentMethod("cod");
+                    }}
+                    style={[styles.countryChip, checkoutForm.country === "Pakistan" && styles.countryChipActive]}
+                  >
+                    <Text style={styles.countryFlag}>PK</Text>
+                    <Text style={[styles.countryChipText, checkoutForm.country === "Pakistan" && styles.countryChipTextActive]}>Pakistan</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      setCheckoutForm({ ...checkoutForm, country: "International" });
+                      setPaymentMethod("card");
+                    }}
+                    style={[styles.countryChip, checkoutForm.country === "International" && styles.countryChipActive]}
+                  >
+                    <Ionicons name="globe-outline" size={16} color={checkoutForm.country === "International" ? "#fff" : Colors.light.textSecondary} />
+                    <Text style={[styles.countryChipText, checkoutForm.country === "International" && styles.countryChipTextActive]}>International</Text>
+                  </Pressable>
                 </View>
+              </View>
+
+              <View style={styles.checkoutSection}>
+                <Text style={styles.checkoutSectionTitle}>Payment Method</Text>
+                {checkoutForm.country === "Pakistan" ? (
+                  <>
+                    <Pressable
+                      onPress={() => setPaymentMethod("cod")}
+                      style={[styles.paymentOption, paymentMethod === "cod" && styles.paymentOptionActive]}
+                    >
+                      <MaterialCommunityIcons name="cash" size={24} color={paymentMethod === "cod" ? Colors.light.success : Colors.light.textSecondary} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.codTitle}>Cash on Delivery</Text>
+                        <Text style={styles.codDesc}>Pay when you receive your order</Text>
+                      </View>
+                      <View style={[styles.radioOuter, paymentMethod === "cod" && styles.radioOuterActive]}>
+                        {paymentMethod === "cod" && <View style={styles.radioInner} />}
+                      </View>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setPaymentMethod("card")}
+                      style={[styles.paymentOption, { marginTop: 10 }, paymentMethod === "card" && styles.paymentOptionActive]}
+                    >
+                      <Ionicons name="card" size={24} color={paymentMethod === "card" ? "#1976D2" : Colors.light.textSecondary} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.codTitle}>ATM / Debit Card</Text>
+                        <Text style={styles.codDesc}>Pay with your bank card</Text>
+                      </View>
+                      <View style={[styles.radioOuter, paymentMethod === "card" && styles.radioOuterActive]}>
+                        {paymentMethod === "card" && <View style={styles.radioInner} />}
+                      </View>
+                    </Pressable>
+                  </>
+                ) : (
+                  <View style={[styles.paymentOption, styles.paymentOptionActive]}>
+                    <Ionicons name="card" size={24} color="#1976D2" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.codTitle}>Credit / Debit Card</Text>
+                      <Text style={styles.codDesc}>International card payment</Text>
+                    </View>
+                    <Ionicons name="checkmark-circle" size={24} color={Colors.light.success} />
+                  </View>
+                )}
+
+                {paymentMethod === "card" && (
+                  <View style={styles.cardFormWrapper}>
+                    <View style={styles.cardIconsRow}>
+                      <Ionicons name="card" size={20} color="#1A73E8" />
+                      <MaterialCommunityIcons name="credit-card-outline" size={20} color="#EB001B" />
+                      <MaterialCommunityIcons name="credit-card" size={20} color="#F79E1B" />
+                    </View>
+                    <Text style={styles.checkoutFieldLabel}>Card Number *</Text>
+                    <TextInput
+                      style={styles.checkoutInput}
+                      value={cardForm.number}
+                      onChangeText={(t) => setCardForm({ ...cardForm, number: formatCardNumber(t) })}
+                      placeholder="1234 5678 9012 3456"
+                      placeholderTextColor={Colors.light.tabIconDefault}
+                      keyboardType="number-pad"
+                      maxLength={19}
+                    />
+                    <Text style={styles.checkoutFieldLabel}>Cardholder Name *</Text>
+                    <TextInput
+                      style={styles.checkoutInput}
+                      value={cardForm.holder}
+                      onChangeText={(t) => setCardForm({ ...cardForm, holder: t })}
+                      placeholder="Name on card"
+                      placeholderTextColor={Colors.light.tabIconDefault}
+                      autoCapitalize="characters"
+                    />
+                    <View style={styles.cardRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.checkoutFieldLabel}>Expiry *</Text>
+                        <TextInput
+                          style={styles.checkoutInput}
+                          value={cardForm.expiry}
+                          onChangeText={(t) => setCardForm({ ...cardForm, expiry: formatExpiry(t) })}
+                          placeholder="MM/YY"
+                          placeholderTextColor={Colors.light.tabIconDefault}
+                          keyboardType="number-pad"
+                          maxLength={5}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.checkoutFieldLabel}>CVV *</Text>
+                        <TextInput
+                          style={styles.checkoutInput}
+                          value={cardForm.cvv}
+                          onChangeText={(t) => setCardForm({ ...cardForm, cvv: t.replace(/\D/g, "").slice(0, 4) })}
+                          placeholder="123"
+                          placeholderTextColor={Colors.light.tabIconDefault}
+                          keyboardType="number-pad"
+                          maxLength={4}
+                          secureTextEntry
+                        />
+                      </View>
+                    </View>
+                    <View style={styles.secureNotice}>
+                      <Ionicons name="lock-closed" size={14} color={Colors.light.success} />
+                      <Text style={styles.secureNoticeText}>Your card details are secure and encrypted</Text>
+                    </View>
+                  </View>
+                )}
               </View>
             </ScrollView>
             <View style={[styles.cartFooter, { paddingBottom: insets.bottom + 10 }]}>
@@ -1245,15 +1397,99 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.light.border,
   },
-  codBadge: {
+  countryRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  countryChip: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: Colors.light.background,
+    borderWidth: 1.5,
+    borderColor: Colors.light.border,
+  },
+  countryChipActive: {
+    backgroundColor: Colors.light.primary,
+    borderColor: Colors.light.primary,
+  },
+  countryFlag: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+  },
+  countryChipText: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+  },
+  countryChipTextActive: {
+    color: "#fff",
+  },
+  paymentOption: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: Colors.light.success + "12",
+    backgroundColor: Colors.light.background,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.light.border,
+  },
+  paymentOptionActive: {
+    borderColor: Colors.light.primary + "60",
+    backgroundColor: Colors.light.primary + "08",
+  },
+  radioOuter: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: Colors.light.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioOuterActive: {
+    borderColor: Colors.light.primary,
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: Colors.light.primary,
+  },
+  cardFormWrapper: {
+    marginTop: 14,
+    backgroundColor: Colors.light.background,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: Colors.light.success + "30",
+    borderColor: Colors.light.border,
+  },
+  cardIconsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 4,
+  },
+  cardRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  secureNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 12,
+    justifyContent: "center",
+  },
+  secureNoticeText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 11,
+    color: Colors.light.success,
   },
   codTitle: {
     fontFamily: "Poppins_600SemiBold",
