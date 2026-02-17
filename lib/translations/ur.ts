@@ -186,6 +186,8 @@ export const ur = {
     privacyPolicy: "رازداری کی پالیسی",
     termsOfService: "سروس کی شرائط",
     language: "زبان",
+    currency: "کرنسی",
+    selectCurrency: "اپنی کرنسی منتخب کریں",
     signOut: "سائن آؤٹ",
     signOutConfirm: "کیا آپ واقعی سائن آؤٹ کرنا چاہتے ہیں؟",
     enterName: "اپنا پورا نام درج کریں",

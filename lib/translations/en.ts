@@ -186,6 +186,8 @@ export const en = {
     privacyPolicy: "Privacy Policy",
     termsOfService: "Terms of Service",
     language: "Language",
+    currency: "Currency",
+    selectCurrency: "Select your currency",
     signOut: "Sign Out",
     signOutConfirm: "Are you sure you want to sign out?",
     enterName: "Enter your full name",

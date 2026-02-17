@@ -186,6 +186,8 @@ export const hi = {
     privacyPolicy: "गोपनीयता नीति",
     termsOfService: "सेवा की शर्तें",
     language: "भाषा",
+    currency: "मुद्रा",
+    selectCurrency: "अपनी मुद्रा चुनें",
     signOut: "साइन आउट",
     signOutConfirm: "क्या आप वाकई साइन आउट करना चाहते हैं?",
     enterName: "अपना पूरा नाम दर्ज करें",

@@ -186,6 +186,8 @@ export const pa = {
     privacyPolicy: "ਪਰਦੇਦਾਰੀ ਨੀਤੀ",
     termsOfService: "ਸੇਵਾ ਦੀਆਂ ਸ਼ਰਤਾਂ",
     language: "ਭਾਸ਼ਾ",
+    currency: "ਮੁਦਰਾ",
+    selectCurrency: "ਆਪਣੀ ਮੁਦਰਾ ਚੁਣੋ",
     signOut: "ਸਾਈਨ ਆਊਟ",
     signOutConfirm: "ਕੀ ਤੁਸੀਂ ਸੱਚਮੁੱਚ ਸਾਈਨ ਆਊਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ?",
     enterName: "ਆਪਣਾ ਪੂਰਾ ਨਾਂ ਦਰਜ ਕਰੋ",
