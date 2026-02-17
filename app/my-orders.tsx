@@ -153,7 +153,7 @@ export default function MyOrdersScreen() {
         colors={[Colors.light.primaryDark, Colors.light.primary]}
         style={[styles.header, { paddingTop: (insets.top || webTopInset) + 8 }]}
       >
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => { if (router.canGoBack()) { router.back(); } else { router.replace("/(tabs)/profile"); } }} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>My Orders</Text>
