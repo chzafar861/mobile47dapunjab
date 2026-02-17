@@ -6,6 +6,8 @@ import crypto from "crypto";
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const router = Router();
 
+const ADMIN_EMAILS = ["47dapunjab@gmail.com"];
+
 function getBaseUrl(req: Request): string {
   const forwardedProto = req.header("x-forwarded-proto") || req.protocol || "https";
   const forwardedHost = req.header("x-forwarded-host") || req.get("host");
@@ -77,10 +79,11 @@ router.post("/api/auth/register", async (req: Request, res: Response) => {
       return res.status(409).json({ error: "An account with this email already exists. Please sign in instead." });
     }
     const passwordHash = await bcrypt.hash(password, 10);
+    const assignedRole = ADMIN_EMAILS.includes(email.toLowerCase()) ? "admin" : "user";
     const result = await pool.query(
       `INSERT INTO auth_users (email, password_hash, name, phone, role, provider) 
-       VALUES ($1, $2, $3, $4, 'user', 'email') RETURNING id, email, name, phone, role, avatar_url, provider, created_at`,
-      [email.toLowerCase(), passwordHash, name, phone || ""]
+       VALUES ($1, $2, $3, $4, $5, 'email') RETURNING id, email, name, phone, role, avatar_url, provider, created_at`,
+      [email.toLowerCase(), passwordHash, name, phone || "", assignedRole]
     );
     const user = result.rows[0];
     (req.session as any).userId = user.id;
@@ -151,10 +154,11 @@ router.post("/api/auth/smart-login", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "No account found. Please provide your name to create one.", needsSignup: true });
     }
     const passwordHash = await bcrypt.hash(password, 10);
+    const loginRole = ADMIN_EMAILS.includes(email.toLowerCase()) ? "admin" : "user";
     const result = await pool.query(
       `INSERT INTO auth_users (email, password_hash, name, phone, role, provider) 
-       VALUES ($1, $2, $3, $4, 'user', 'email') RETURNING id, email, name, phone, role, avatar_url, provider, created_at`,
-      [email.toLowerCase(), passwordHash, name, phone || ""]
+       VALUES ($1, $2, $3, $4, $5, 'email') RETURNING id, email, name, phone, role, avatar_url, provider, created_at`,
+      [email.toLowerCase(), passwordHash, name, phone || "", loginRole]
     );
     const newUser = result.rows[0];
     (req.session as any).userId = newUser.id;
@@ -185,10 +189,11 @@ router.post("/api/auth/social", async (req: Request, res: Response) => {
       user.provider = provider;
       user.avatar_url = avatarUrl || user.avatar_url;
     } else {
+      const assignedRole = ADMIN_EMAILS.includes(email.toLowerCase()) ? "admin" : "user";
       const result = await pool.query(
         `INSERT INTO auth_users (email, name, provider, provider_id, avatar_url, role)
-         VALUES ($1, $2, $3, $4, $5, 'user') RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
-        [email.toLowerCase(), name || "", provider, providerId || null, avatarUrl || null]
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
+        [email.toLowerCase(), name || "", provider, providerId || null, avatarUrl || null, assignedRole]
       );
       user = result.rows[0];
     }
@@ -277,10 +282,11 @@ router.get("/api/auth/google/callback", async (req: Request, res: Response) => {
       );
       user.avatar_url = googleUser.picture || user.avatar_url;
     } else {
+      const gRole = ADMIN_EMAILS.includes(googleUser.email.toLowerCase()) ? "admin" : "user";
       const result = await pool.query(
         `INSERT INTO auth_users (email, name, provider, provider_id, avatar_url, role)
-         VALUES ($1, $2, 'google', $3, $4, 'user') RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
-        [googleUser.email.toLowerCase(), googleUser.name || "", googleUser.id, googleUser.picture || null]
+         VALUES ($1, $2, 'google', $3, $4, $5) RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
+        [googleUser.email.toLowerCase(), googleUser.name || "", googleUser.id, googleUser.picture || null, gRole]
       );
       user = result.rows[0];
     }
@@ -361,10 +367,11 @@ router.get("/api/auth/facebook/callback", async (req: Request, res: Response) =>
       );
       user.avatar_url = avatarUrl || user.avatar_url;
     } else {
+      const fbRole = ADMIN_EMAILS.includes(fbUser.email.toLowerCase()) ? "admin" : "user";
       const result = await pool.query(
         `INSERT INTO auth_users (email, name, provider, provider_id, avatar_url, role)
-         VALUES ($1, $2, 'facebook', $3, $4, 'user') RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
-        [fbUser.email.toLowerCase(), fbUser.name || "", fbUser.id, avatarUrl]
+         VALUES ($1, $2, 'facebook', $3, $4, $5) RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
+        [fbUser.email.toLowerCase(), fbUser.name || "", fbUser.id, avatarUrl, fbRole]
       );
       user = result.rows[0];
     }
