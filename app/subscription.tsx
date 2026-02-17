@@ -47,11 +47,6 @@ export default function SubscriptionScreen() {
       setReason("");
       setShowErrors(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      if (Platform.OS === "web") {
-        window.alert("Your request has been submitted! Admin will review it shortly.");
-      } else {
-        Alert.alert("Request Submitted", "Your access request has been sent to the admin for review.");
-      }
     },
     onError: (err: any) => {
       if (Platform.OS === "web") {
