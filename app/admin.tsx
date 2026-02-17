@@ -90,82 +90,92 @@ export default function AdminScreen() {
   };
 
   const deleteBooking = async (id: string) => {
-    Alert.alert(t.admin.deleteBooking, "Are you sure?", [
-      { text: t.common.cancel, style: "cancel" },
-      {
-        text: t.common.delete,
-        style: "destructive",
-        onPress: async () => {
-          try { await firebaseApi.deleteBooking(id); } catch {}
-          setBookings((prev) => prev.filter((b) => b.docId !== id));
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        },
-      },
-    ]);
+    const doDelete = async () => {
+      try { await firebaseApi.deleteBooking(id); } catch {}
+      setBookings((prev) => prev.filter((b) => (b.docId || b.id) !== id));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm("Are you sure you want to delete this booking?")) {
+        await doDelete();
+      }
+    } else {
+      Alert.alert(t.admin.deleteBooking, "Are you sure?", [
+        { text: t.common.cancel, style: "cancel" },
+        { text: t.common.delete, style: "destructive", onPress: doDelete },
+      ]);
+    }
   };
 
   const deleteProperty = async (id: string) => {
-    Alert.alert(t.admin.deleteProperty, "Are you sure?", [
-      { text: t.common.cancel, style: "cancel" },
-      {
-        text: t.common.delete,
-        style: "destructive",
-        onPress: async () => {
-          try { await firebaseApi.deletePropertyDetail(id); } catch {}
-          setPropertyDetails((prev) => prev.filter((p) => p.docId !== id));
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        },
-      },
-    ]);
+    const doDelete = async () => {
+      try { await firebaseApi.deletePropertyDetail(id); } catch {}
+      setPropertyDetails((prev) => prev.filter((p) => (p.docId || p.id) !== id));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm("Are you sure you want to delete this property?")) {
+        await doDelete();
+      }
+    } else {
+      Alert.alert(t.admin.deleteProperty, "Are you sure?", [
+        { text: t.common.cancel, style: "cancel" },
+        { text: t.common.delete, style: "destructive", onPress: doDelete },
+      ]);
+    }
   };
 
   const toggleUserRole = async (targetUser: AuthUser) => {
     const newRole = targetUser.role === "admin" ? "user" : "admin";
-    Alert.alert(
-      t.admin.changeRole,
-      `Make ${targetUser.name || targetUser.email} a${newRole === "admin" ? "n admin" : " regular user"}?`,
-      [
+    const msg = `Make ${targetUser.name || targetUser.email} a${newRole === "admin" ? "n admin" : " regular user"}?`;
+    const doToggle = async () => {
+      try {
+        await adminFetch(`/api/auth/users/${targetUser.id}/role`, {
+          method: "PUT",
+          body: JSON.stringify({ role: newRole }),
+        });
+        setUsers((prev) => prev.map((u) => u.id === targetUser.id ? { ...u, role: newRole } : u));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch {
+        if (Platform.OS === "web") window.alert("Failed to update role");
+        else Alert.alert(t.common.error, "Failed to update role");
+      }
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm(msg)) await doToggle();
+    } else {
+      Alert.alert(t.admin.changeRole, msg, [
         { text: t.common.cancel, style: "cancel" },
-        {
-          text: t.common.confirm,
-          onPress: async () => {
-            try {
-              await adminFetch(`/api/auth/users/${targetUser.id}/role`, {
-                method: "PUT",
-                body: JSON.stringify({ role: newRole }),
-              });
-              setUsers((prev) => prev.map((u) => u.id === targetUser.id ? { ...u, role: newRole } : u));
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            } catch {
-              Alert.alert(t.common.error, "Failed to update role");
-            }
-          },
-        },
-      ]
-    );
+        { text: t.common.confirm, onPress: doToggle },
+      ]);
+    }
   };
 
   const deleteUser = async (targetUser: AuthUser) => {
     if (targetUser.id === currentUser?.id) {
-      Alert.alert(t.common.error, "You cannot delete your own account.");
+      if (Platform.OS === "web") window.alert("You cannot delete your own account.");
+      else Alert.alert(t.common.error, "You cannot delete your own account.");
       return;
     }
-    Alert.alert(t.admin.deleteUser, `Delete ${targetUser.name || targetUser.email}? This cannot be undone.`, [
-      { text: t.common.cancel, style: "cancel" },
-      {
-        text: t.common.delete,
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await adminFetch(`/api/auth/users/${targetUser.id}`, { method: "DELETE" });
-            setUsers((prev) => prev.filter((u) => u.id !== targetUser.id));
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          } catch {
-            Alert.alert(t.common.error, "Failed to delete user");
-          }
-        },
-      },
-    ]);
+    const msg = `Delete ${targetUser.name || targetUser.email}? This cannot be undone.`;
+    const doDelete = async () => {
+      try {
+        await adminFetch(`/api/auth/users/${targetUser.id}`, { method: "DELETE" });
+        setUsers((prev) => prev.filter((u) => u.id !== targetUser.id));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      } catch {
+        if (Platform.OS === "web") window.alert("Failed to delete user");
+        else Alert.alert(t.common.error, "Failed to delete user");
+      }
+    };
+    if (Platform.OS === "web") {
+      if (window.confirm(msg)) await doDelete();
+    } else {
+      Alert.alert(t.admin.deleteUser, msg, [
+        { text: t.common.cancel, style: "cancel" },
+        { text: t.common.delete, style: "destructive", onPress: doDelete },
+      ]);
+    }
   };
 
   const approveWriteRequest = async (reqId: number) => {
