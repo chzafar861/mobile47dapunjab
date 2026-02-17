@@ -4,6 +4,13 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, HumanFind (people & property search), history, and property detail submissions.
 
 ## Recent Changes
+- 2026-02-17: Real-time dynamic content translation using google-translate-api-x backend endpoint (POST /api/translate)
+- 2026-02-17: useTranslate hook (lib/useTranslate.ts) with global cache for translating user-entered content
+- 2026-02-17: Shop products fully translated (names, descriptions, details) via static translation keys in all 4 languages
+- 2026-02-17: HumanFind PersonCard/PropertyCard dynamically translate names, locations, descriptions
+- 2026-02-17: Migration detail page translates person info, notes, and comments in real-time
+- 2026-02-17: My Orders page shows translated product names using static product translation map
+- 2026-02-17: My Submissions page uses TranslatedText component for dynamic content
 - 2026-02-17: Full multilingual i18n support - 4 languages: English, Urdu (RTL), Hindi, Punjabi
 - 2026-02-17: I18nProvider (lib/i18n.tsx) with AsyncStorage persistence, useI18n hook, LANGUAGES array
 - 2026-02-17: Translation files: lib/translations/en.ts, ur.ts, hi.ts, pa.ts (15+ sections each)
