@@ -22,7 +22,7 @@ import { useI18n } from "@/lib/i18n";
 import { useCurrency } from "@/lib/currency";
 import { getApiUrl, apiRequest, queryClient } from "@/lib/query-client";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import Colors from "@/constants/colors";
@@ -261,6 +261,13 @@ export default function ShopScreen() {
   const { user, isAdmin } = useAuth();
   const { t } = useI18n();
   const { formatPrice } = useCurrency();
+  const params = useLocalSearchParams<{ addProduct?: string }>();
+
+  useEffect(() => {
+    if (params.addProduct === "true" && isAdmin) {
+      setShowAddProduct(true);
+    }
+  }, [params.addProduct, isAdmin]);
 
   const categoryLabels: Record<string, string> = {
     "All": t.shop.all,
@@ -1022,18 +1029,6 @@ export default function ShopScreen() {
           </View>
         </View>
       </Modal>
-
-      <Pressable
-        onPress={handleFabPress}
-        style={({ pressed }) => [styles.fab, { opacity: pressed ? 0.9 : 1 }]}
-      >
-        <LinearGradient
-          colors={[Colors.light.accent, "#C4972E"]}
-          style={styles.fabGradient}
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </LinearGradient>
-      </Pressable>
 
       <Modal visible={showAddProduct} animationType="slide" transparent>
         <View style={styles.modalOverlay}>

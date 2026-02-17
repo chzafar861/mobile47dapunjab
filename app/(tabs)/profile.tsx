@@ -414,6 +414,82 @@ export default function ProfileScreen() {
 
         {!isEditing && (
           <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t.profile.contentManagement || "Content Management"}</Text>
+
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                if (isAdmin) {
+                  router.push({ pathname: "/(tabs)/shop", params: { addProduct: "true" } });
+                } else {
+                  router.push("/subscription");
+                }
+              }}
+              style={({ pressed }) => [
+                styles.contentCard,
+                { transform: [{ scale: pressed ? 0.97 : 1 }] },
+              ]}
+            >
+              <LinearGradient
+                colors={[Colors.light.primary, "#2D6A4F"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.contentCardGradient}
+              >
+                <View style={styles.contentCardIconWrap}>
+                  <Ionicons name="bag-add" size={24} color={Colors.light.primary} />
+                </View>
+                <View style={styles.contentCardContent}>
+                  <Text style={styles.contentCardTitle}>{t.profile.addProduct || "Add Product"}</Text>
+                  <Text style={styles.contentCardDesc}>
+                    {isAdmin
+                      ? (t.profile.addProductAdminDesc || "Publish a new product to the shop")
+                      : (t.profile.addProductDesc || "Subscribe to list your products")}
+                  </Text>
+                </View>
+                <Ionicons name="arrow-forward-circle" size={22} color="rgba(255,255,255,0.85)" />
+              </LinearGradient>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                if (isAdmin) {
+                  router.push({ pathname: "/blog", params: { writePost: "true" } });
+                } else {
+                  router.push("/subscription");
+                }
+              }}
+              style={({ pressed }) => [
+                styles.contentCard,
+                { transform: [{ scale: pressed ? 0.97 : 1 }], marginTop: 10 },
+              ]}
+            >
+              <LinearGradient
+                colors={[Colors.light.accent, "#C4972E"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.contentCardGradient}
+              >
+                <View style={[styles.contentCardIconWrap, { backgroundColor: "rgba(212,175,55,0.15)" }]}>
+                  <Feather name="edit-3" size={22} color={Colors.light.accent} />
+                </View>
+                <View style={styles.contentCardContent}>
+                  <Text style={styles.contentCardTitle}>{t.profile.writeBlog || "Write Blog Post"}</Text>
+                  <Text style={styles.contentCardDesc}>
+                    {isAdmin
+                      ? (t.profile.writeBlogAdminDesc || "Create a new blog article")
+                      : (t.profile.writeBlogDesc || "Subscribe to publish your stories")}
+                  </Text>
+                </View>
+                <Ionicons name="arrow-forward-circle" size={22} color="rgba(255,255,255,0.85)" />
+              </LinearGradient>
+            </Pressable>
+          </View>
+        )}
+
+        {!isEditing && (
+          <View style={styles.section}>
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -1051,5 +1127,42 @@ const styles = StyleSheet.create({
   },
   currencyNameActive: {
     color: Colors.light.primary,
+  },
+  contentCard: {
+    borderRadius: 16,
+    overflow: "hidden" as const,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  contentCardGradient: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    padding: 16,
+    gap: 12,
+  },
+  contentCardIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  contentCardContent: {
+    flex: 1,
+  },
+  contentCardTitle: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 15,
+    color: "#fff",
+  },
+  contentCardDesc: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.8)",
+    marginTop: 2,
   },
 });

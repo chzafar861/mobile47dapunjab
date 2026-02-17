@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -17,7 +17,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
@@ -328,6 +328,13 @@ export default function BlogScreen() {
   const { isAdmin, user } = useAuth();
   const [activeCategory, setActiveCategory] = useState("All");
   const [showWriteModal, setShowWriteModal] = useState(false);
+  const blogParams = useLocalSearchParams<{ writePost?: string }>();
+
+  useEffect(() => {
+    if (blogParams.writePost === "true" && isAdmin) {
+      setShowWriteModal(true);
+    }
+  }, [blogParams.writePost, isAdmin]);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -500,26 +507,6 @@ export default function BlogScreen() {
           </View>
         )}
       </ScrollView>
-
-      {user && (
-        <Pressable
-          onPress={handleFabPress}
-          style={({ pressed }) => [
-            styles.fab,
-            {
-              transform: [{ scale: pressed ? 0.9 : 1 }],
-              bottom: insets.bottom + webBottomInset + 20,
-            },
-          ]}
-        >
-          <LinearGradient
-            colors={isAdmin ? [Colors.light.accent, "#C4972E"] : [Colors.light.primary, "#2D6A4F"] as [string, string]}
-            style={styles.fabGradient}
-          >
-            <Feather name={isAdmin ? "edit-3" : "send"} size={24} color="#fff" />
-          </LinearGradient>
-        </Pressable>
-      )}
 
       <BlogDetailModal
         post={selectedPost}
