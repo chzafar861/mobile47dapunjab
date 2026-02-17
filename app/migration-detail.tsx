@@ -22,6 +22,7 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
 import { useI18n } from "@/lib/i18n";
+import { useTranslate, useTranslateOne } from "@/lib/useTranslate";
 
 interface MigrationRecord {
   id: number;
@@ -73,6 +74,7 @@ function DetailRow({ icon, label, value, iconColor }: { icon: string; label: str
 }
 
 function CommentItem({ item }: { item: Comment }) {
+  const { translated: commentTranslated } = useTranslateOne(item.comment);
   const initials = item.user_name
     .split(" ")
     .map((n) => n[0])
@@ -90,7 +92,7 @@ function CommentItem({ item }: { item: Comment }) {
           <Text style={styles.commentName}>{item.user_name}</Text>
           <Text style={styles.commentTime}>{timeAgo(item.created_at)}</Text>
         </View>
-        <Text style={styles.commentText}>{item.comment}</Text>
+        <Text style={styles.commentText}>{commentTranslated}</Text>
       </View>
     </View>
   );
@@ -162,6 +164,22 @@ export default function MigrationDetailScreen() {
     );
   }
 
+  const { translated: recordTranslated } = useTranslate(
+    record
+      ? [
+          record.full_name,
+          record.village_of_origin,
+          record.district,
+          record.current_location,
+          record.notes || "",
+          record.contact_info || "",
+        ]
+      : []
+  );
+  const [trName, trVillage, trDistrict, trLocation, trNotes, trContact] = record
+    ? recordTranslated
+    : ["", "", "", "", "", ""];
+
   if (!record) {
     return (
       <View style={[styles.container, styles.centerWrap]}>
@@ -210,7 +228,7 @@ export default function MigrationDetailScreen() {
                   <Text style={styles.heroAvatarText}>{initials}</Text>
                 )}
               </View>
-              <Text style={styles.heroName}>{record.full_name}</Text>
+              <Text style={styles.heroName}>{trName}</Text>
               <View style={styles.heroBadge}>
                 <Ionicons name="calendar-outline" size={13} color={Colors.light.accent} />
                 <Text style={styles.heroBadgeText}>
@@ -223,11 +241,11 @@ export default function MigrationDetailScreen() {
           <View style={styles.detailsSection}>
             <Text style={styles.sectionTitle}>{t.migrationDetail.title}</Text>
             <View style={styles.detailsCard}>
-              <DetailRow icon="home" label={t.humanFind.village} value={record.village_of_origin} />
-              <DetailRow icon="map" label={t.humanFind.district} value={record.district} iconColor={Colors.light.accent} />
-              <DetailRow icon="location" label={t.humanFind.currentLocation} value={record.current_location} iconColor="#E74C3C" />
+              <DetailRow icon="home" label={t.humanFind.village} value={trVillage} />
+              <DetailRow icon="map" label={t.humanFind.district} value={trDistrict} iconColor={Colors.light.accent} />
+              <DetailRow icon="location" label={t.humanFind.currentLocation} value={trLocation} iconColor="#E74C3C" />
               {record.contact_info && (
-                <DetailRow icon="call" label="Contact" value={record.contact_info} iconColor="#3498DB" />
+                <DetailRow icon="call" label="Contact" value={trContact} iconColor="#3498DB" />
               )}
             </View>
 
@@ -237,7 +255,7 @@ export default function MigrationDetailScreen() {
                   <Ionicons name="document-text" size={18} color={Colors.light.primary} />
                   <Text style={styles.notesTitle}>Family Story / Notes</Text>
                 </View>
-                <Text style={styles.notesText}>{record.notes}</Text>
+                <Text style={styles.notesText}>{trNotes}</Text>
               </View>
             )}
           </View>

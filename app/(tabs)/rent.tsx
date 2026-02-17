@@ -21,6 +21,7 @@ import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { useI18n } from "@/lib/i18n";
+import { useTranslate } from "@/lib/useTranslate";
 
 interface PersonRecord {
   id: number;
@@ -60,6 +61,14 @@ interface PropertyRecord {
 type ActiveSection = "people" | "property";
 
 function PersonCard({ item }: { item: PersonRecord }) {
+  const { translated } = useTranslate([
+    item.full_name,
+    item.village_of_origin,
+    item.district,
+    item.current_location,
+  ]);
+  const [name, village, district, location] = translated;
+
   return (
     <Pressable
       onPress={() => {
@@ -87,14 +96,14 @@ function PersonCard({ item }: { item: PersonRecord }) {
           )}
         </View>
         <View style={styles.cardInfo}>
-          <Text style={styles.cardName} numberOfLines={1}>{item.full_name}</Text>
+          <Text style={styles.cardName} numberOfLines={1}>{name}</Text>
           <View style={styles.detailRow}>
             <Ionicons name="location-outline" size={13} color={Colors.light.accent} />
-            <Text style={styles.detailText} numberOfLines={1}>{item.village_of_origin}, {item.district}</Text>
+            <Text style={styles.detailText} numberOfLines={1}>{village}, {district}</Text>
           </View>
           <View style={styles.detailRow}>
             <Ionicons name="navigate-outline" size={13} color={Colors.light.primary} />
-            <Text style={styles.detailText} numberOfLines={1}>{item.current_location}</Text>
+            <Text style={styles.detailText} numberOfLines={1}>{location}</Text>
           </View>
         </View>
         <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary} />
@@ -106,6 +115,14 @@ function PersonCard({ item }: { item: PersonRecord }) {
 function PropertyCard({ item }: { item: PropertyRecord }) {
   const { t } = useI18n();
   const d = item.data || {};
+  const { translated } = useTranslate([
+    d.ownerName || "",
+    d.location || "",
+    d.propertyType || "",
+    d.description || "",
+    d.area || "",
+  ]);
+  const [ownerName, location, propertyType, description, area] = translated;
 
   return (
     <Pressable
@@ -129,22 +146,22 @@ function PropertyCard({ item }: { item: PropertyRecord }) {
         </View>
         <View style={styles.cardInfo}>
           <Text style={styles.cardName} numberOfLines={1}>
-            {d.ownerName || d.propertyType || t.humanFind.propertyDetails}
+            {ownerName || propertyType || t.humanFind.propertyDetails}
           </Text>
           {d.location && (
             <View style={styles.detailRow}>
               <Ionicons name="location-outline" size={13} color={Colors.light.accent} />
-              <Text style={styles.detailText} numberOfLines={1}>{d.location}</Text>
+              <Text style={styles.detailText} numberOfLines={1}>{location}</Text>
             </View>
           )}
           {d.propertyType && (
             <View style={styles.detailRow}>
               <MaterialCommunityIcons name="home-outline" size={13} color={Colors.light.primary} />
-              <Text style={styles.detailText} numberOfLines={1}>{d.propertyType}{d.area ? ` - ${d.area}` : ""}</Text>
+              <Text style={styles.detailText} numberOfLines={1}>{propertyType}{d.area ? ` - ${area}` : ""}</Text>
             </View>
           )}
           {d.description && (
-            <Text style={styles.descriptionText} numberOfLines={2}>{d.description}</Text>
+            <Text style={styles.descriptionText} numberOfLines={2}>{description}</Text>
           )}
         </View>
         <Ionicons name="chevron-forward" size={20} color={Colors.light.textSecondary} />
