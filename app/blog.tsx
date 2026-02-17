@@ -399,7 +399,7 @@ export default function BlogScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       quality: 0.7,
       base64: true,
     });
@@ -723,10 +723,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 18,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
+    boxShadow: "0px 2px 12px rgba(0,0,0,0.08)",
     elevation: 3,
     borderWidth: 1,
     borderColor: Colors.light.border,

@@ -1111,10 +1111,7 @@ const styles = StyleSheet.create({
   contentCard: {
     borderRadius: 16,
     overflow: "hidden" as const,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    boxShadow: "0px 2px 6px rgba(0,0,0,0.1)",
     elevation: 3,
   },
   contentCardGradient: {

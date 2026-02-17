@@ -334,10 +334,7 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#D4A843",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
+    boxShadow: "0px 4px 12px rgba(212,168,67,0.4)",
     elevation: 8,
   },
   heroTitle: {
