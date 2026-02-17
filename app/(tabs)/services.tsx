@@ -16,6 +16,7 @@ import { firebaseApi } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import Colors from "@/constants/colors";
+import { useI18n } from "@/lib/i18n";
 
 interface ServiceBooking {
   id: string;
@@ -107,6 +108,7 @@ function BookingForm({ serviceType, onClose, onSubmit }: BookingFormProps) {
 
 export default function ServicesScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const [activeBooking, setActiveBooking] = useState<string | null>(null);
@@ -147,9 +149,9 @@ export default function ServicesScreen() {
         contentInsetAdjustmentBehavior="automatic"
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Our Services</Text>
+          <Text style={styles.headerTitle}>{t.services.title}</Text>
           <Text style={styles.headerSubtitle}>
-            Premium services for visitors to Punjab, Pakistan
+            {t.services.subtitle}
           </Text>
         </View>
 
@@ -164,23 +166,17 @@ export default function ServicesScreen() {
               <Text style={styles.badgeText}>POPULAR</Text>
             </View>
             <MaterialCommunityIcons name="shield-star" size={48} color="#fff" />
-            <Text style={styles.mainServiceTitle}>Protocol Service</Text>
+            <Text style={styles.mainServiceTitle}>{t.services.protocolService}</Text>
             <Text style={styles.mainServiceDesc}>
-              Get VIP protocol and escort service when visiting Pakistan. We provide security, transportation, and guided assistance from the customs department.
+              {t.services.protocolDesc}
             </Text>
             <View style={styles.mainServiceFeatures}>
-              <View style={styles.featureChip}>
-                <Ionicons name="car" size={14} color="#fff" />
-                <Text style={styles.chipText}>Transport</Text>
-              </View>
-              <View style={styles.featureChip}>
-                <Ionicons name="shield-checkmark" size={14} color="#fff" />
-                <Text style={styles.chipText}>Security</Text>
-              </View>
-              <View style={styles.featureChip}>
-                <Ionicons name="navigate" size={14} color="#fff" />
-                <Text style={styles.chipText}>Guide</Text>
-              </View>
+              {t.services.protocolFeatures.split("\n").map((feature, idx) => (
+                <View key={idx} style={styles.featureChip}>
+                  <Ionicons name={idx === 0 ? "car" : idx === 1 ? "shield-checkmark" : idx === 2 ? "navigate" : "checkmark-circle"} size={14} color="#fff" />
+                  <Text style={styles.chipText}>{feature}</Text>
+                </View>
+              ))}
             </View>
             <Pressable
               onPress={() => {
@@ -192,7 +188,7 @@ export default function ServicesScreen() {
                 { opacity: pressed ? 0.9 : 1 },
               ]}
             >
-              <Text style={styles.bookBtnText}>Book Now</Text>
+              <Text style={styles.bookBtnText}>{t.services.bookNow}</Text>
               <Ionicons name="arrow-forward" size={16} color={Colors.light.primaryDark} />
             </Pressable>
           </LinearGradient>
@@ -206,32 +202,21 @@ export default function ServicesScreen() {
             style={styles.mainServiceCard}
           >
             <Ionicons name="videocam" size={48} color="#fff" />
-            <Text style={styles.mainServiceTitle}>Village Video Service</Text>
+            <Text style={styles.mainServiceTitle}>{t.services.videoService}</Text>
             <Text style={styles.mainServiceDesc}>
-              Want a personal video of your village or any old memorable place? We create professional 1-hour videos capturing your cherished locations.
+              {t.services.videoDesc}
             </Text>
             <View style={styles.priceTag}>
-              <Text style={styles.priceAmount}>$100</Text>
-              <Text style={styles.pricePer}>/ 1 hour video</Text>
+              <Text style={styles.priceAmount}>{t.services.videoPrice}</Text>
+              <Text style={styles.pricePer}>/ {t.services.perHour}</Text>
             </View>
-            <Text style={styles.priceNote}>Without editing - Same day delivery</Text>
             <View style={styles.mainServiceFeatures}>
-              <View style={styles.featureChip}>
-                <Ionicons name="camera" size={14} color="#fff" />
-                <Text style={styles.chipText}>HD Quality</Text>
-              </View>
-              <View style={styles.featureChip}>
-                <Ionicons name="time" size={14} color="#fff" />
-                <Text style={styles.chipText}>1 Hour</Text>
-              </View>
-              <View style={styles.featureChip}>
-                <Ionicons name="today" size={14} color="#fff" />
-                <Text style={styles.chipText}>Same Day</Text>
-              </View>
-              <View style={styles.featureChip}>
-                <Ionicons name="videocam-outline" size={14} color="#fff" />
-                <Text style={styles.chipText}>Raw Footage</Text>
-              </View>
+              {t.services.videoFeatures.split("\n").map((feature, idx) => (
+                <View key={idx} style={styles.featureChip}>
+                  <Ionicons name={idx === 0 ? "camera" : idx === 1 ? "time" : idx === 2 ? "today" : "videocam-outline"} size={14} color="#fff" />
+                  <Text style={styles.chipText}>{feature}</Text>
+                </View>
+              ))}
             </View>
             <Pressable
               onPress={() => {
@@ -244,7 +229,7 @@ export default function ServicesScreen() {
                 { opacity: pressed ? 0.9 : 1 },
               ]}
             >
-              <Text style={[styles.bookBtnText, { color: "#fff" }]}>Order Video</Text>
+              <Text style={[styles.bookBtnText, { color: "#fff" }]}>{t.services.requestVideo}</Text>
               <Ionicons name="arrow-forward" size={16} color="#fff" />
             </Pressable>
           </LinearGradient>
@@ -255,9 +240,9 @@ export default function ServicesScreen() {
             <View style={styles.secondaryIconWrap}>
               <MaterialCommunityIcons name="passport" size={32} color={Colors.light.primary} />
             </View>
-            <Text style={styles.secondaryTitle}>Customs Department Service</Text>
+            <Text style={styles.secondaryTitle}>{t.services.customsService}</Text>
             <Text style={styles.secondaryDesc}>
-              Coming from outside Pakistan? Get official protocol assistance from the customs department. We handle all formalities for a smooth arrival.
+              {t.services.customsDesc}
             </Text>
             <Pressable
               onPress={() => {
@@ -269,7 +254,7 @@ export default function ServicesScreen() {
                 { opacity: pressed ? 0.9 : 1 },
               ]}
             >
-              <Text style={styles.secondaryBtnText}>Get Started</Text>
+              <Text style={styles.secondaryBtnText}>{t.services.requestCustoms}</Text>
             </Pressable>
           </View>
         </View>
@@ -278,7 +263,7 @@ export default function ServicesScreen() {
           <View style={styles.infoCard}>
             <Ionicons name="information-circle" size={22} color={Colors.light.primary} />
             <Text style={styles.infoText}>
-              All services are available for overseas Pakistanis and international visitors. Contact us for custom packages.
+              {t.services.subtitle}
             </Text>
           </View>
         </View>

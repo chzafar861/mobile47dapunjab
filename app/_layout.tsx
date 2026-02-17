@@ -7,6 +7,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { I18nProvider } from "@/lib/i18n";
 import { View, ActivityIndicator, StyleSheet, Platform } from "react-native";
 import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from "@expo-google-fonts/poppins";
 import Colors from "@/constants/colors";
@@ -99,9 +100,11 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView>
           <KeyboardProvider>
-            <AuthProvider>
-              <AuthGate />
-            </AuthProvider>
+            <I18nProvider>
+              <AuthProvider>
+                <AuthGate />
+              </AuthProvider>
+            </I18nProvider>
           </KeyboardProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>

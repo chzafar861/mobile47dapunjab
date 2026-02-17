@@ -18,6 +18,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { getApiUrl } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
@@ -254,6 +255,15 @@ export default function ShopScreen() {
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user } = useAuth();
+  const { t } = useI18n();
+
+  const categoryLabels: Record<string, string> = {
+    "All": t.shop.all,
+    "Clothing": t.shop.clothing,
+    "Kitchen": t.shop.food,
+    "Art": t.shop.art,
+    "Home": t.shop.home,
+  };
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -393,8 +403,8 @@ export default function ShopScreen() {
       <View style={{ paddingTop: insets.top + webTopInset + 16, paddingHorizontal: 16 }}>
         <View style={styles.topRow}>
           <View>
-            <Text style={styles.headerTitle}>Shop</Text>
-            <Text style={styles.headerSub}>Authentic Pakistani Crafts</Text>
+            <Text style={styles.headerTitle}>{t.shop.title}</Text>
+            <Text style={styles.headerSub}>{t.shop.searchPlaceholder}</Text>
           </View>
           <Pressable
             onPress={() => { setShowCart(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
@@ -413,7 +423,7 @@ export default function ShopScreen() {
           <Ionicons name="search" size={18} color={Colors.light.tabIconDefault} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search products..."
+            placeholder={t.shop.searchPlaceholder}
             placeholderTextColor={Colors.light.tabIconDefault}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -445,7 +455,7 @@ export default function ShopScreen() {
                   selectedCategory === cat && styles.categoryTextActive,
                 ]}
               >
-                {cat}
+                {categoryLabels[cat] || cat}
               </Text>
             </Pressable>
           ))}
@@ -473,7 +483,7 @@ export default function ShopScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="bag-outline" size={48} color={Colors.light.tabIconDefault} />
-            <Text style={styles.emptyText}>No products found</Text>
+            <Text style={styles.emptyText}>{t.common.noResults}</Text>
           </View>
         }
         scrollEnabled={filteredProducts.length > 0}
@@ -495,7 +505,7 @@ export default function ShopScreen() {
                   <Text style={styles.detailName}>{showProduct.name}</Text>
                   <View style={styles.detailRatingRow}>
                     <StarRating rating={showProduct.rating} size={16} />
-                    <Text style={styles.detailRatingText}>{showProduct.rating} ({showProduct.reviews} reviews)</Text>
+                    <Text style={styles.detailRatingText}>{showProduct.rating} ({showProduct.reviews} {t.shop.reviews})</Text>
                   </View>
                   <View style={styles.detailPriceRow}>
                     <Text style={styles.detailPrice}>${showProduct.price}</Text>
@@ -515,15 +525,15 @@ export default function ShopScreen() {
                   <View style={styles.detailFeatures}>
                     <View style={styles.featureItem}>
                       <Ionicons name="shield-checkmark" size={20} color={Colors.light.success} />
-                      <Text style={styles.featureText}>Authentic</Text>
+                      <Text style={styles.featureText}>{t.shop.inStock}</Text>
                     </View>
                     <View style={styles.featureItem}>
                       <Ionicons name="airplane" size={20} color={Colors.light.primary} />
-                      <Text style={styles.featureText}>Free Shipping</Text>
+                      <Text style={styles.featureText}>{t.shop.freeShipping}</Text>
                     </View>
                     <View style={styles.featureItem}>
                       <Ionicons name="refresh" size={20} color={Colors.light.accent} />
-                      <Text style={styles.featureText}>Easy Returns</Text>
+                      <Text style={styles.featureText}>{t.shop.features}</Text>
                     </View>
                   </View>
                 </View>
@@ -535,7 +545,7 @@ export default function ShopScreen() {
                     style={({ pressed }) => [styles.addToCartBtn, styles.addToCartHalf, { opacity: pressed ? 0.9 : 1 }]}
                   >
                     <Ionicons name="bag-add" size={20} color="#fff" />
-                    <Text style={styles.addToCartBtnText}>Add to Cart</Text>
+                    <Text style={styles.addToCartBtnText}>{t.shop.addToCart}</Text>
                   </Pressable>
                   <Pressable
                     onPress={() => {
@@ -546,7 +556,7 @@ export default function ShopScreen() {
                     style={({ pressed }) => [styles.buyNowBtn, { opacity: pressed ? 0.9 : 1 }]}
                   >
                     <Ionicons name="flash" size={20} color="#fff" />
-                    <Text style={styles.addToCartBtnText}>Buy Now</Text>
+                    <Text style={styles.addToCartBtnText}>{t.shop.buyNow}</Text>
                   </Pressable>
                 </View>
               </View>
@@ -559,7 +569,7 @@ export default function ShopScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.cartModal, { paddingTop: insets.top + 10 }]}>
             <View style={styles.cartHeader}>
-              <Text style={styles.cartTitle}>Your Cart ({cartCount})</Text>
+              <Text style={styles.cartTitle}>{t.shop.cartTitle} ({cartCount})</Text>
               <Pressable onPress={() => setShowCart(false)} style={styles.modalCloseBtn}>
                 <Ionicons name="close" size={24} color={Colors.light.text} />
               </Pressable>
@@ -567,13 +577,13 @@ export default function ShopScreen() {
             {cart.length === 0 ? (
               <View style={styles.cartEmpty}>
                 <Ionicons name="bag-outline" size={64} color={Colors.light.tabIconDefault} />
-                <Text style={styles.cartEmptyTitle}>Your cart is empty</Text>
-                <Text style={styles.cartEmptyDesc}>Browse our collection and add some authentic Pakistani crafts</Text>
+                <Text style={styles.cartEmptyTitle}>{t.shop.cartEmpty}</Text>
+                <Text style={styles.cartEmptyDesc}>{t.shop.cartEmptyDesc}</Text>
                 <Pressable
                   onPress={() => setShowCart(false)}
                   style={({ pressed }) => [styles.continueShopping, { opacity: pressed ? 0.9 : 1 }]}
                 >
-                  <Text style={styles.continueShoppingText}>Continue Shopping</Text>
+                  <Text style={styles.continueShoppingText}>{t.shop.continueShopping}</Text>
                 </Pressable>
               </View>
             ) : (
@@ -607,16 +617,16 @@ export default function ShopScreen() {
                 <View style={[styles.cartFooter, { paddingBottom: insets.bottom + 10 }]}>
                   <View style={styles.cartSummary}>
                     <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Subtotal</Text>
+                      <Text style={styles.summaryLabel}>{t.shop.subtotal}</Text>
                       <Text style={styles.summaryValue}>${cartTotal.toFixed(2)}</Text>
                     </View>
                     <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Shipping</Text>
-                      <Text style={[styles.summaryValue, { color: Colors.light.success }]}>Free</Text>
+                      <Text style={styles.summaryLabel}>{t.shop.shipping}</Text>
+                      <Text style={[styles.summaryValue, { color: Colors.light.success }]}>{t.shop.freeShipping}</Text>
                     </View>
                     <View style={styles.summaryDivider} />
                     <View style={styles.summaryRow}>
-                      <Text style={styles.totalLabel}>Total</Text>
+                      <Text style={styles.totalLabel}>{t.shop.total}</Text>
                       <Text style={styles.totalValue}>${cartTotal.toFixed(2)}</Text>
                     </View>
                   </View>
@@ -625,7 +635,7 @@ export default function ShopScreen() {
                     style={({ pressed }) => [styles.checkoutBtn, { opacity: pressed ? 0.9 : 1 }]}
                   >
                     <Ionicons name="card" size={20} color="#fff" />
-                    <Text style={styles.checkoutBtnText}>Proceed to Checkout</Text>
+                    <Text style={styles.checkoutBtnText}>{t.shop.checkout}</Text>
                   </Pressable>
                 </View>
               </>
@@ -638,14 +648,14 @@ export default function ShopScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.cartModal, { paddingTop: insets.top + 10 }]}>
             <View style={styles.cartHeader}>
-              <Text style={styles.cartTitle}>Checkout</Text>
+              <Text style={styles.cartTitle}>{t.shop.checkout}</Text>
               <Pressable onPress={() => { setShowCheckout(false); setShowErrors(false); }} style={styles.modalCloseBtn}>
                 <Ionicons name="close" size={24} color={Colors.light.text} />
               </Pressable>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 20 }}>
               <View style={styles.checkoutSection}>
-                <Text style={styles.checkoutSectionTitle}>Order Summary</Text>
+                <Text style={styles.checkoutSectionTitle}>{t.shop.cartTitle}</Text>
                 {cart.map((item) => (
                   <View key={item.id} style={styles.checkoutItem}>
                     <Text style={styles.checkoutItemName}>{item.name} x{item.quantity}</Text>
@@ -654,52 +664,52 @@ export default function ShopScreen() {
                 ))}
                 <View style={styles.summaryDivider} />
                 <View style={styles.checkoutItem}>
-                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalLabel}>{t.shop.total}</Text>
                   <Text style={styles.totalValue}>${cartTotal.toFixed(2)}</Text>
                 </View>
               </View>
 
               <View style={styles.checkoutSection}>
-                <Text style={styles.checkoutSectionTitle}>Delivery Details</Text>
-                <Text style={styles.checkoutFieldLabel}>Full Name *</Text>
+                <Text style={styles.checkoutSectionTitle}>{t.shop.deliveryDetails}</Text>
+                <Text style={styles.checkoutFieldLabel}>{t.shop.fullName} *</Text>
                 <TextInput
                   style={[styles.checkoutInput, showErrors && !checkoutForm.name.trim() && { borderColor: Colors.light.danger }]}
                   value={checkoutForm.name}
-                  onChangeText={(t) => setCheckoutForm({ ...checkoutForm, name: t })}
-                  placeholder="Your full name"
+                  onChangeText={(v) => setCheckoutForm({ ...checkoutForm, name: v })}
+                  placeholder={t.shop.fullName}
                   placeholderTextColor={Colors.light.tabIconDefault}
                 />
-                <Text style={styles.checkoutFieldLabel}>Phone Number *</Text>
+                <Text style={styles.checkoutFieldLabel}>{t.shop.phoneNumber} *</Text>
                 <TextInput
                   style={[styles.checkoutInput, showErrors && !checkoutForm.phone.trim() && { borderColor: Colors.light.danger }]}
                   value={checkoutForm.phone}
-                  onChangeText={(t) => setCheckoutForm({ ...checkoutForm, phone: t })}
-                  placeholder="e.g. +92 300 1234567"
+                  onChangeText={(v) => setCheckoutForm({ ...checkoutForm, phone: v })}
+                  placeholder={t.shop.phoneNumber}
                   placeholderTextColor={Colors.light.tabIconDefault}
                   keyboardType="phone-pad"
                 />
-                <Text style={styles.checkoutFieldLabel}>Delivery Address *</Text>
+                <Text style={styles.checkoutFieldLabel}>{t.shop.address} *</Text>
                 <TextInput
                   style={[styles.checkoutInput, showErrors && !checkoutForm.address.trim() && { borderColor: Colors.light.danger }, { minHeight: 70 }]}
                   value={checkoutForm.address}
-                  onChangeText={(t) => setCheckoutForm({ ...checkoutForm, address: t })}
-                  placeholder="Full delivery address"
+                  onChangeText={(v) => setCheckoutForm({ ...checkoutForm, address: v })}
+                  placeholder={t.shop.address}
                   placeholderTextColor={Colors.light.tabIconDefault}
                   multiline
                   textAlignVertical="top"
                 />
-                <Text style={styles.checkoutFieldLabel}>City *</Text>
+                <Text style={styles.checkoutFieldLabel}>{t.shop.city} *</Text>
                 <TextInput
                   style={[styles.checkoutInput, showErrors && !checkoutForm.city.trim() && { borderColor: Colors.light.danger }]}
                   value={checkoutForm.city}
-                  onChangeText={(t) => setCheckoutForm({ ...checkoutForm, city: t })}
-                  placeholder="e.g. Lahore, Karachi"
+                  onChangeText={(v) => setCheckoutForm({ ...checkoutForm, city: v })}
+                  placeholder={t.shop.city}
                   placeholderTextColor={Colors.light.tabIconDefault}
                 />
               </View>
 
               <View style={styles.checkoutSection}>
-                <Text style={styles.checkoutSectionTitle}>Country</Text>
+                <Text style={styles.checkoutSectionTitle}>{t.shop.country}</Text>
                 <View style={styles.countryRow}>
                   <Pressable
                     onPress={() => {
@@ -709,7 +719,7 @@ export default function ShopScreen() {
                     style={[styles.countryChip, checkoutForm.country === "Pakistan" && styles.countryChipActive]}
                   >
                     <Text style={styles.countryFlag}>PK</Text>
-                    <Text style={[styles.countryChipText, checkoutForm.country === "Pakistan" && styles.countryChipTextActive]}>Pakistan</Text>
+                    <Text style={[styles.countryChipText, checkoutForm.country === "Pakistan" && styles.countryChipTextActive]}>{t.shop.pakistan}</Text>
                   </Pressable>
                   <Pressable
                     onPress={() => {
@@ -719,13 +729,13 @@ export default function ShopScreen() {
                     style={[styles.countryChip, checkoutForm.country === "International" && styles.countryChipActive]}
                   >
                     <Ionicons name="globe-outline" size={16} color={checkoutForm.country === "International" ? "#fff" : Colors.light.textSecondary} />
-                    <Text style={[styles.countryChipText, checkoutForm.country === "International" && styles.countryChipTextActive]}>International</Text>
+                    <Text style={[styles.countryChipText, checkoutForm.country === "International" && styles.countryChipTextActive]}>{t.shop.international}</Text>
                   </Pressable>
                 </View>
               </View>
 
               <View style={styles.checkoutSection}>
-                <Text style={styles.checkoutSectionTitle}>Payment Method</Text>
+                <Text style={styles.checkoutSectionTitle}>{t.shop.paymentMethod}</Text>
                 {checkoutForm.country === "Pakistan" ? (
                   <>
                     <Pressable
@@ -734,8 +744,8 @@ export default function ShopScreen() {
                     >
                       <MaterialCommunityIcons name="cash" size={24} color={paymentMethod === "cod" ? Colors.light.success : Colors.light.textSecondary} />
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.codTitle}>Cash on Delivery</Text>
-                        <Text style={styles.codDesc}>Pay when you receive your order</Text>
+                        <Text style={styles.codTitle}>{t.shop.cashOnDelivery}</Text>
+                        <Text style={styles.codDesc}>{t.shop.codDesc}</Text>
                       </View>
                       <View style={[styles.radioOuter, paymentMethod === "cod" && styles.radioOuterActive]}>
                         {paymentMethod === "cod" && <View style={styles.radioInner} />}
@@ -747,8 +757,8 @@ export default function ShopScreen() {
                     >
                       <Ionicons name="card" size={24} color={paymentMethod === "card" ? "#1976D2" : Colors.light.textSecondary} />
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.codTitle}>ATM / Debit Card</Text>
-                        <Text style={styles.codDesc}>Pay with your bank card</Text>
+                        <Text style={styles.codTitle}>{t.shop.creditCard}</Text>
+                        <Text style={styles.codDesc}>{t.shop.codDesc}</Text>
                       </View>
                       <View style={[styles.radioOuter, paymentMethod === "card" && styles.radioOuterActive]}>
                         {paymentMethod === "card" && <View style={styles.radioInner} />}
@@ -759,8 +769,8 @@ export default function ShopScreen() {
                   <View style={[styles.paymentOption, styles.paymentOptionActive]}>
                     <Ionicons name="card" size={24} color="#1976D2" />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.codTitle}>Credit / Debit Card</Text>
-                      <Text style={styles.codDesc}>International card payment</Text>
+                      <Text style={styles.codTitle}>{t.shop.creditCard}</Text>
+                      <Text style={styles.codDesc}>{t.shop.codDesc}</Text>
                     </View>
                     <Ionicons name="checkmark-circle" size={24} color={Colors.light.success} />
                   </View>
@@ -773,44 +783,44 @@ export default function ShopScreen() {
                       <MaterialCommunityIcons name="credit-card-outline" size={20} color="#EB001B" />
                       <MaterialCommunityIcons name="credit-card" size={20} color="#F79E1B" />
                     </View>
-                    <Text style={styles.checkoutFieldLabel}>Card Number *</Text>
+                    <Text style={styles.checkoutFieldLabel}>{t.shop.cardNumber} *</Text>
                     <TextInput
                       style={[styles.checkoutInput, showErrors && paymentMethod === "card" && cardForm.number.replace(/\s/g, "").length < 13 && { borderColor: Colors.light.danger }]}
                       value={cardForm.number}
-                      onChangeText={(t) => setCardForm({ ...cardForm, number: formatCardNumber(t) })}
+                      onChangeText={(v) => setCardForm({ ...cardForm, number: formatCardNumber(v) })}
                       placeholder="1234 5678 9012 3456"
                       placeholderTextColor={Colors.light.tabIconDefault}
                       keyboardType="number-pad"
                       maxLength={19}
                     />
-                    <Text style={styles.checkoutFieldLabel}>Cardholder Name *</Text>
+                    <Text style={styles.checkoutFieldLabel}>{t.shop.cardHolder} *</Text>
                     <TextInput
                       style={[styles.checkoutInput, showErrors && paymentMethod === "card" && !cardForm.holder.trim() && { borderColor: Colors.light.danger }]}
                       value={cardForm.holder}
-                      onChangeText={(t) => setCardForm({ ...cardForm, holder: t })}
-                      placeholder="Name on card"
+                      onChangeText={(v) => setCardForm({ ...cardForm, holder: v })}
+                      placeholder={t.shop.cardHolder}
                       placeholderTextColor={Colors.light.tabIconDefault}
                       autoCapitalize="characters"
                     />
                     <View style={styles.cardRow}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.checkoutFieldLabel}>Expiry *</Text>
+                        <Text style={styles.checkoutFieldLabel}>{t.shop.expiryDate} *</Text>
                         <TextInput
                           style={[styles.checkoutInput, showErrors && paymentMethod === "card" && cardForm.expiry.length < 5 && { borderColor: Colors.light.danger }]}
                           value={cardForm.expiry}
-                          onChangeText={(t) => setCardForm({ ...cardForm, expiry: formatExpiry(t) })}
-                          placeholder="MM/YY"
+                          onChangeText={(v) => setCardForm({ ...cardForm, expiry: formatExpiry(v) })}
+                          placeholder={t.shop.expiryDate}
                           placeholderTextColor={Colors.light.tabIconDefault}
                           keyboardType="number-pad"
                           maxLength={5}
                         />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.checkoutFieldLabel}>CVV *</Text>
+                        <Text style={styles.checkoutFieldLabel}>{t.shop.cvv} *</Text>
                         <TextInput
                           style={[styles.checkoutInput, showErrors && paymentMethod === "card" && cardForm.cvv.length < 3 && { borderColor: Colors.light.danger }]}
                           value={cardForm.cvv}
-                          onChangeText={(t) => setCardForm({ ...cardForm, cvv: t.replace(/\D/g, "").slice(0, 4) })}
+                          onChangeText={(v) => setCardForm({ ...cardForm, cvv: v.replace(/\D/g, "").slice(0, 4) })}
                           placeholder="123"
                           placeholderTextColor={Colors.light.tabIconDefault}
                           keyboardType="number-pad"
@@ -838,7 +848,7 @@ export default function ShopScreen() {
                 ) : (
                   <>
                     <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                    <Text style={styles.placeOrderBtnText}>Place Order - ${cartTotal.toFixed(2)}</Text>
+                    <Text style={styles.placeOrderBtnText}>{t.shop.placeOrder} - ${cartTotal.toFixed(2)}</Text>
                   </>
                 )}
               </Pressable>
@@ -853,9 +863,9 @@ export default function ShopScreen() {
             <View style={styles.successCircle}>
               <Ionicons name="checkmark" size={48} color="#fff" />
             </View>
-            <Text style={styles.orderSuccessTitle}>Order Placed!</Text>
+            <Text style={styles.orderSuccessTitle}>{t.shop.orderPlaced}</Text>
             <Text style={styles.orderSuccessDesc}>
-              Your order has been placed successfully. You can track your order status anytime.
+              {t.shop.orderPlacedDesc}
             </Text>
             <Pressable
               onPress={() => {
@@ -865,13 +875,13 @@ export default function ShopScreen() {
               style={({ pressed }) => [styles.orderSuccessBtn, { opacity: pressed ? 0.9 : 1 }]}
             >
               <Ionicons name="location-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
-              <Text style={styles.orderSuccessBtnText}>Track My Order</Text>
+              <Text style={styles.orderSuccessBtnText}>{t.shop.trackMyOrder}</Text>
             </Pressable>
             <Pressable
               onPress={() => setOrderPlaced(false)}
               style={({ pressed }) => [styles.continueShopBtn, { opacity: pressed ? 0.9 : 1 }]}
             >
-              <Text style={styles.continueShopBtnText}>Continue Shopping</Text>
+              <Text style={styles.continueShopBtnText}>{t.shop.continueShopping}</Text>
             </Pressable>
           </View>
         </View>

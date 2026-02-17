@@ -20,6 +20,7 @@ import { apiRequest } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
+import { useI18n } from "@/lib/i18n";
 
 interface PersonRecord {
   id: number;
@@ -103,6 +104,7 @@ function PersonCard({ item }: { item: PersonRecord }) {
 }
 
 function PropertyCard({ item }: { item: PropertyRecord }) {
+  const { t } = useI18n();
   const d = item.data || {};
 
   return (
@@ -127,7 +129,7 @@ function PropertyCard({ item }: { item: PropertyRecord }) {
         </View>
         <View style={styles.cardInfo}>
           <Text style={styles.cardName} numberOfLines={1}>
-            {d.ownerName || d.propertyType || "Property"}
+            {d.ownerName || d.propertyType || t.humanFind.propertyDetails}
           </Text>
           {d.location && (
             <View style={styles.detailRow}>
@@ -153,6 +155,7 @@ function PropertyCard({ item }: { item: PropertyRecord }) {
 
 export default function HumanFindScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
 
@@ -220,9 +223,9 @@ export default function HumanFindScreen() {
         <View style={styles.headerContent}>
           <View style={styles.headerTitleRow}>
             <Ionicons name="people" size={26} color={Colors.light.accent} />
-            <Text style={styles.headerTitle}>HumanFind</Text>
+            <Text style={styles.headerTitle}>{t.humanFind.title}</Text>
           </View>
-          <Text style={styles.headerSubtitle}>Find people & property details across Punjab</Text>
+          <Text style={styles.headerSubtitle}>{t.humanFind.subtitle}</Text>
         </View>
 
         <View style={styles.tabRow}>
@@ -231,14 +234,14 @@ export default function HumanFindScreen() {
             style={[styles.tabBtn, activeSection === "people" && styles.tabBtnActive]}
           >
             <Ionicons name="person-outline" size={16} color={activeSection === "people" ? Colors.light.primaryDark : "rgba(255,255,255,0.6)"} />
-            <Text style={[styles.tabText, activeSection === "people" && styles.tabTextActive]}>Find People</Text>
+            <Text style={[styles.tabText, activeSection === "people" && styles.tabTextActive]}>{t.humanFind.findPeople}</Text>
           </Pressable>
           <Pressable
             onPress={() => { setActiveSection("property"); setSearchQuery(""); }}
             style={[styles.tabBtn, activeSection === "property" && styles.tabBtnActive]}
           >
             <MaterialCommunityIcons name="home-search-outline" size={16} color={activeSection === "property" ? Colors.light.primaryDark : "rgba(255,255,255,0.6)"} />
-            <Text style={[styles.tabText, activeSection === "property" && styles.tabTextActive]}>Property Details</Text>
+            <Text style={[styles.tabText, activeSection === "property" && styles.tabTextActive]}>{t.humanFind.propertyDetails}</Text>
           </Pressable>
         </View>
       </LinearGradient>
@@ -249,7 +252,7 @@ export default function HumanFindScreen() {
             <Ionicons name="search" size={18} color={Colors.light.textSecondary} />
             <TextInput
               style={styles.searchInput}
-              placeholder={activeSection === "people" ? "Search by name, village, location..." : "Search by owner, location, type..."}
+              placeholder={activeSection === "people" ? t.humanFind.searchPeople : t.humanFind.searchProperty}
               placeholderTextColor={Colors.light.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -277,7 +280,7 @@ export default function HumanFindScreen() {
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={Colors.light.primary} />
           <Text style={styles.loadingText}>
-            {activeSection === "people" ? "Searching people..." : "Loading properties..."}
+            {t.common.loading}
           </Text>
         </View>
       ) : (
@@ -305,12 +308,12 @@ export default function HumanFindScreen() {
                 color={Colors.light.tabIconDefault}
               />
               <Text style={styles.emptyTitle}>
-                {activeSection === "people" ? "No People Found" : "No Properties Found"}
+                {t.humanFind.noRecords}
               </Text>
               <Text style={styles.emptyText}>
                 {activeSection === "people"
-                  ? "Try searching by name, village, or location to find people."
-                  : "No property details submitted yet. You can submit property details from your Profile page."}
+                  ? t.humanFind.searchPeople
+                  : t.humanFind.searchProperty}
               </Text>
             </View>
           }
@@ -318,7 +321,7 @@ export default function HumanFindScreen() {
             displayData.length > 0 ? (
               <View style={styles.resultCount}>
                 <Text style={styles.resultCountText}>
-                  {displayData.length} {activeSection === "people" ? "person" : "propert"}{displayData.length !== 1 ? (activeSection === "people" ? "s" : "ies") : (activeSection === "people" ? "" : "y")} found
+                  {displayData.length} {activeSection === "people" ? t.humanFind.findPeople : t.humanFind.propertyDetails}
                 </Text>
               </View>
             ) : null

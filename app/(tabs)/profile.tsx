@@ -19,6 +19,7 @@ import { firebaseApi } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
+import { useI18n, LANGUAGES } from "@/lib/i18n";
 
 function InputField({
   icon,
@@ -76,6 +77,7 @@ export default function ProfileScreen() {
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user, isAdmin, logout, updateProfile } = useAuth();
+  const { t, lang, setLanguage, isRTL } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editData, setEditData] = useState({
@@ -139,9 +141,9 @@ export default function ProfileScreen() {
     setShowErrors(true);
     if (!editData.name.trim()) {
       if (Platform.OS === "web") {
-        window.alert("Please enter your name.");
+        window.alert(t.common.required);
       } else {
-        Alert.alert("Required", "Please enter your name.");
+        Alert.alert(t.common.required, t.profile.enterName);
       }
       return;
     }
@@ -151,15 +153,15 @@ export default function ProfileScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setIsEditing(false);
       if (Platform.OS === "web") {
-        window.alert("Your profile has been updated.");
+        window.alert(t.common.success);
       } else {
-        Alert.alert("Saved", "Your profile has been updated.");
+        Alert.alert(t.common.save, t.common.success);
       }
     } catch {
       if (Platform.OS === "web") {
-        window.alert("Could not save profile. Please try again.");
+        window.alert(t.common.error);
       } else {
-        Alert.alert("Error", "Could not save profile. Please try again.");
+        Alert.alert(t.common.error, t.common.error);
       }
     } finally {
       setIsSaving(false);
@@ -168,15 +170,15 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     if (Platform.OS === "web") {
-      const confirmed = window.confirm("Are you sure you want to sign out?");
+      const confirmed = window.confirm(t.profile.signOutConfirm);
       if (confirmed) {
         await logout();
       }
     } else {
-      Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-        { text: "Cancel", style: "cancel" },
+      Alert.alert(t.profile.signOut, t.profile.signOutConfirm, [
+        { text: t.common.cancel, style: "cancel" },
         {
-          text: "Sign Out",
+          text: t.profile.signOut,
           style: "destructive",
           onPress: async () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -209,13 +211,13 @@ export default function ProfileScreen() {
             <Ionicons name="person" size={40} color={Colors.light.primary} />
           </View>
           <Text style={styles.profileName}>
-            {user?.name || "Set Up Your Profile"}
+            {user?.name || t.profile.editProfile}
           </Text>
           <Text style={styles.profileEmail}>{user?.email}</Text>
           <Text style={styles.profileLocation}>
             {user?.city && user?.country
               ? `${user.city}, ${user.country}`
-              : "Add your location"}
+              : t.profile.city}
           </Text>
           {isAdmin && (
             <View style={styles.adminBadge}>
@@ -233,59 +235,59 @@ export default function ProfileScreen() {
               testID="edit-profile-btn"
             >
               <Ionicons name="create-outline" size={16} color={Colors.light.primary} />
-              <Text style={styles.editProfileBtnText}>Edit Profile</Text>
+              <Text style={styles.editProfileBtnText}>{t.profile.editProfile}</Text>
             </Pressable>
           )}
         </LinearGradient>
 
         {isEditing ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Edit Profile</Text>
+            <Text style={styles.sectionTitle}>{t.profile.editProfile}</Text>
 
             <View style={styles.formCard}>
               <InputField
                 icon="person-outline"
-                label="Full Name"
+                label={t.profile.fullName}
                 value={editData.name}
-                onChangeText={(t) => setEditData({ ...editData, name: t })}
-                placeholder="Enter your full name"
+                onChangeText={(v) => setEditData({ ...editData, name: v })}
+                placeholder={t.profile.enterName}
                 required={true}
                 showErrors={showErrors}
               />
               <InputField
                 icon="mail-outline"
-                label="Email"
+                label={t.profile.email}
                 value={user?.email || ""}
                 editable={false}
               />
               <InputField
                 icon="call-outline"
-                label="Phone"
+                label={t.profile.phone}
                 value={editData.phone}
-                onChangeText={(t) => setEditData({ ...editData, phone: t })}
-                placeholder="e.g. +92 300 1234567"
+                onChangeText={(v) => setEditData({ ...editData, phone: v })}
+                placeholder={t.profile.enterPhone}
                 keyboardType="phone-pad"
               />
               <InputField
                 icon="location-outline"
-                label="City"
+                label={t.profile.city}
                 value={editData.city}
-                onChangeText={(t) => setEditData({ ...editData, city: t })}
-                placeholder="e.g. Lahore, London, New York"
+                onChangeText={(v) => setEditData({ ...editData, city: v })}
+                placeholder={t.profile.enterCity}
               />
               <InputField
                 icon="globe-outline"
-                label="Country"
+                label={t.profile.country}
                 value={editData.country}
-                onChangeText={(t) => setEditData({ ...editData, country: t })}
-                placeholder="e.g. Pakistan, UK, USA"
+                onChangeText={(v) => setEditData({ ...editData, country: v })}
+                placeholder={t.profile.enterCountry}
               />
               <InputField
                 icon="airplane-outline"
-                label="Purpose of Visit"
+                label={t.profile.purpose}
                 value={editData.purpose}
-                onChangeText={(t) => setEditData({ ...editData, purpose: t })}
-                placeholder="e.g. Tourism, Family Visit, Business"
+                onChangeText={(v) => setEditData({ ...editData, purpose: v })}
+                placeholder={t.profile.enterPurpose}
                 multiline
               />
             </View>
@@ -300,7 +302,7 @@ export default function ProfileScreen() {
                 testID="cancel-edit-btn"
               >
                 <Ionicons name="close" size={18} color={Colors.light.textSecondary} />
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={styles.cancelBtnText}>{t.common.cancel}</Text>
               </Pressable>
               <Pressable
                 onPress={saveProfile}
@@ -316,7 +318,7 @@ export default function ProfileScreen() {
                 ) : (
                   <>
                     <Ionicons name="checkmark" size={18} color="#fff" />
-                    <Text style={styles.saveBtnText}>Save Changes</Text>
+                    <Text style={styles.saveBtnText}>{t.profile.saveChanges}</Text>
                   </>
                 )}
               </Pressable>
@@ -331,7 +333,7 @@ export default function ProfileScreen() {
               }}
               style={styles.profileDetailsToggle}
             >
-              <Text style={styles.sectionTitle}>Profile Details</Text>
+              <Text style={styles.sectionTitle}>{t.profile.profileDetails}</Text>
               <Ionicons
                 name={showProfileDetails ? "chevron-up" : "chevron-down"}
                 size={20}
@@ -340,17 +342,17 @@ export default function ProfileScreen() {
             </Pressable>
             {showProfileDetails && (
               <View style={styles.profileDetails}>
-                <ProfileRow icon="person-outline" label="Name" value={user?.name || ""} />
+                <ProfileRow icon="person-outline" label={t.profile.fullName} value={user?.name || ""} />
                 <View style={styles.rowDivider} />
-                <ProfileRow icon="call-outline" label="Phone" value={user?.phone || ""} />
+                <ProfileRow icon="call-outline" label={t.profile.phone} value={user?.phone || ""} />
                 <View style={styles.rowDivider} />
-                <ProfileRow icon="mail-outline" label="Email" value={user?.email || ""} />
+                <ProfileRow icon="mail-outline" label={t.profile.email} value={user?.email || ""} />
                 <View style={styles.rowDivider} />
-                <ProfileRow icon="location-outline" label="City" value={user?.city || ""} />
+                <ProfileRow icon="location-outline" label={t.profile.city} value={user?.city || ""} />
                 <View style={styles.rowDivider} />
-                <ProfileRow icon="globe-outline" label="Country" value={user?.country || ""} />
+                <ProfileRow icon="globe-outline" label={t.profile.country} value={user?.country || ""} />
                 <View style={styles.rowDivider} />
-                <ProfileRow icon="airplane-outline" label="Purpose" value={user?.purpose || ""} />
+                <ProfileRow icon="airplane-outline" label={t.profile.purpose} value={user?.purpose || ""} />
               </View>
             )}
           </View>
@@ -358,25 +360,25 @@ export default function ProfileScreen() {
 
         {isAdmin && !isEditing && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Admin Panel</Text>
+            <Text style={styles.sectionTitle}>{t.profile.adminPanel}</Text>
             <View style={styles.adminStats}>
               <View style={styles.statCard}>
                 <Text style={styles.statNumber}>{bookings.length}</Text>
-                <Text style={styles.statLabel}>Bookings</Text>
+                <Text style={styles.statLabel}>{t.profile.bookings}</Text>
               </View>
               <View style={styles.statCard}>
                 <Text style={styles.statNumber}>8</Text>
-                <Text style={styles.statLabel}>Products</Text>
+                <Text style={styles.statLabel}>{t.profile.products}</Text>
               </View>
               <View style={styles.statCard}>
                 <Text style={styles.statNumber}>8</Text>
-                <Text style={styles.statLabel}>Rentals</Text>
+                <Text style={styles.statLabel}>{t.profile.rentals}</Text>
               </View>
             </View>
 
             {bookings.length > 0 && (
               <View style={styles.bookingsList}>
-                <Text style={styles.bookingsTitle}>Recent Bookings</Text>
+                <Text style={styles.bookingsTitle}>{t.profile.recentBookings}</Text>
                 {bookings.slice(-5).reverse().map((b, i) => (
                   <View key={i} style={styles.bookingItem}>
                     <View style={styles.bookingDot} />
@@ -400,7 +402,7 @@ export default function ProfileScreen() {
               ]}
             >
               <MaterialCommunityIcons name="cog" size={20} color="#fff" />
-              <Text style={styles.adminBtnText}>Full Admin Dashboard</Text>
+              <Text style={styles.adminBtnText}>{t.profile.fullAdminDashboard}</Text>
             </Pressable>
           </View>
         )}
@@ -428,9 +430,9 @@ export default function ProfileScreen() {
                   <MaterialCommunityIcons name="file-document-edit" size={28} color={Colors.light.accent} />
                 </View>
                 <View style={styles.submitDetailsContent}>
-                  <Text style={styles.submitDetailsTitle}>Submit Your Request</Text>
+                  <Text style={styles.submitDetailsTitle}>{t.profile.submitRequest}</Text>
                   <Text style={styles.submitDetailsDesc}>
-                    Submit property details with photos or add a person to HumanFind
+                    {t.profile.submitRequestDesc}
                   </Text>
                 </View>
                 <Ionicons name="arrow-forward-circle" size={24} color="rgba(255,255,255,0.85)" />
@@ -457,9 +459,9 @@ export default function ProfileScreen() {
                   <MaterialCommunityIcons name="package-variant" size={24} color={Colors.light.primary} />
                 </View>
                 <View style={styles.mySubmissionsContent}>
-                  <Text style={styles.mySubmissionsTitle}>My Orders</Text>
+                  <Text style={styles.mySubmissionsTitle}>{t.profile.myOrders}</Text>
                   <Text style={styles.mySubmissionsDesc}>
-                    View your orders and track delivery status
+                    {t.profile.myOrdersDesc}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
@@ -482,9 +484,9 @@ export default function ProfileScreen() {
                   <Ionicons name="documents" size={24} color={Colors.light.primary} />
                 </View>
                 <View style={styles.mySubmissionsContent}>
-                  <Text style={styles.mySubmissionsTitle}>My Submissions</Text>
+                  <Text style={styles.mySubmissionsTitle}>{t.profile.mySubmissions}</Text>
                   <Text style={styles.mySubmissionsDesc}>
-                    View, edit, or delete your submitted properties and people
+                    {t.profile.mySubmissionsDesc}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
@@ -495,7 +497,20 @@ export default function ProfileScreen() {
 
         {!isEditing && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Links</Text>
+            <Text style={styles.sectionTitle}>{t.profile.language}</Text>
+            <View style={styles.languageSelector}>
+              {LANGUAGES.map((l) => (
+                <Pressable key={l.code} onPress={() => { setLanguage(l.code); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={[styles.languageBtn, lang === l.code && styles.languageBtnActive]}>
+                  <Text style={[styles.languageBtnText, lang === l.code && styles.languageBtnTextActive]}>{l.nativeLabel}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {!isEditing && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t.profile.quickLinks}</Text>
             <Pressable
               onPress={() => router.push("/history")}
               style={({ pressed }) => [
@@ -504,7 +519,7 @@ export default function ProfileScreen() {
               ]}
             >
               <MaterialCommunityIcons name="mosque" size={20} color={Colors.light.primary} />
-              <Text style={styles.linkText}>History & Heritage</Text>
+              <Text style={styles.linkText}>{t.profile.historyHeritage}</Text>
               <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
             </Pressable>
             <Pressable
@@ -515,7 +530,7 @@ export default function ProfileScreen() {
               ]}
             >
               <MaterialCommunityIcons name="star-crescent" size={20} color={Colors.light.primary} />
-              <Text style={styles.linkText}>Pakistan Guide & Services</Text>
+              <Text style={styles.linkText}>{t.profile.pakistanGuide}</Text>
               <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
             </Pressable>
             <Pressable
@@ -526,7 +541,7 @@ export default function ProfileScreen() {
               ]}
             >
               <Ionicons name="shield-checkmark-outline" size={20} color={Colors.light.primary} />
-              <Text style={styles.linkText}>Privacy Policy</Text>
+              <Text style={styles.linkText}>{t.profile.privacyPolicy}</Text>
               <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
             </Pressable>
             <Pressable
@@ -537,7 +552,7 @@ export default function ProfileScreen() {
               ]}
             >
               <Ionicons name="document-text-outline" size={20} color={Colors.light.primary} />
-              <Text style={styles.linkText}>Terms of Service</Text>
+              <Text style={styles.linkText}>{t.profile.termsOfService}</Text>
               <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
             </Pressable>
             <Pressable
@@ -549,7 +564,7 @@ export default function ProfileScreen() {
               testID="sign-out-btn"
             >
               <Ionicons name="log-out-outline" size={20} color={Colors.light.danger} />
-              <Text style={[styles.linkText, { color: Colors.light.danger }]}>Sign Out</Text>
+              <Text style={[styles.linkText, { color: Colors.light.danger }]}>{t.profile.signOut}</Text>
               <Ionicons name="chevron-forward" size={18} color={Colors.light.tabIconDefault} />
             </Pressable>
           </View>
@@ -569,7 +584,7 @@ function ProfileRow({ icon, label, value }: { icon: string; label: string; value
       <View style={styles.profileRowText}>
         <Text style={styles.profileLabel}>{label}</Text>
         <Text style={styles.profileValue} numberOfLines={1}>
-          {value || "Not set"}
+          {value || ""}
         </Text>
       </View>
     </View>
@@ -934,5 +949,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.light.textSecondary,
     marginTop: 2,
+  },
+  languageSelector: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  languageBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#f0f0f0",
+    borderWidth: 1.5,
+    borderColor: "transparent",
+  },
+  languageBtnActive: {
+    backgroundColor: Colors.light.primary + "15",
+    borderColor: Colors.light.primary,
+  },
+  languageBtnText: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+  },
+  languageBtnTextActive: {
+    color: Colors.light.primary,
+    fontFamily: "Poppins_600SemiBold",
   },
 });

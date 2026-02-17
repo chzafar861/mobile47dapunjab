@@ -13,6 +13,7 @@ import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Colors from "@/constants/colors";
+import { useI18n } from "@/lib/i18n";
 
 const { width } = Dimensions.get("window");
 
@@ -75,6 +76,7 @@ function FeatureRow({ icon, title, description, onPress }: FeatureRowProps) {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
 
@@ -97,8 +99,8 @@ export default function HomeScreen() {
           <View style={styles.heroContent}>
             <View style={styles.heroTopRow}>
               <View>
-                <Text style={styles.heroWelcome}>Welcome to</Text>
-                <Text style={styles.heroTitle}>47daPunjab</Text>
+                <Text style={styles.heroWelcome}>{t.home.welcome}</Text>
+                <Text style={styles.heroTitle}>{t.home.appName}</Text>
               </View>
               <Pressable
                 onPress={() => router.push("/(tabs)/profile")}
@@ -108,14 +110,14 @@ export default function HomeScreen() {
               </Pressable>
             </View>
             <Text style={styles.heroSubtitle}>
-              Your gateway to Punjab, Pakistan. Protocol services, village videos, rentals & more.
+              {t.home.subtitle}
             </Text>
           </View>
           <View style={styles.heroWave} />
         </LinearGradient>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Popular Services</Text>
+          <Text style={styles.sectionTitle}>{t.home.popularServices}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -123,22 +125,22 @@ export default function HomeScreen() {
           >
             <ServiceCard
               icon={<MaterialCommunityIcons name="shield-star" size={28} color="#fff" />}
-              title="Protocol"
-              subtitle="VIP escort service"
+              title={t.home.protocol}
+              subtitle={t.home.protocolDesc}
               gradient={["#0A6847", "#14A76C"]}
               onPress={() => router.push("/(tabs)/services")}
             />
             <ServiceCard
               icon={<Ionicons name="videocam" size={28} color="#fff" />}
-              title="Video Service"
-              subtitle="$100 / 1 hour"
+              title={t.home.videoService}
+              subtitle={t.home.videoPrice}
               gradient={["#D4A843", "#E8C96A"]}
               onPress={() => router.push("/(tabs)/services")}
             />
             <ServiceCard
               icon={<MaterialCommunityIcons name="passport" size={28} color="#fff" />}
-              title="Customs"
-              subtitle="Travel assistance"
+              title={t.home.customs}
+              subtitle={t.home.customsDesc}
               gradient={["#2C3E50", "#4A6274"]}
               onPress={() => router.push("/(tabs)/services")}
             />
@@ -146,47 +148,47 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Explore</Text>
+          <Text style={styles.sectionTitle}>{t.home.explore}</Text>
           <FeatureRow
             icon={<Ionicons name="bag-handle" size={22} color={Colors.light.primary} />}
-            title="Shop"
-            description="Browse Pakistani products & souvenirs"
+            title={t.home.shopCard}
+            description={t.home.shopCardDesc}
             onPress={() => router.push("/(tabs)/shop")}
           />
           <FeatureRow
             icon={<Ionicons name="people" size={22} color={Colors.light.accent} />}
-            title="HumanFind"
-            description="Find people & property details"
+            title={t.home.humanFindCard}
+            description={t.home.humanFindCardDesc}
             onPress={() => router.push("/(tabs)/rent")}
           />
           <FeatureRow
             icon={<MaterialCommunityIcons name="home-city-outline" size={22} color="#8B5E3C" />}
-            title="Property Details"
-            description="Browse property information"
+            title={t.home.propertyDetails}
+            description={t.home.propertyDetailsDesc}
             onPress={() => router.push("/(tabs)/rent")}
           />
           <FeatureRow
             icon={<MaterialCommunityIcons name="mosque" size={22} color={Colors.light.primaryDark} />}
-            title="History"
-            description="Historical & memorable places"
+            title={t.home.history}
+            description={t.home.historyDesc}
             onPress={() => router.push("/history")}
           />
           <FeatureRow
             icon={<MaterialCommunityIcons name="star-crescent" size={22} color="#1B4332" />}
-            title="Pakistan Guide"
-            description="Services overview & Pakistan info"
+            title={t.home.pakistanGuide}
+            description={t.home.pakistanGuideDesc}
             onPress={() => router.push("/pakistan-guide")}
           />
           <FeatureRow
             icon={<Feather name="edit-3" size={22} color={Colors.light.accent} />}
-            title="Blog"
-            description="Stories, tips & insights from Punjab"
+            title={t.home.blog}
+            description={t.home.blogDesc}
             onPress={() => router.push("/blog")}
           />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Modern Pakistan</Text>
+          <Text style={styles.sectionTitle}>{t.home.modernPakistan}</Text>
           <View style={styles.modernCard}>
             <LinearGradient
               colors={["#0A6847", "#053B2F"]}
@@ -195,9 +197,9 @@ export default function HomeScreen() {
               style={styles.modernGradient}
             >
               <MaterialCommunityIcons name="city-variant" size={40} color={Colors.light.accent} />
-              <Text style={styles.modernTitle}>Discover Modern Pakistan</Text>
+              <Text style={styles.modernTitle}>{t.home.modernPakistanTitle}</Text>
               <Text style={styles.modernDesc}>
-                Experience the new face of Pakistan - smart cities, modern infrastructure, and vibrant culture.
+                {t.home.modernPakistanDesc}
               </Text>
               <Pressable
                 onPress={() => router.push("/history")}
@@ -206,7 +208,7 @@ export default function HomeScreen() {
                   { opacity: pressed ? 0.8 : 1 },
                 ]}
               >
-                <Text style={styles.modernBtnText}>Explore</Text>
+                <Text style={styles.modernBtnText}>{t.home.explore}</Text>
                 <Ionicons name="arrow-forward" size={16} color={Colors.light.primaryDark} />
               </Pressable>
             </LinearGradient>
