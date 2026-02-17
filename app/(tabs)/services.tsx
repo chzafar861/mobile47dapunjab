@@ -6,9 +6,9 @@ import {
   ScrollView,
   Pressable,
   Platform,
-  Alert,
   TextInput,
 } from "react-native";
+import { showAlert } from "@/lib/platform-alert";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -41,7 +41,7 @@ function BookingForm({ serviceType, onClose, onSubmit }: BookingFormProps) {
 
   const handleSubmit = async () => {
     if (!name.trim() || !phone.trim()) {
-      Alert.alert("Required", "Please fill in your name and phone number.");
+      showAlert("Required", "Please fill in your name and phone number.");
       return;
     }
     const booking: ServiceBooking = {
@@ -57,7 +57,7 @@ function BookingForm({ serviceType, onClose, onSubmit }: BookingFormProps) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSubmit(booking);
     } catch (e: any) {
-      Alert.alert("Error", "Could not save booking.");
+      showAlert("Error", "Could not save booking.");
     }
   };
 
@@ -117,7 +117,7 @@ export default function ServicesScreen() {
 
   const handleBookingSubmit = () => {
     setActiveBooking(null);
-    Alert.alert("Success", "Your booking has been submitted! We will contact you shortly.");
+    showAlert("Success", "Your booking has been submitted! We will contact you shortly.");
   };
 
   if (activeBooking) {

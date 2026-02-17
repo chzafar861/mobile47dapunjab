@@ -21,6 +21,7 @@ import { useTranslate } from "@/lib/useTranslate";
 import { getApiUrl } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
+import { showAlert, showConfirm } from "@/lib/platform-alert";
 import Colors from "@/constants/colors";
 
 type TabType = "property" | "person";
@@ -168,7 +169,7 @@ export default function MySubmissionsScreen() {
   const saveProperty = async () => {
     if (!editingProperty) return;
     if (!propForm.ownerName.trim() || !propForm.phone.trim() || !propForm.location.trim()) {
-      Alert.alert(t.common.required, "Owner name, phone, and location are required.");
+      showAlert(t.common.required, "Owner name, phone, and location are required.");
       return;
     }
     setSaving(true);
@@ -189,7 +190,7 @@ export default function MySubmissionsScreen() {
       setEditPropertyModal(false);
       loadSubmissions();
     } catch (err: any) {
-      Alert.alert(t.common.error, err.message || "Could not update.");
+      showAlert(t.common.error, err.message || "Could not update.");
     } finally {
       setSaving(false);
     }
@@ -198,7 +199,7 @@ export default function MySubmissionsScreen() {
   const savePerson = async () => {
     if (!editingPerson) return;
     if (!personForm.full_name.trim() || !personForm.village_of_origin.trim() || !personForm.district.trim() || !personForm.current_location.trim()) {
-      Alert.alert(t.common.required, "Name, village, district, and location are required.");
+      showAlert(t.common.required, "Name, village, district, and location are required.");
       return;
     }
     setSaving(true);
@@ -221,7 +222,7 @@ export default function MySubmissionsScreen() {
       setEditPersonModal(false);
       loadSubmissions();
     } catch (err: any) {
-      Alert.alert(t.common.error, err.message || "Could not update.");
+      showAlert(t.common.error, err.message || "Could not update.");
     } finally {
       setSaving(false);
     }
@@ -234,17 +235,10 @@ export default function MySubmissionsScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         loadSubmissions();
       } catch (err: any) {
-        Alert.alert(t.common.error, err.message || "Could not delete.");
+        showAlert(t.common.error, err.message || "Could not delete.");
       }
     };
-    if (Platform.OS === "web") {
-      if (window.confirm(t.submissions.deleteConfirm)) doDelete();
-    } else {
-      Alert.alert(t.common.delete, t.submissions.deleteConfirm, [
-        { text: t.common.cancel, style: "cancel" },
-        { text: t.common.delete, style: "destructive", onPress: doDelete },
-      ]);
-    }
+    showConfirm(t.common.delete, t.submissions.deleteConfirm, doDelete, t.common.delete, true);
   };
 
   const deletePerson = (item: PersonSubmission) => {
@@ -254,17 +248,10 @@ export default function MySubmissionsScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         loadSubmissions();
       } catch (err: any) {
-        Alert.alert(t.common.error, err.message || "Could not delete.");
+        showAlert(t.common.error, err.message || "Could not delete.");
       }
     };
-    if (Platform.OS === "web") {
-      if (window.confirm(t.submissions.deleteConfirm)) doDelete();
-    } else {
-      Alert.alert(t.common.delete, t.submissions.deleteConfirm, [
-        { text: t.common.cancel, style: "cancel" },
-        { text: t.common.delete, style: "destructive", onPress: doDelete },
-      ]);
-    }
+    showConfirm(t.common.delete, t.submissions.deleteConfirm, doDelete, t.common.delete, true);
   };
 
   const formatDate = (dateStr: string) => {

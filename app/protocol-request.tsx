@@ -6,11 +6,11 @@ import {
   ScrollView,
   Pressable,
   Platform,
-  Alert,
   TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
 } from "react-native";
+import { showAlert } from "@/lib/platform-alert";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -148,13 +148,6 @@ export default function ProtocolRequestScreen() {
     Haptics.selectionAsync();
   };
 
-  const showAlert = (title: string, message: string) => {
-    if (Platform.OS === "web") {
-      window.alert(`${title}\n\n${message}`);
-    } else {
-      Alert.alert(title, message);
-    }
-  };
 
   const handleSubmit = async () => {
     setShowErrors(true);

@@ -6,7 +6,6 @@ import {
   ScrollView,
   Pressable,
   TextInput,
-  Alert,
   ActivityIndicator,
   Platform,
   Dimensions,
@@ -22,6 +21,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import { showAlert } from "@/lib/platform-alert";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
@@ -173,7 +173,7 @@ function BlogDetailModal({
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
     onError: (err: any) => {
-      Alert.alert("Error", err.message || "Could not post comment");
+      showAlert("Error", err.message || "Could not post comment");
     },
   });
 
@@ -369,17 +369,17 @@ export default function BlogScreen() {
       setContent("");
       setCategory("General");
       setImageUrl("");
-      Alert.alert("Published!", "Your blog post is now live.");
+      showAlert("Published!", "Your blog post is now live.");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
     onError: (err: any) => {
-      Alert.alert("Error", err.message || "Could not submit post");
+      showAlert("Error", err.message || "Could not submit post");
     },
   });
 
   const handleSubmit = () => {
     if (!title.trim() || !content.trim()) {
-      Alert.alert("Required", "Please fill in title and content.");
+      showAlert("Required", "Please fill in title and content.");
       return;
     }
     submitMutation.mutate({
@@ -395,7 +395,7 @@ export default function BlogScreen() {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Please allow photo library access.");
+      showAlert("Permission Required", "Please allow photo library access.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({

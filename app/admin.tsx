@@ -6,13 +6,14 @@ import {
   ScrollView,
   Pressable,
   Platform,
-  Alert,
+  Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { firebaseApi } from "@/lib/firebase";
+import { showAlert, showConfirm } from "@/lib/platform-alert";
 import { useAuth } from "@/lib/auth-context";
 import { getApiUrl } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
@@ -56,7 +57,7 @@ export default function AdminScreen() {
 
   useEffect(() => {
     if (!isAdmin) {
-      Alert.alert("Access Denied", "Admin access required.");
+      showAlert("Access Denied", "Admin access required.");
       router.back();
       return;
     }
@@ -90,45 +91,25 @@ export default function AdminScreen() {
   };
 
   const deleteBooking = async (id: string) => {
-    const doDelete = async () => {
+    showConfirm(t.admin.deleteBooking, "Are you sure?", async () => {
       try { await firebaseApi.deleteBooking(id); } catch {}
       setBookings((prev) => prev.filter((b) => (b.docId || b.id) !== id));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    };
-    if (Platform.OS === "web") {
-      if (window.confirm("Are you sure you want to delete this booking?")) {
-        await doDelete();
-      }
-    } else {
-      Alert.alert(t.admin.deleteBooking, "Are you sure?", [
-        { text: t.common.cancel, style: "cancel" },
-        { text: t.common.delete, style: "destructive", onPress: doDelete },
-      ]);
-    }
+    }, t.common.delete, true);
   };
 
   const deleteProperty = async (id: string) => {
-    const doDelete = async () => {
+    showConfirm(t.admin.deleteProperty, "Are you sure?", async () => {
       try { await firebaseApi.deletePropertyDetail(id); } catch {}
       setPropertyDetails((prev) => prev.filter((p) => (p.docId || p.id) !== id));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    };
-    if (Platform.OS === "web") {
-      if (window.confirm("Are you sure you want to delete this property?")) {
-        await doDelete();
-      }
-    } else {
-      Alert.alert(t.admin.deleteProperty, "Are you sure?", [
-        { text: t.common.cancel, style: "cancel" },
-        { text: t.common.delete, style: "destructive", onPress: doDelete },
-      ]);
-    }
+    }, t.common.delete, true);
   };
 
   const toggleUserRole = async (targetUser: AuthUser) => {
     const newRole = targetUser.role === "admin" ? "user" : "admin";
     const msg = `Make ${targetUser.name || targetUser.email} a${newRole === "admin" ? "n admin" : " regular user"}?`;
-    const doToggle = async () => {
+    showConfirm(t.admin.changeRole, msg, async () => {
       try {
         await adminFetch(`/api/auth/users/${targetUser.id}/role`, {
           method: "PUT",
@@ -137,45 +118,26 @@ export default function AdminScreen() {
         setUsers((prev) => prev.map((u) => u.id === targetUser.id ? { ...u, role: newRole } : u));
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } catch {
-        if (Platform.OS === "web") window.alert("Failed to update role");
-        else Alert.alert(t.common.error, "Failed to update role");
+        showAlert(t.common.error, "Failed to update role");
       }
-    };
-    if (Platform.OS === "web") {
-      if (window.confirm(msg)) await doToggle();
-    } else {
-      Alert.alert(t.admin.changeRole, msg, [
-        { text: t.common.cancel, style: "cancel" },
-        { text: t.common.confirm, onPress: doToggle },
-      ]);
-    }
+    }, t.common.confirm);
   };
 
   const deleteUser = async (targetUser: AuthUser) => {
     if (targetUser.id === currentUser?.id) {
-      if (Platform.OS === "web") window.alert("You cannot delete your own account.");
-      else Alert.alert(t.common.error, "You cannot delete your own account.");
+      showAlert(t.common.error, "You cannot delete your own account.");
       return;
     }
     const msg = `Delete ${targetUser.name || targetUser.email}? This cannot be undone.`;
-    const doDelete = async () => {
+    showConfirm(t.admin.deleteUser, msg, async () => {
       try {
         await adminFetch(`/api/auth/users/${targetUser.id}`, { method: "DELETE" });
         setUsers((prev) => prev.filter((u) => u.id !== targetUser.id));
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       } catch {
-        if (Platform.OS === "web") window.alert("Failed to delete user");
-        else Alert.alert(t.common.error, "Failed to delete user");
+        showAlert(t.common.error, "Failed to delete user");
       }
-    };
-    if (Platform.OS === "web") {
-      if (window.confirm(msg)) await doDelete();
-    } else {
-      Alert.alert(t.admin.deleteUser, msg, [
-        { text: t.common.cancel, style: "cancel" },
-        { text: t.common.delete, style: "destructive", onPress: doDelete },
-      ]);
-    }
+    }, t.common.delete, true);
   };
 
   const approveWriteRequest = async (reqId: number) => {
@@ -187,30 +149,23 @@ export default function AdminScreen() {
       setWriteRequests((prev) => prev.map((r) => r.id === reqId ? { ...r, status: "approved" } : r));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
-      Alert.alert(t.common.error, "Failed to approve request");
+      showAlert(t.common.error, "Failed to approve request");
     }
   };
 
   const rejectWriteRequest = async (reqId: number) => {
-    Alert.alert(t.admin.reject, "Are you sure you want to reject this writing request?", [
-      { text: t.common.cancel, style: "cancel" },
-      {
-        text: t.admin.reject,
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await adminFetch(`/api/blog-write-requests/${reqId}/reject`, {
-              method: "PATCH",
-              body: JSON.stringify({ admin_note: null }),
-            });
-            setWriteRequests((prev) => prev.map((r) => r.id === reqId ? { ...r, status: "rejected" } : r));
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          } catch {
-            Alert.alert(t.common.error, "Failed to reject request");
-          }
-        },
-      },
-    ]);
+    showConfirm(t.admin.reject, "Are you sure you want to reject this writing request?", async () => {
+      try {
+        await adminFetch(`/api/blog-write-requests/${reqId}/reject`, {
+          method: "PATCH",
+          body: JSON.stringify({ admin_note: null }),
+        });
+        setWriteRequests((prev) => prev.map((r) => r.id === reqId ? { ...r, status: "rejected" } : r));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      } catch {
+        showAlert(t.common.error, "Failed to reject request");
+      }
+    }, t.admin.reject, true);
   };
 
   const updateOrderStatus = async (orderId: number, newStatus: string, trackingNum?: string) => {
@@ -222,7 +177,7 @@ export default function AdminScreen() {
         body: JSON.stringify(body),
       });
       if (result.error) {
-        Alert.alert(t.common.error, result.error);
+        showAlert(t.common.error, result.error);
         return;
       }
       setOrders((prev) => prev.map((o) => o.id === orderId ? {
@@ -231,31 +186,14 @@ export default function AdminScreen() {
       } : o));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
-      Alert.alert(t.common.error, "Failed to update order status");
+      showAlert(t.common.error, "Failed to update order status");
     }
   };
 
+  const [statusPickerOrder, setStatusPickerOrder] = useState<any>(null);
+
   const showStatusPicker = (order: any) => {
-    const statuses = ["pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled"];
-    const labels: Record<string, string> = {
-      pending: "Pending",
-      confirmed: "Confirmed",
-      processing: "Processing",
-      shipped: "Shipped",
-      out_for_delivery: "Out for Delivery",
-      delivered: "Delivered",
-      cancelled: "Cancelled",
-    };
-    const buttons = statuses
-      .filter((s) => s !== order.status)
-      .map((s) => ({
-        text: labels[s],
-        onPress: () => {
-          updateOrderStatus(order.id, s);
-        },
-      }));
-    buttons.push({ text: t.common.cancel, onPress: () => {} });
-    Alert.alert(t.admin.updateStatus, `${t.admin.current}: ${labels[order.status]}\nOrder #${order.id}`, buttons);
+    setStatusPickerOrder(order);
   };
 
   const sections = ["overview", "bookings", "properties", "users", "writers", "orders"] as const;
@@ -595,9 +533,54 @@ export default function AdminScreen() {
           </View>
         )}
       </ScrollView>
+      {statusPickerOrder && (() => {
+        const statuses = ["pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled"];
+        const labels: Record<string, string> = {
+          pending: "Pending", confirmed: "Confirmed", processing: "Processing",
+          shipped: "Shipped", out_for_delivery: "Out for Delivery", delivered: "Delivered", cancelled: "Cancelled",
+        };
+        const statusColors: Record<string, string> = {
+          pending: "#F59E0B", confirmed: "#3B82F6", processing: "#8B5CF6",
+          shipped: "#06B6D4", out_for_delivery: "#10B981", delivered: Colors.light.success, cancelled: Colors.light.danger,
+        };
+        return (
+          <Modal visible transparent animationType="fade" onRequestClose={() => setStatusPickerOrder(null)}>
+            <Pressable style={pickerStyles.overlay} onPress={() => setStatusPickerOrder(null)}>
+              <View style={pickerStyles.sheet}>
+                <Text style={pickerStyles.title}>{t.admin.updateStatus}</Text>
+                <Text style={pickerStyles.subtitle}>Order #{statusPickerOrder.id} - Current: {labels[statusPickerOrder.status]}</Text>
+                {statuses.filter((s) => s !== statusPickerOrder.status).map((s) => (
+                  <Pressable key={s} style={pickerStyles.option} onPress={() => {
+                    updateOrderStatus(statusPickerOrder.id, s);
+                    setStatusPickerOrder(null);
+                  }}>
+                    <View style={[pickerStyles.dot, { backgroundColor: statusColors[s] }]} />
+                    <Text style={pickerStyles.optionText}>{labels[s]}</Text>
+                  </Pressable>
+                ))}
+                <Pressable style={pickerStyles.cancelBtn} onPress={() => setStatusPickerOrder(null)}>
+                  <Text style={pickerStyles.cancelText}>{t.common.cancel}</Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Modal>
+        );
+      })()}
     </View>
   );
 }
+
+const pickerStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
+  sheet: { backgroundColor: "#fff", borderRadius: 16, padding: 20, width: "85%", maxWidth: 360 },
+  title: { fontFamily: "Poppins_600SemiBold", fontSize: 16, color: Colors.light.text, marginBottom: 4 },
+  subtitle: { fontFamily: "Poppins_400Regular", fontSize: 13, color: Colors.light.textSecondary, marginBottom: 16 },
+  option: { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 12, borderBottomWidth: 1, borderBottomColor: Colors.light.border },
+  dot: { width: 12, height: 12, borderRadius: 6 },
+  optionText: { fontFamily: "Poppins_500Medium", fontSize: 14, color: Colors.light.text },
+  cancelBtn: { marginTop: 16, alignItems: "center", paddingVertical: 12, borderRadius: 10, backgroundColor: Colors.light.backgroundSecondary },
+  cancelText: { fontFamily: "Poppins_600SemiBold", fontSize: 14, color: Colors.light.textSecondary },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.light.background },

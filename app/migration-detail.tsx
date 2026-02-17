@@ -9,9 +9,9 @@ import {
   TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Alert,
   Image,
 } from "react-native";
+import { showAlert } from "@/lib/platform-alert";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -138,7 +138,7 @@ export default function MigrationDetailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
     onError: () => {
-      Alert.alert("Error", "Could not post comment. Please try again.");
+      showAlert("Error", "Could not post comment. Please try again.");
     },
   });
 
@@ -161,7 +161,7 @@ export default function MigrationDetailScreen() {
   const handlePostComment = () => {
     if (!commentText.trim()) return;
     if (!commentName.trim()) {
-      Alert.alert("Name Required", "Please enter your name to post a comment.");
+      showAlert("Name Required", "Please enter your name to post a comment.");
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);

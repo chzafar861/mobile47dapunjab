@@ -6,11 +6,11 @@ import {
   ScrollView,
   Pressable,
   Platform,
-  Alert,
   TextInput,
   Image,
   ActivityIndicator,
 } from "react-native";
+import { showAlert } from "@/lib/platform-alert";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -62,7 +62,7 @@ export default function SubmitDetailsScreen() {
   const pickImages = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Please allow access to your photo library to upload property images.");
+      showAlert("Permission Required", "Please allow access to your photo library to upload property images.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -82,7 +82,7 @@ export default function SubmitDetailsScreen() {
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Please allow camera access to take property photos.");
+      showAlert("Permission Required", "Please allow camera access to take property photos.");
       return;
     }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.7, base64: true });
@@ -101,7 +101,7 @@ export default function SubmitDetailsScreen() {
   const handlePropertySubmit = async () => {
     setShowErrors(true);
     if (!ownerName.trim() || !phone.trim() || !location.trim()) {
-      Alert.alert("Required", "Please fill in owner name, phone, and location.");
+      showAlert("Required", "Please fill in owner name, phone, and location.");
       return;
     }
     setSubmitting(true);
@@ -122,7 +122,7 @@ export default function SubmitDetailsScreen() {
       setSubmittedType("property");
       setSubmitted(true);
     } catch {
-      Alert.alert("Error", "Could not save details.");
+      showAlert("Error", "Could not save details.");
     } finally {
       setSubmitting(false);
     }
@@ -131,23 +131,23 @@ export default function SubmitDetailsScreen() {
   const handlePersonSubmit = async () => {
     setShowErrors(true);
     if (!personForm.full_name.trim()) {
-      Alert.alert("Required", "Please enter the full name.");
+      showAlert("Required", "Please enter the full name.");
       return;
     }
     if (!personForm.village_of_origin.trim()) {
-      Alert.alert("Required", "Please enter the village of origin.");
+      showAlert("Required", "Please enter the village of origin.");
       return;
     }
     if (!personForm.district.trim()) {
-      Alert.alert("Required", "Please enter the district.");
+      showAlert("Required", "Please enter the district.");
       return;
     }
     if (!personForm.current_location.trim()) {
-      Alert.alert("Required", "Please enter the current location.");
+      showAlert("Required", "Please enter the current location.");
       return;
     }
     if (personForm.year_of_migration && (isNaN(parseInt(personForm.year_of_migration)) || parseInt(personForm.year_of_migration) < 1900 || parseInt(personForm.year_of_migration) > 2026)) {
-      Alert.alert("Invalid Year", "Please enter a valid year.");
+      showAlert("Invalid Year", "Please enter a valid year.");
       return;
     }
     setPersonSubmitting(true);
@@ -168,7 +168,7 @@ export default function SubmitDetailsScreen() {
       setSubmittedType("person");
       setSubmitted(true);
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to submit. Please try again.");
+      showAlert("Error", err.message || "Failed to submit. Please try again.");
     } finally {
       setPersonSubmitting(false);
     }
@@ -177,7 +177,7 @@ export default function SubmitDetailsScreen() {
   const pickPersonImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Please allow photo library access.");
+      showAlert("Permission Required", "Please allow photo library access.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({

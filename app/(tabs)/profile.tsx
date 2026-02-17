@@ -6,11 +6,11 @@ import {
   ScrollView,
   Pressable,
   Platform,
-  Alert,
   TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
 } from "react-native";
+import { showAlert, showConfirm } from "@/lib/platform-alert";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -142,11 +142,7 @@ export default function ProfileScreen() {
   const saveProfile = async () => {
     setShowErrors(true);
     if (!editData.name.trim()) {
-      if (Platform.OS === "web") {
-        window.alert(t.common.required);
-      } else {
-        Alert.alert(t.common.required, t.profile.enterName);
-      }
+      showAlert(t.common.required, t.profile.enterName);
       return;
     }
     setIsSaving(true);
@@ -157,41 +153,25 @@ export default function ProfileScreen() {
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setIsEditing(false);
-      if (Platform.OS === "web") {
-        window.alert(t.common.success);
-      } else {
-        Alert.alert(t.common.save, t.common.success);
-      }
+      showAlert(t.common.save, t.common.success);
     } catch {
-      if (Platform.OS === "web") {
-        window.alert(t.common.error);
-      } else {
-        Alert.alert(t.common.error, t.common.error);
-      }
+      showAlert(t.common.error, t.common.error);
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleLogout = async () => {
-    if (Platform.OS === "web") {
-      const confirmed = window.confirm(t.profile.signOutConfirm);
-      if (confirmed) {
+    showConfirm(
+      t.profile.signOut,
+      t.profile.signOutConfirm,
+      async () => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         await logout();
-      }
-    } else {
-      Alert.alert(t.profile.signOut, t.profile.signOutConfirm, [
-        { text: t.common.cancel, style: "cancel" },
-        {
-          text: t.profile.signOut,
-          style: "destructive",
-          onPress: async () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            await logout();
-          },
-        },
-      ]);
-    }
+      },
+      t.profile.signOut,
+      true
+    );
   };
 
   return (

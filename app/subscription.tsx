@@ -6,11 +6,11 @@ import {
   ScrollView,
   Pressable,
   Platform,
-  Alert,
   TextInput,
   ActivityIndicator,
   KeyboardAvoidingView,
 } from "react-native";
+import { showAlert } from "@/lib/platform-alert";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -49,22 +49,14 @@ export default function SubscriptionScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
     onError: (err: any) => {
-      if (Platform.OS === "web") {
-        window.alert(err.message || "Could not submit request");
-      } else {
-        Alert.alert("Error", err.message || "Could not submit request");
-      }
+      showAlert("Error", err.message || "Could not submit request");
     },
   });
 
   const handleSubmit = () => {
     setShowErrors(true);
     if (!name.trim() || !email.trim() || !reason.trim()) {
-      if (Platform.OS === "web") {
-        window.alert("Please fill in all required fields");
-      } else {
-        Alert.alert("Required", "Please fill in name, email, and reason.");
-      }
+      showAlert("Required", "Please fill in name, email, and reason.");
       return;
     }
     submitMutation.mutate({

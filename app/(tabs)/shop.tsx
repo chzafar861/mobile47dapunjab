@@ -25,6 +25,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import { showAlert } from "@/lib/platform-alert";
 import Colors from "@/constants/colors";
 
 const { width } = Dimensions.get("window");
@@ -391,7 +392,7 @@ export default function ShopScreen() {
   const pickProductImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Please allow photo library access.");
+      showAlert("Permission Required", "Please allow photo library access.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -436,7 +437,7 @@ export default function ShopScreen() {
     if (Platform.OS === "web") {
       // silent on web
     } else {
-      Alert.alert("Added", `${item.name} added to cart`);
+      showAlert("Added", `${item.name} added to cart`);
     }
   };
 
@@ -471,25 +472,25 @@ export default function ShopScreen() {
   const placeOrder = async () => {
     setShowErrors(true);
     if (!checkoutForm.name.trim() || !checkoutForm.phone.trim() || !checkoutForm.address.trim() || !checkoutForm.city.trim()) {
-      Alert.alert("Required", "Please fill in all delivery details.");
+      showAlert("Required", "Please fill in all delivery details.");
       return;
     }
     if (paymentMethod === "card") {
       const num = cardForm.number.replace(/\s/g, "");
       if (num.length < 13 || num.length > 19) {
-        Alert.alert("Invalid Card", "Please enter a valid card number.");
+        showAlert("Invalid Card", "Please enter a valid card number.");
         return;
       }
       if (cardForm.expiry.length < 5) {
-        Alert.alert("Invalid Expiry", "Please enter a valid expiry date (MM/YY).");
+        showAlert("Invalid Expiry", "Please enter a valid expiry date (MM/YY).");
         return;
       }
       if (cardForm.cvv.length < 3) {
-        Alert.alert("Invalid CVV", "Please enter a valid CVV.");
+        showAlert("Invalid CVV", "Please enter a valid CVV.");
         return;
       }
       if (!cardForm.holder.trim()) {
-        Alert.alert("Required", "Please enter the cardholder name.");
+        showAlert("Required", "Please enter the cardholder name.");
         return;
       }
     }
@@ -515,7 +516,7 @@ export default function ShopScreen() {
       setShowErrors(false);
       setOrderPlaced(true);
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Could not place order.");
+      showAlert("Error", err.message || "Could not place order.");
     } finally {
       setPlacing(false);
     }
