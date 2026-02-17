@@ -791,7 +791,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ rates: exchangeRateCache.rates, cached: true });
       }
 
-      const currencies = ["PKR", "INR", "GBP", "EUR", "CAD", "AED", "SAR", "AUD"];
+      const currencies = ["PKR", "INR"];
       const apiUrl = `https://open.er-api.com/v6/latest/USD`;
       const response = await fetch(apiUrl);
 
@@ -811,14 +811,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const fallbackRates: Record<string, number> = {
-        USD: 1, PKR: 278.5, INR: 83.5, GBP: 0.79, EUR: 0.92,
-        CAD: 1.36, AED: 3.67, SAR: 3.75, AUD: 1.53,
+        USD: 1, PKR: 278.5, INR: 83.5,
       };
       res.json({ rates: fallbackRates, cached: false, fallback: true });
     } catch (e: any) {
       const fallbackRates: Record<string, number> = {
-        USD: 1, PKR: 278.5, INR: 83.5, GBP: 0.79, EUR: 0.92,
-        CAD: 1.36, AED: 3.67, SAR: 3.75, AUD: 1.53,
+        USD: 1, PKR: 278.5, INR: 83.5,
       };
       res.json({ rates: fallbackRates, cached: false, fallback: true });
     }

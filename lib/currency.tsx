@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useMemo, ReactNode, useEffe
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApiUrl } from "@/lib/query-client";
 
-export type CurrencyCode = "USD" | "PKR" | "INR" | "GBP" | "EUR" | "CAD" | "AED" | "SAR" | "AUD";
+export type CurrencyCode = "USD" | "PKR" | "INR";
 
 export interface CurrencyInfo {
   code: CurrencyCode;
@@ -17,55 +17,28 @@ const DEFAULT_RATES: Record<CurrencyCode, number> = {
   USD: 1,
   PKR: 278.5,
   INR: 83.5,
-  GBP: 0.79,
-  EUR: 0.92,
-  CAD: 1.36,
-  AED: 3.67,
-  SAR: 3.75,
-  AUD: 1.53,
 };
 
 export const CURRENCIES: CurrencyInfo[] = [
   { code: "USD", symbol: "$", name: "US Dollar", nativeName: "US Dollar", flag: "US", rate: DEFAULT_RATES.USD },
   { code: "PKR", symbol: "Rs", name: "Pakistani Rupee", nativeName: "پاکستانی روپیہ", flag: "PK", rate: DEFAULT_RATES.PKR },
   { code: "INR", symbol: "₹", name: "Indian Rupee", nativeName: "भारतीय रुपया", flag: "IN", rate: DEFAULT_RATES.INR },
-  { code: "GBP", symbol: "£", name: "British Pound", nativeName: "British Pound", flag: "GB", rate: DEFAULT_RATES.GBP },
-  { code: "EUR", symbol: "€", name: "Euro", nativeName: "Euro", flag: "EU", rate: DEFAULT_RATES.EUR },
-  { code: "CAD", symbol: "C$", name: "Canadian Dollar", nativeName: "Canadian Dollar", flag: "CA", rate: DEFAULT_RATES.CAD },
-  { code: "AED", symbol: "د.إ", name: "UAE Dirham", nativeName: "درهم إماراتي", flag: "AE", rate: DEFAULT_RATES.AED },
-  { code: "SAR", symbol: "﷼", name: "Saudi Riyal", nativeName: "ريال سعودي", flag: "SA", rate: DEFAULT_RATES.SAR },
-  { code: "AUD", symbol: "A$", name: "Australian Dollar", nativeName: "Australian Dollar", flag: "AU", rate: DEFAULT_RATES.AUD },
 ];
 
 export const COUNTRY_CURRENCY_MAP: Record<string, CurrencyCode> = {
   pakistan: "PKR",
   india: "INR",
-  uk: "GBP",
-  "united kingdom": "GBP",
-  england: "GBP",
-  scotland: "GBP",
-  wales: "GBP",
   usa: "USD",
   "united states": "USD",
   america: "USD",
   "united states of america": "USD",
-  canada: "CAD",
-  uae: "AED",
-  "united arab emirates": "AED",
-  dubai: "AED",
-  "saudi arabia": "SAR",
-  australia: "AUD",
-  germany: "EUR",
-  france: "EUR",
-  italy: "EUR",
-  spain: "EUR",
-  netherlands: "EUR",
-  belgium: "EUR",
-  ireland: "EUR",
-  portugal: "EUR",
-  austria: "EUR",
-  greece: "EUR",
-  finland: "EUR",
+  uk: "USD",
+  "united kingdom": "USD",
+  canada: "USD",
+  australia: "USD",
+  uae: "USD",
+  "united arab emirates": "USD",
+  "saudi arabia": "USD",
 };
 
 export function getCurrencyForCountry(country: string): CurrencyCode | null {
