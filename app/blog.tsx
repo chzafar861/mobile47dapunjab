@@ -25,6 +25,7 @@ import * as ImagePicker from "expo-image-picker";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
+import { useTranslate, useTranslateOne } from "@/lib/useTranslate";
 
 const { width } = Dimensions.get("window");
 
@@ -79,6 +80,8 @@ function getCategoryGradient(category: string): [string, string] {
 function BlogCard({ post, onLike, onReadMore }: { post: BlogPost; onLike: (id: number) => void; onReadMore: (post: BlogPost) => void }) {
   const { t } = useI18n();
   const catInfo = CATEGORY_ICONS[post.category] || CATEGORY_ICONS["General"];
+  const { translated } = useTranslate([post.title, post.content]);
+  const [trTitle, trContent] = translated;
 
   return (
     <View style={styles.blogCard}>
@@ -102,8 +105,8 @@ function BlogCard({ post, onLike, onReadMore }: { post: BlogPost; onLike: (id: n
           </View>
           <Text style={styles.blogDate}>{formatDate(post.created_at)}</Text>
         </View>
-        <Text style={styles.blogTitle} numberOfLines={2}>{post.title}</Text>
-        <Text style={styles.blogExcerpt} numberOfLines={3}>{post.content}</Text>
+        <Text style={styles.blogTitle} numberOfLines={2}>{trTitle}</Text>
+        <Text style={styles.blogExcerpt} numberOfLines={3}>{trContent}</Text>
         <Pressable onPress={() => onReadMore(post)}>
           <Text style={styles.readMoreText}>{t.blog.readMore}</Text>
         </Pressable>
@@ -152,6 +155,8 @@ function BlogDetailModal({
   const [commentText, setCommentText] = useState("");
 
   const catInfo = post ? (CATEGORY_ICONS[post.category] || CATEGORY_ICONS["General"]) : CATEGORY_ICONS["General"];
+  const { translated: detailTranslated } = useTranslate(post ? [post.title, post.content] : []);
+  const [detailTitle, detailContent] = post ? detailTranslated : ["", ""];
 
   const { data: comments = [], isLoading: commentsLoading } = useQuery<BlogComment[]>({
     queryKey: ["/api/blog-posts", String(post?.id), "comments"],
@@ -224,7 +229,7 @@ function BlogDetailModal({
                 <Text style={[styles.categoryBadgeText, { color: catInfo.color }]}>{post.category}</Text>
               </View>
 
-              <Text style={styles.detailTitle}>{post.title}</Text>
+              <Text style={styles.detailTitle}>{detailTitle}</Text>
 
               <View style={styles.detailAuthorRow}>
                 <View style={styles.authorAvatar}>
@@ -236,7 +241,7 @@ function BlogDetailModal({
                 </View>
               </View>
 
-              <Text style={styles.detailContent}>{post.content}</Text>
+              <Text style={styles.detailContent}>{detailContent}</Text>
 
               <View style={styles.detailActions}>
                 <Pressable
