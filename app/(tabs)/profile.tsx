@@ -20,6 +20,7 @@ import { useAuth } from "@/lib/auth-context";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useI18n, LANGUAGES } from "@/lib/i18n";
+import { useCurrency, CURRENCIES } from "@/lib/currency";
 
 function InputField({
   icon,
@@ -78,6 +79,7 @@ export default function ProfileScreen() {
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user, isAdmin, logout, updateProfile } = useAuth();
   const { t, lang, setLanguage, isRTL } = useI18n();
+  const { currency, setCurrency, currencyInfo } = useCurrency();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editData, setEditData] = useState({
@@ -502,6 +504,35 @@ export default function ProfileScreen() {
               {LANGUAGES.map((l) => (
                 <Pressable key={l.code} onPress={() => { setLanguage(l.code); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={[styles.languageBtn, lang === l.code && styles.languageBtnActive]}>
                   <Text style={[styles.languageBtnText, lang === l.code && styles.languageBtnTextActive]}>{l.nativeLabel}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {!isEditing && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t.profile.currency}</Text>
+            <Text style={styles.currencySubtitle}>{t.profile.selectCurrency}</Text>
+            <View style={styles.currencySelector}>
+              {CURRENCIES.map((c) => (
+                <Pressable
+                  key={c.code}
+                  onPress={() => {
+                    setCurrency(c.code);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  style={[
+                    styles.currencyBtn,
+                    currency === c.code && styles.currencyBtnActive,
+                  ]}
+                >
+                  <Text style={[styles.currencySymbol, currency === c.code && styles.currencySymbolActive]}>
+                    {c.symbol} {c.code}
+                  </Text>
+                  <Text style={[styles.currencyName, currency === c.code && styles.currencyNameActive]}>
+                    {c.nativeName}
+                  </Text>
                 </Pressable>
               ))}
             </View>
@@ -975,5 +1006,47 @@ const styles = StyleSheet.create({
   languageBtnTextActive: {
     color: Colors.light.primary,
     fontFamily: "Poppins_600SemiBold",
+  },
+  currencySubtitle: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    marginBottom: 12,
+  },
+  currencySelector: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  currencyBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#f0f0f0",
+    borderWidth: 1.5,
+    borderColor: "transparent",
+    minWidth: 90,
+    alignItems: "center",
+  },
+  currencyBtnActive: {
+    backgroundColor: Colors.light.primary + "15",
+    borderColor: Colors.light.primary,
+  },
+  currencySymbol: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 14,
+    color: Colors.light.text,
+  },
+  currencySymbolActive: {
+    color: Colors.light.primary,
+  },
+  currencyName: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 11,
+    color: Colors.light.textSecondary,
+    marginTop: 2,
+  },
+  currencyNameActive: {
+    color: Colors.light.primary,
   },
 });

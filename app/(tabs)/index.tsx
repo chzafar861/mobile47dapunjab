@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Colors from "@/constants/colors";
 import { useI18n } from "@/lib/i18n";
+import { useCurrency } from "@/lib/currency";
 
 const { width } = Dimensions.get("window");
 
@@ -77,6 +78,7 @@ function FeatureRow({ icon, title, description, onPress }: FeatureRowProps) {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
+  const { formatPrice } = useCurrency();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
 
@@ -133,7 +135,7 @@ export default function HomeScreen() {
             <ServiceCard
               icon={<Ionicons name="videocam" size={28} color="#fff" />}
               title={t.home.videoService}
-              subtitle={t.home.videoPrice}
+              subtitle={`${formatPrice(100)} / 1 ${t.services.perHour}`}
               gradient={["#D4A843", "#E8C96A"]}
               onPress={() => router.push("/(tabs)/services")}
             />

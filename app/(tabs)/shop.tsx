@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
+import { useCurrency } from "@/lib/currency";
 import { getApiUrl } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
@@ -205,7 +206,7 @@ function StarRating({ rating, size = 12 }: { rating: number; size?: number }) {
   return <View style={{ flexDirection: "row", gap: 1 }}>{stars}</View>;
 }
 
-function ProductCard({ item, onAddToCart, onPress }: { item: ShopItem; onAddToCart: () => void; onPress: () => void }) {
+function ProductCard({ item, onAddToCart, onPress, formatPrice }: { item: ShopItem; onAddToCart: () => void; onPress: () => void; formatPrice: (amount: number) => string }) {
   return (
     <Pressable
       style={({ pressed }) => [
@@ -230,9 +231,9 @@ function ProductCard({ item, onAddToCart, onPress }: { item: ShopItem; onAddToCa
         </View>
         <View style={styles.productBottom}>
           <View>
-            <Text style={styles.productPrice}>${item.price}</Text>
+            <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
             {item.originalPrice && (
-              <Text style={styles.originalPrice}>${item.originalPrice}</Text>
+              <Text style={styles.originalPrice}>{formatPrice(item.originalPrice)}</Text>
             )}
           </View>
           <Pressable
@@ -256,6 +257,7 @@ export default function ShopScreen() {
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user } = useAuth();
   const { t } = useI18n();
+  const { formatPrice } = useCurrency();
 
   const categoryLabels: Record<string, string> = {
     "All": t.shop.all,
@@ -478,6 +480,7 @@ export default function ShopScreen() {
             item={item}
             onAddToCart={() => addToCart(item)}
             onPress={() => setShowProduct(item)}
+            formatPrice={formatPrice}
           />
         )}
         ListEmptyComponent={
@@ -508,13 +511,13 @@ export default function ShopScreen() {
                     <Text style={styles.detailRatingText}>{showProduct.rating} ({showProduct.reviews} {t.shop.reviews})</Text>
                   </View>
                   <View style={styles.detailPriceRow}>
-                    <Text style={styles.detailPrice}>${showProduct.price}</Text>
+                    <Text style={styles.detailPrice}>{formatPrice(showProduct.price)}</Text>
                     {showProduct.originalPrice && (
-                      <Text style={styles.detailOriginalPrice}>${showProduct.originalPrice}</Text>
+                      <Text style={styles.detailOriginalPrice}>{formatPrice(showProduct.originalPrice)}</Text>
                     )}
                     {showProduct.originalPrice && (
                       <View style={styles.detailSaveBadge}>
-                        <Text style={styles.detailSaveText}>Save ${showProduct.originalPrice - showProduct.price}</Text>
+                        <Text style={styles.detailSaveText}>Save {formatPrice(showProduct.originalPrice - showProduct.price)}</Text>
                       </View>
                     )}
                   </View>
@@ -594,7 +597,7 @@ export default function ShopScreen() {
                       <Image source={item.image} style={styles.cartItemImage} resizeMode="cover" />
                       <View style={styles.cartItemInfo}>
                         <Text style={styles.cartItemName} numberOfLines={1}>{item.name}</Text>
-                        <Text style={styles.cartItemPrice}>${item.price}</Text>
+                        <Text style={styles.cartItemPrice}>{formatPrice(item.price)}</Text>
                         <View style={styles.quantityRow}>
                           <Pressable onPress={() => updateQuantity(item.id, -1)} style={styles.qtyBtn}>
                             <Ionicons name="remove" size={16} color={Colors.light.text} />
@@ -606,7 +609,7 @@ export default function ShopScreen() {
                         </View>
                       </View>
                       <View style={styles.cartItemRight}>
-                        <Text style={styles.cartItemTotal}>${(item.price * item.quantity).toFixed(2)}</Text>
+                        <Text style={styles.cartItemTotal}>{formatPrice(item.price * item.quantity)}</Text>
                         <Pressable onPress={() => removeFromCart(item.id)}>
                           <Ionicons name="trash-outline" size={18} color={Colors.light.danger} />
                         </Pressable>
@@ -618,7 +621,7 @@ export default function ShopScreen() {
                   <View style={styles.cartSummary}>
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>{t.shop.subtotal}</Text>
-                      <Text style={styles.summaryValue}>${cartTotal.toFixed(2)}</Text>
+                      <Text style={styles.summaryValue}>{formatPrice(cartTotal)}</Text>
                     </View>
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>{t.shop.shipping}</Text>
@@ -627,7 +630,7 @@ export default function ShopScreen() {
                     <View style={styles.summaryDivider} />
                     <View style={styles.summaryRow}>
                       <Text style={styles.totalLabel}>{t.shop.total}</Text>
-                      <Text style={styles.totalValue}>${cartTotal.toFixed(2)}</Text>
+                      <Text style={styles.totalValue}>{formatPrice(cartTotal)}</Text>
                     </View>
                   </View>
                   <Pressable
@@ -659,13 +662,13 @@ export default function ShopScreen() {
                 {cart.map((item) => (
                   <View key={item.id} style={styles.checkoutItem}>
                     <Text style={styles.checkoutItemName}>{item.name} x{item.quantity}</Text>
-                    <Text style={styles.checkoutItemPrice}>${(item.price * item.quantity).toFixed(2)}</Text>
+                    <Text style={styles.checkoutItemPrice}>{formatPrice(item.price * item.quantity)}</Text>
                   </View>
                 ))}
                 <View style={styles.summaryDivider} />
                 <View style={styles.checkoutItem}>
                   <Text style={styles.totalLabel}>{t.shop.total}</Text>
-                  <Text style={styles.totalValue}>${cartTotal.toFixed(2)}</Text>
+                  <Text style={styles.totalValue}>{formatPrice(cartTotal)}</Text>
                 </View>
               </View>
 
@@ -848,7 +851,7 @@ export default function ShopScreen() {
                 ) : (
                   <>
                     <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                    <Text style={styles.placeOrderBtnText}>{t.shop.placeOrder} - ${cartTotal.toFixed(2)}</Text>
+                    <Text style={styles.placeOrderBtnText}>{t.shop.placeOrder} - {formatPrice(cartTotal)}</Text>
                   </>
                 )}
               </Pressable>

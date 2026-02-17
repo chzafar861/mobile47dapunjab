@@ -17,6 +17,7 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import Colors from "@/constants/colors";
 import { useI18n } from "@/lib/i18n";
+import { useCurrency } from "@/lib/currency";
 
 interface ServiceBooking {
   id: string;
@@ -109,6 +110,7 @@ function BookingForm({ serviceType, onClose, onSubmit }: BookingFormProps) {
 export default function ServicesScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
+  const { formatPrice } = useCurrency();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const [activeBooking, setActiveBooking] = useState<string | null>(null);
@@ -207,7 +209,7 @@ export default function ServicesScreen() {
               {t.services.videoDesc}
             </Text>
             <View style={styles.priceTag}>
-              <Text style={styles.priceAmount}>{t.services.videoPrice}</Text>
+              <Text style={styles.priceAmount}>{formatPrice(100)}</Text>
               <Text style={styles.pricePer}>/ {t.services.perHour}</Text>
             </View>
             <View style={styles.mainServiceFeatures}>
