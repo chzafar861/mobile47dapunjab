@@ -782,6 +782,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/shop-products", async (_req: Request, res: Response) => {
+    try {
+      const result = await pool.query("SELECT * FROM shop_products ORDER BY created_at DESC");
+      res.json(result.rows);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/shop-products", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Login required" });
+      const roleCheck = await pool.query("SELECT role, email FROM auth_users WHERE id = $1", [userId]);
+      if (!roleCheck.rows.length || roleCheck.rows[0].role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const { name, price, original_price, category, description, details, image_url } = req.body;
+      if (!name || !price) return res.status(400).json({ error: "Name and price are required" });
+      const result = await pool.query(
+        `INSERT INTO shop_products (name, price, original_price, category, description, details, image_url, posted_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [name, price, original_price || null, category || "General", description || "", details || "", image_url || null, roleCheck.rows[0].email]
+      );
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete("/api/shop-products/:id", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Login required" });
+      const roleCheck = await pool.query("SELECT role FROM auth_users WHERE id = $1", [userId]);
+      if (!roleCheck.rows.length || roleCheck.rows[0].role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      await pool.query("DELETE FROM shop_products WHERE id = $1", [req.params.id]);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   const exchangeRateCache: { rates: Record<string, number> | null; timestamp: number } = { rates: null, timestamp: 0 };
   const EXCHANGE_CACHE_TTL = 6 * 60 * 60 * 1000;
 

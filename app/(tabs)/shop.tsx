@@ -20,8 +20,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import { useCurrency } from "@/lib/currency";
-import { getApiUrl } from "@/lib/query-client";
+import { getApiUrl, apiRequest, queryClient } from "@/lib/query-client";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import Colors from "@/constants/colors";
 
 const { width } = Dimensions.get("window");
@@ -255,7 +258,7 @@ export default function ShopScreen() {
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { t } = useI18n();
   const { formatPrice } = useCurrency();
 
@@ -293,6 +296,31 @@ export default function ShopScreen() {
     });
   }, [t]);
 
+  const { data: adminProducts = [] } = useQuery<any[]>({
+    queryKey: ["/api/shop-products"],
+  });
+
+  const allProducts = useMemo(() => {
+    const adminItems: ShopItem[] = adminProducts.map((p: any) => ({
+      id: `admin_${p.id}`,
+      name: p.name,
+      price: p.price,
+      originalPrice: p.original_price || undefined,
+      category: p.category || "General",
+      description: p.description || "",
+      details: p.details || "",
+      icon: "storefront",
+      iconSet: "ionicons" as const,
+      image: p.image_url ? { uri: p.image_url } : require("@/assets/images/shop/truck-art.jpg"),
+      rating: p.rating || 4.5,
+      reviews: p.reviews || 0,
+      inStock: p.in_stock !== false,
+      _isAdminProduct: true,
+      _dbId: p.id,
+    }));
+    return [...adminItems, ...translatedProducts];
+  }, [adminProducts, translatedProducts]);
+
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -304,6 +332,83 @@ export default function ShopScreen() {
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "card">("cod");
   const [cardForm, setCardForm] = useState({ number: "", expiry: "", cvv: "", holder: "" });
   const [showErrors, setShowErrors] = useState(false);
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [newProduct, setNewProduct] = useState({ name: "", price: "", original_price: "", category: "General", description: "", details: "", image_url: "" });
+
+  const addProductMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", "/api/shop-products", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/shop-products"] });
+      setShowAddProduct(false);
+      setNewProduct({ name: "", price: "", original_price: "", category: "General", description: "", details: "", image_url: "" });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (Platform.OS === "web") window.alert("Product published successfully!");
+      else Alert.alert("Published", "Your product is now live in the shop.");
+    },
+    onError: (err: any) => {
+      if (Platform.OS === "web") window.alert(err.message || "Could not publish product");
+      else Alert.alert("Error", err.message || "Could not publish product");
+    },
+  });
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/shop-products/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/shop-products"] });
+      setShowProduct(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+  });
+
+  const handleAddProduct = () => {
+    if (!newProduct.name.trim() || !newProduct.price.trim()) {
+      if (Platform.OS === "web") window.alert("Name and price are required");
+      else Alert.alert("Required", "Please enter product name and price.");
+      return;
+    }
+    addProductMutation.mutate({
+      name: newProduct.name.trim(),
+      price: parseFloat(newProduct.price),
+      original_price: newProduct.original_price ? parseFloat(newProduct.original_price) : null,
+      category: newProduct.category,
+      description: newProduct.description.trim(),
+      details: newProduct.details.trim(),
+      image_url: newProduct.image_url || null,
+    });
+  };
+
+  const pickProductImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Please allow photo library access.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      base64: true,
+    });
+    if (!result.canceled && result.assets[0]?.base64) {
+      setNewProduct(prev => ({ ...prev, image_url: `data:image/jpeg;base64,${result.assets[0].base64}` }));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const handleFabPress = () => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    if (isAdmin) {
+      setShowAddProduct(true);
+    } else {
+      router.push("/subscription");
+    }
+  };
   const [checkoutForm, setCheckoutForm] = useState({
     name: user?.name || "",
     phone: user?.phone || "",
@@ -420,7 +525,7 @@ export default function ShopScreen() {
     }
   };
 
-  const filteredProducts = translatedProducts.filter((p: any) => {
+  const filteredProducts = allProducts.filter((p: any) => {
     const origCategory = p._originalCategory || p.category;
     const matchesCategory = selectedCategory === "All" || origCategory === selectedCategory;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -914,6 +1019,119 @@ export default function ShopScreen() {
             >
               <Text style={styles.continueShopBtnText}>{t.shop.continueShopping}</Text>
             </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Pressable
+        onPress={handleFabPress}
+        style={({ pressed }) => [styles.fab, { opacity: pressed ? 0.9 : 1 }]}
+      >
+        <LinearGradient
+          colors={[Colors.light.accent, "#C4972E"]}
+          style={styles.fabGradient}
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </LinearGradient>
+      </Pressable>
+
+      <Modal visible={showAddProduct} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.addProductModal, { paddingTop: insets.top + 10 }]}>
+            <View style={styles.cartHeader}>
+              <Text style={styles.cartTitle}>Publish Product</Text>
+              <Pressable onPress={() => setShowAddProduct(false)} style={styles.modalCloseBtn}>
+                <Ionicons name="close" size={24} color={Colors.light.text} />
+              </Pressable>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40, paddingHorizontal: 16 }}>
+              <Text style={styles.addFieldLabel}>Product Name *</Text>
+              <TextInput
+                style={styles.addFieldInput}
+                placeholder="Enter product name"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={newProduct.name}
+                onChangeText={(v) => setNewProduct(p => ({ ...p, name: v }))}
+              />
+              <Text style={styles.addFieldLabel}>Price (USD) *</Text>
+              <TextInput
+                style={styles.addFieldInput}
+                placeholder="e.g. 25"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={newProduct.price}
+                onChangeText={(v) => setNewProduct(p => ({ ...p, price: v }))}
+                keyboardType="numeric"
+              />
+              <Text style={styles.addFieldLabel}>Original Price (USD, optional)</Text>
+              <TextInput
+                style={styles.addFieldInput}
+                placeholder="e.g. 40 (for showing discount)"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={newProduct.original_price}
+                onChangeText={(v) => setNewProduct(p => ({ ...p, original_price: v }))}
+                keyboardType="numeric"
+              />
+              <Text style={styles.addFieldLabel}>Category</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                {["General", "Clothing", "Art", "Home", "Kitchen", "Accessories"].map(cat => (
+                  <Pressable
+                    key={cat}
+                    onPress={() => setNewProduct(p => ({ ...p, category: cat }))}
+                    style={[styles.categoryChip, newProduct.category === cat && styles.categoryChipActive, { marginRight: 8 }]}
+                  >
+                    <Text style={[styles.categoryText, newProduct.category === cat && styles.categoryTextActive]}>{cat}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+              <Text style={styles.addFieldLabel}>Description</Text>
+              <TextInput
+                style={[styles.addFieldInput, { height: 80, textAlignVertical: "top" }]}
+                placeholder="Short product description"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={newProduct.description}
+                onChangeText={(v) => setNewProduct(p => ({ ...p, description: v }))}
+                multiline
+              />
+              <Text style={styles.addFieldLabel}>Details</Text>
+              <TextInput
+                style={[styles.addFieldInput, { height: 100, textAlignVertical: "top" }]}
+                placeholder="Full product details"
+                placeholderTextColor={Colors.light.tabIconDefault}
+                value={newProduct.details}
+                onChangeText={(v) => setNewProduct(p => ({ ...p, details: v }))}
+                multiline
+              />
+              <Text style={styles.addFieldLabel}>Product Image</Text>
+              <Pressable onPress={pickProductImage} style={styles.imagePickerBtn}>
+                {newProduct.image_url ? (
+                  <Image source={{ uri: newProduct.image_url }} style={styles.pickedImagePreview} />
+                ) : (
+                  <View style={styles.imagePickerPlaceholder}>
+                    <Ionicons name="camera" size={32} color={Colors.light.tabIconDefault} />
+                    <Text style={styles.imagePickerText}>Tap to add photo</Text>
+                  </View>
+                )}
+              </Pressable>
+              <Pressable
+                onPress={handleAddProduct}
+                style={({ pressed }) => [styles.publishBtn, { opacity: pressed ? 0.9 : 1 }]}
+                disabled={addProductMutation.isPending}
+              >
+                <LinearGradient
+                  colors={[Colors.light.primary, "#2D6A4F"]}
+                  style={styles.publishBtnGradient}
+                >
+                  {addProductMutation.isPending ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="cloud-upload" size={20} color="#fff" />
+                      <Text style={styles.publishBtnText}>Publish Product</Text>
+                    </>
+                  )}
+                </LinearGradient>
+              </Pressable>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1639,5 +1857,91 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_500Medium",
     fontSize: 14,
     color: Colors.light.textSecondary,
+  },
+  fab: {
+    position: "absolute" as const,
+    bottom: 90,
+    right: 20,
+    zIndex: 100,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  addProductModal: {
+    flex: 1,
+    backgroundColor: Colors.light.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: 40,
+  },
+  addFieldLabel: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 13,
+    color: Colors.light.text,
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  addFieldInput: {
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontFamily: "Poppins_400Regular",
+    fontSize: 14,
+    color: Colors.light.text,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  imagePickerBtn: {
+    marginTop: 8,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: "hidden" as const,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    borderStyle: "dashed" as const,
+  },
+  imagePickerPlaceholder: {
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingVertical: 32,
+    backgroundColor: Colors.light.backgroundSecondary,
+  },
+  imagePickerText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 13,
+    color: Colors.light.tabIconDefault,
+    marginTop: 8,
+  },
+  pickedImagePreview: {
+    width: "100%" as const,
+    height: 200,
+    borderRadius: 12,
+  },
+  publishBtn: {
+    marginTop: 20,
+    borderRadius: 14,
+    overflow: "hidden" as const,
+  },
+  publishBtnGradient: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 8,
+    paddingVertical: 14,
+  },
+  publishBtnText: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 15,
+    color: "#fff",
   },
 });
