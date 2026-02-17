@@ -4,6 +4,12 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, HumanFind (people & property search), history, and property detail submissions.
 
 ## Recent Changes
+- 2026-02-17: Full multilingual i18n support - 4 languages: English, Urdu (RTL), Hindi, Punjabi
+- 2026-02-17: I18nProvider (lib/i18n.tsx) with AsyncStorage persistence, useI18n hook, LANGUAGES array
+- 2026-02-17: Translation files: lib/translations/en.ts, ur.ts, hi.ts, pa.ts (15+ sections each)
+- 2026-02-17: Language selector on Profile page with native labels (English, اردو, हिन्दी, ਪੰਜਾਬੀ)
+- 2026-02-17: ALL 18+ screens updated with translations (tabs, home, services, shop, humanfind, profile, login, orders, submissions, submit-details, admin, blog, history, pakistan-guide, protocol/video/customs requests, migration-detail)
+- 2026-02-17: Tab bar labels translate dynamically when language changes
 - 2026-02-16: Added My Orders page (app/my-orders.tsx) - users can view orders, see order tracking timeline with 6 statuses
 - 2026-02-16: Order tracking statuses: pending, confirmed, processing, shipped, out_for_delivery, delivered (+ cancelled)
 - 2026-02-16: Added tracking_number and status_updated_at columns to orders table
