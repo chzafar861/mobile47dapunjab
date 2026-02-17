@@ -155,6 +155,13 @@ export const en = {
     area: "Area",
     description: "Description",
     viewDetails: "View Details",
+    noPhotos: "No photos available",
+    photos: "photos",
+    price: "Price",
+    status: "Status",
+    contact: "Contact",
+    phone: "Phone",
+    email: "Email",
   },
 
   profile: {

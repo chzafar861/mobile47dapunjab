@@ -155,6 +155,13 @@ export const pa = {
     area: "ਖੇਤਰ",
     description: "ਵੇਰਵਾ",
     viewDetails: "ਵੇਰਵੇ ਦੇਖੋ",
+    noPhotos: "ਕੋਈ ਫੋਟੋ ਉਪਲਬਧ ਨਹੀਂ",
+    photos: "ਫੋਟੋਆਂ",
+    price: "ਕੀਮਤ",
+    status: "ਸਥਿਤੀ",
+    contact: "ਸੰਪਰਕ",
+    phone: "ਫ਼ੋਨ",
+    email: "ਈਮੇਲ",
   },
 
   profile: {

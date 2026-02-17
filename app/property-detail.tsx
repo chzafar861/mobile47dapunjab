@@ -17,6 +17,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/query-client";
 import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
+import { useI18n } from "@/lib/i18n";
+import { useTranslate } from "@/lib/useTranslate";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -61,6 +63,7 @@ function InfoRow({ icon, label, value }: { icon: string; label: string; value: s
 export default function PropertyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
 
@@ -75,7 +78,20 @@ export default function PropertyDetailScreen() {
 
   const d = property?.data || {} as PropertyData;
   const images = d.images || [];
-  const title = d.ownerName || d.propertyType || "Property Details";
+
+  const { translated } = useTranslate([
+    d.ownerName || "",
+    d.location || d.city || "",
+    d.district || "",
+    d.area || "",
+    d.description || "",
+    d.propertyType || "",
+    d.price || "",
+    d.status || "",
+  ]);
+  const [trOwner, trLocation, trDistrict, trArea, trDescription, trPropertyType, trPrice, trStatus] = translated;
+
+  const title = trOwner || trPropertyType || t.humanFind.propertyDetails;
 
   if (isLoading) {
     return (
@@ -89,9 +105,9 @@ export default function PropertyDetailScreen() {
     return (
       <View style={[styles.container, styles.center]}>
         <Ionicons name="alert-circle-outline" size={48} color={Colors.light.textSecondary} />
-        <Text style={styles.notFoundText}>Property not found</Text>
+        <Text style={styles.notFoundText}>{t.common.noResults}</Text>
         <Pressable onPress={() => router.back()} style={styles.goBackBtn}>
-          <Text style={styles.goBackBtnText}>Go Back</Text>
+          <Text style={styles.goBackBtnText}>{t.common.back}</Text>
         </Pressable>
       </View>
     );
@@ -103,7 +119,7 @@ export default function PropertyDetailScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.light.text} />
         </Pressable>
-        <Text style={styles.headerBarTitle} numberOfLines={1}>Property Details</Text>
+        <Text style={styles.headerBarTitle} numberOfLines={1}>{t.humanFind.propertyDetails}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -128,14 +144,14 @@ export default function PropertyDetailScreen() {
             style={styles.noImageBanner}
           >
             <MaterialCommunityIcons name="home-city-outline" size={48} color={Colors.light.textSecondary} />
-            <Text style={styles.noImageText}>No photos available</Text>
+            <Text style={styles.noImageText}>{t.humanFind.noPhotos || "No photos available"}</Text>
           </LinearGradient>
         )}
 
         {images.length > 1 && (
           <View style={styles.imageCount}>
             <Ionicons name="images-outline" size={14} color={Colors.light.textSecondary} />
-            <Text style={styles.imageCountText}>{images.length} photos</Text>
+            <Text style={styles.imageCountText}>{images.length} {t.humanFind.photos || "photos"}</Text>
           </View>
         )}
 
@@ -145,7 +161,7 @@ export default function PropertyDetailScreen() {
           {d.propertyType && (
             <View style={styles.typeBadge}>
               <MaterialCommunityIcons name="home-outline" size={14} color={Colors.light.primary} />
-              <Text style={styles.typeBadgeText}>{d.propertyType}</Text>
+              <Text style={styles.typeBadgeText}>{trPropertyType}</Text>
             </View>
           )}
         </View>
@@ -153,14 +169,14 @@ export default function PropertyDetailScreen() {
         <View style={styles.divider} />
 
         <View style={styles.contentSection}>
-          <Text style={styles.sectionHeading}>Details</Text>
+          <Text style={styles.sectionHeading}>{t.humanFind.viewDetails}</Text>
           <View style={styles.infoCard}>
-            <InfoRow icon="person-outline" label="Owner" value={d.ownerName || ""} />
-            <InfoRow icon="location-outline" label="Location" value={d.location || d.city || ""} />
-            <InfoRow icon="map-outline" label="District" value={d.district || ""} />
-            <InfoRow icon="resize-outline" label="Area" value={d.area || ""} />
-            <InfoRow icon="pricetag-outline" label="Price" value={d.price || ""} />
-            <InfoRow icon="flag-outline" label="Status" value={d.status || ""} />
+            <InfoRow icon="person-outline" label={t.humanFind.owner} value={trOwner} />
+            <InfoRow icon="location-outline" label={t.humanFind.location} value={trLocation} />
+            <InfoRow icon="map-outline" label={t.humanFind.district || "District"} value={trDistrict} />
+            <InfoRow icon="resize-outline" label={t.humanFind.area} value={trArea} />
+            <InfoRow icon="pricetag-outline" label={t.humanFind.price || "Price"} value={trPrice} />
+            <InfoRow icon="flag-outline" label={t.humanFind.status || "Status"} value={trStatus} />
           </View>
         </View>
 
@@ -168,8 +184,8 @@ export default function PropertyDetailScreen() {
           <>
             <View style={styles.divider} />
             <View style={styles.contentSection}>
-              <Text style={styles.sectionHeading}>Description</Text>
-              <Text style={styles.descriptionText}>{d.description}</Text>
+              <Text style={styles.sectionHeading}>{t.humanFind.description}</Text>
+              <Text style={styles.descriptionText}>{trDescription}</Text>
             </View>
           </>
         )}
@@ -178,10 +194,10 @@ export default function PropertyDetailScreen() {
           <>
             <View style={styles.divider} />
             <View style={styles.contentSection}>
-              <Text style={styles.sectionHeading}>Contact</Text>
+              <Text style={styles.sectionHeading}>{t.humanFind.contact || "Contact"}</Text>
               <View style={styles.infoCard}>
-                <InfoRow icon="call-outline" label="Phone" value={d.phone || d.contact || ""} />
-                <InfoRow icon="mail-outline" label="Email" value={d.email || ""} />
+                <InfoRow icon="call-outline" label={t.humanFind.phone} value={d.phone || d.contact || ""} />
+                <InfoRow icon="mail-outline" label={t.humanFind.email || "Email"} value={d.email || ""} />
               </View>
             </View>
           </>
@@ -189,7 +205,7 @@ export default function PropertyDetailScreen() {
 
         <View style={styles.contentSection}>
           <Text style={styles.submittedDate}>
-            Submitted: {new Date(property.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+            {t.humanFind.submittedBy ? `${t.humanFind.submittedBy}: ` : "Submitted: "}{new Date(property.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
           </Text>
         </View>
       </ScrollView>

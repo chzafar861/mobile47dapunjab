@@ -155,6 +155,13 @@ export const hi = {
     area: "क्षेत्र",
     description: "विवरण",
     viewDetails: "विवरण देखें",
+    noPhotos: "कोई फ़ोटो उपलब्ध नहीं",
+    photos: "फ़ोटो",
+    price: "कीमत",
+    status: "स्थिति",
+    contact: "संपर्क",
+    phone: "फ़ोन",
+    email: "ईमेल",
   },
 
   profile: {

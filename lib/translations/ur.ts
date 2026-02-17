@@ -155,6 +155,13 @@ export const ur = {
     area: "رقبہ",
     description: "تفصیل",
     viewDetails: "تفصیلات دیکھیں",
+    noPhotos: "کوئی تصویر دستیاب نہیں",
+    photos: "تصاویر",
+    price: "قیمت",
+    status: "حالت",
+    contact: "رابطہ",
+    phone: "فون",
+    email: "ای میل",
   },
 
   profile: {
