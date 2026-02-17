@@ -19,6 +19,7 @@ import { firebaseApi } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
+import { useI18n } from "@/lib/i18n";
 
 const VIDEO_INCLUDES = [
   { key: "streets", label: "Village streets", icon: "trail-sign-outline" },
@@ -55,7 +56,7 @@ function FormField({
   number: number;
   placeholder: string;
   value: string;
-  onChangeText: (t: string) => void;
+  onChangeText: (v: string) => void;
   keyboardType?: "default" | "phone-pad" | "email-address";
   multiline?: boolean;
   optional?: boolean;
@@ -90,6 +91,7 @@ function FormField({
 
 export default function VideoRequestScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user } = useAuth();
@@ -229,8 +231,8 @@ export default function VideoRequestScreen() {
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </Pressable>
           <Ionicons name="videocam" size={44} color="#fff" />
-          <Text style={styles.heroTitle}>Village Video Service</Text>
-          <Text style={styles.heroSubtitle}>Custom Request Form</Text>
+          <Text style={styles.heroTitle}>{t.videoRequest.title}</Text>
+          <Text style={styles.heroSubtitle}>{t.videoRequest.subtitle}</Text>
           <Text style={styles.heroDesc}>
             Want a personal video of your village or any old memorable place?
           </Text>
@@ -244,7 +246,7 @@ export default function VideoRequestScreen() {
           <View style={styles.sectionCard}>
             <FormField
               number={1}
-              label="Full Name"
+              label={t.videoRequest.fullName}
               placeholder="Enter your full name"
               value={fullName}
               onChangeText={setFullName}
@@ -253,7 +255,7 @@ export default function VideoRequestScreen() {
             />
             <FormField
               number={2}
-              label="Contact Number (WhatsApp preferred)"
+              label={t.videoRequest.contactNumber}
               placeholder="Enter a valid contact number"
               value={contactNumber}
               onChangeText={setContactNumber}
@@ -263,7 +265,7 @@ export default function VideoRequestScreen() {
             />
             <FormField
               number={3}
-              label="Current Country / City"
+              label={t.videoRequest.currentLocation}
               placeholder="Where are you currently living?"
               value={currentLocation}
               onChangeText={setCurrentLocation}
@@ -276,7 +278,7 @@ export default function VideoRequestScreen() {
           <View style={styles.sectionCard}>
             <FormField
               number={4}
-              label="Village / Place Name"
+              label={t.videoRequest.villageName}
               placeholder="Enter the name of the village or place"
               value={villageName}
               onChangeText={setVillageName}
@@ -285,7 +287,7 @@ export default function VideoRequestScreen() {
             />
             <FormField
               number={5}
-              label="District / Region"
+              label={t.videoRequest.district}
               placeholder="Enter district or nearby area"
               value={district}
               onChangeText={setDistrict}
@@ -294,7 +296,7 @@ export default function VideoRequestScreen() {
             />
             <FormField
               number={6}
-              label="Exact Location"
+              label={t.videoRequest.exactLocation}
               placeholder="Google Maps link or nearby landmark"
               value={exactLocation}
               onChangeText={setExactLocation}
@@ -302,7 +304,7 @@ export default function VideoRequestScreen() {
             />
             <FormField
               number={7}
-              label="Why is this place special to you?"
+              label={t.videoRequest.specialMemory}
               placeholder="Share a short story or memory connected to this place"
               value={specialMemory}
               onChangeText={setSpecialMemory}
@@ -372,7 +374,7 @@ export default function VideoRequestScreen() {
             </View>
             <FormField
               number={9}
-              label="Special Instructions"
+              label={t.videoRequest.specialInstructions}
               placeholder="Any specific spots, angles, or timing you prefer"
               value={specialInstructions}
               onChangeText={setSpecialInstructions}
@@ -479,7 +481,7 @@ export default function VideoRequestScreen() {
             ) : (
               <>
                 <Ionicons name="send" size={18} color="#fff" />
-                <Text style={styles.submitBtnText}>Submit Request</Text>
+                <Text style={styles.submitBtnText}>{t.videoRequest.submitRequest}</Text>
               </>
             )}
           </Pressable>

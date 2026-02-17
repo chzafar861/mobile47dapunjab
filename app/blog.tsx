@@ -24,6 +24,7 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 
 const { width } = Dimensions.get("window");
 
@@ -76,6 +77,7 @@ function getCategoryGradient(category: string): [string, string] {
 }
 
 function BlogCard({ post, onLike, onReadMore }: { post: BlogPost; onLike: (id: number) => void; onReadMore: (post: BlogPost) => void }) {
+  const { t } = useI18n();
   const catInfo = CATEGORY_ICONS[post.category] || CATEGORY_ICONS["General"];
 
   return (
@@ -103,7 +105,7 @@ function BlogCard({ post, onLike, onReadMore }: { post: BlogPost; onLike: (id: n
         <Text style={styles.blogTitle} numberOfLines={2}>{post.title}</Text>
         <Text style={styles.blogExcerpt} numberOfLines={3}>{post.content}</Text>
         <Pressable onPress={() => onReadMore(post)}>
-          <Text style={styles.readMoreText}>Read more</Text>
+          <Text style={styles.readMoreText}>{t.blog.readMore}</Text>
         </Pressable>
         <View style={styles.blogCardFooter}>
           <View style={styles.authorRow}>
@@ -142,6 +144,7 @@ function BlogDetailModal({
   onClose: () => void;
   onLike: (id: number) => void;
 }) {
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
@@ -194,7 +197,7 @@ function BlogDetailModal({
             <Pressable onPress={onClose}>
               <Ionicons name="arrow-back" size={26} color={Colors.light.text} />
             </Pressable>
-            <Text style={styles.detailHeaderTitle} numberOfLines={1}>Blog Post</Text>
+            <Text style={styles.detailHeaderTitle} numberOfLines={1}>{t.blog.title}</Text>
             <View style={{ width: 26 }} />
           </View>
 
@@ -244,7 +247,7 @@ function BlogDetailModal({
                   style={({ pressed }) => [styles.detailLikeBtn, { opacity: pressed ? 0.6 : 1 }]}
                 >
                   <Ionicons name="heart" size={20} color="#E53935" />
-                  <Text style={styles.detailLikeText}>{post.likes} Likes</Text>
+                  <Text style={styles.detailLikeText}>{post.likes} {t.blog.likes}</Text>
                 </Pressable>
                 <View style={styles.detailCommentCount}>
                   <Ionicons name="chatbubble-outline" size={18} color={Colors.light.textSecondary} />
@@ -313,6 +316,7 @@ function BlogDetailModal({
 }
 
 export default function BlogScreen() {
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
@@ -480,7 +484,7 @@ export default function BlogScreen() {
           </Pressable>
           <View style={styles.heroContent}>
             <MaterialCommunityIcons name="post-outline" size={44} color={Colors.light.accent} />
-            <Text style={styles.heroTitle}>Punjab Blog</Text>
+            <Text style={styles.heroTitle}>{t.blog.title}</Text>
             <Text style={styles.heroSubtitle}>
               Stories, tips & insights from the heart of Punjab
             </Text>
@@ -492,28 +496,37 @@ export default function BlogScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryRow}
         >
-          {CATEGORIES.map((cat) => (
-            <Pressable
-              key={cat}
-              onPress={() => {
-                setActiveCategory(cat);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-              style={[
-                styles.categoryChip,
-                activeCategory === cat && styles.categoryChipActive,
-              ]}
-            >
-              <Text
+          {CATEGORIES.map((cat) => {
+            const categoryLabels: Record<string, string> = {
+              "All": t.blog.allCategories,
+              "Migration Stories": t.blog.stories,
+              "Travel Tips": t.blog.travel,
+              "Culture": t.blog.culture,
+              "General": t.blog.title,
+            };
+            return (
+              <Pressable
+                key={cat}
+                onPress={() => {
+                  setActiveCategory(cat);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
                 style={[
-                  styles.categoryChipText,
-                  activeCategory === cat && styles.categoryChipTextActive,
+                  styles.categoryChip,
+                  activeCategory === cat && styles.categoryChipActive,
                 ]}
               >
-                {cat}
-              </Text>
-            </Pressable>
-          ))}
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    activeCategory === cat && styles.categoryChipTextActive,
+                  ]}
+                >
+                  {categoryLabels[cat] || cat}
+                </Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
 
         {isLoading ? (
@@ -523,8 +536,8 @@ export default function BlogScreen() {
         ) : filteredPosts.length === 0 ? (
           <View style={styles.emptyWrap}>
             <Feather name="file-text" size={48} color={Colors.light.textSecondary} />
-            <Text style={styles.emptyText}>No posts yet in this category</Text>
-            <Text style={styles.emptySubtext}>Be the first to write one!</Text>
+            <Text style={styles.emptyText}>{t.blog.noPosts}</Text>
+            <Text style={styles.emptySubtext}>{t.blog.writePost}</Text>
           </View>
         ) : (
           <View style={styles.postsContainer}>
@@ -572,7 +585,7 @@ export default function BlogScreen() {
               <Pressable onPress={() => setShowPermissionModal(false)}>
                 <Ionicons name="close" size={26} color={Colors.light.text} />
               </Pressable>
-              <Text style={styles.detailHeaderTitle}>Request Writing Permission</Text>
+              <Text style={styles.detailHeaderTitle}>{t.blog.requestWriteAccess}</Text>
               <View style={{ width: 26 }} />
             </View>
             <ScrollView contentContainerStyle={{ padding: 20, gap: 18, paddingBottom: 40 }}>
@@ -593,8 +606,8 @@ export default function BlogScreen() {
                 <View style={styles.permStatusCard}>
                   <Ionicons name="time-outline" size={24} color="#F9A825" />
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.permStatusTitle}>Request Pending</Text>
-                    <Text style={styles.permStatusText}>Your request is being reviewed by admin</Text>
+                    <Text style={styles.permStatusTitle}>{t.blog.writeAccessPending}</Text>
+                    <Text style={styles.permStatusText}>{t.blog.writeAccessPending}</Text>
                   </View>
                 </View>
               )}
@@ -666,7 +679,7 @@ export default function BlogScreen() {
                   ) : (
                     <>
                       <Ionicons name="paper-plane" size={20} color="#fff" />
-                      <Text style={styles.permSubmitText}>Submit Request</Text>
+                      <Text style={styles.permSubmitText}>{t.blog.requestWriteAccess}</Text>
                     </>
                   )}
                 </LinearGradient>
@@ -694,7 +707,7 @@ export default function BlogScreen() {
               <Pressable onPress={() => setShowWriteModal(false)}>
                 <Ionicons name="close" size={28} color={Colors.light.text} />
               </Pressable>
-              <Text style={styles.modalTitle}>Write a Post</Text>
+              <Text style={styles.modalTitle}>{t.blog.writePost}</Text>
               <Pressable
                 onPress={handleSubmit}
                 disabled={submitMutation.isPending}
@@ -706,7 +719,7 @@ export default function BlogScreen() {
                 {submitMutation.isPending ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.publishBtnText}>Publish</Text>
+                  <Text style={styles.publishBtnText}>{t.blog.publish}</Text>
                 )}
               </Pressable>
             </View>
@@ -723,35 +736,43 @@ export default function BlogScreen() {
               </View>
 
               <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Category</Text>
+                <Text style={styles.fieldLabel}>{t.blog.category}</Text>
                 <View style={styles.categoryPicker}>
-                  {CATEGORIES.filter((c) => c !== "All").map((cat) => (
-                    <Pressable
-                      key={cat}
-                      onPress={() => setCategory(cat)}
-                      style={[
-                        styles.catOption,
-                        category === cat && styles.catOptionActive,
-                      ]}
-                    >
-                      <Text
+                  {CATEGORIES.filter((c) => c !== "All").map((cat) => {
+                    const categoryLabels: Record<string, string> = {
+                      "Migration Stories": t.blog.stories,
+                      "Travel Tips": t.blog.travel,
+                      "Culture": t.blog.culture,
+                      "General": t.blog.title,
+                    };
+                    return (
+                      <Pressable
+                        key={cat}
+                        onPress={() => setCategory(cat)}
                         style={[
-                          styles.catOptionText,
-                          category === cat && styles.catOptionTextActive,
+                          styles.catOption,
+                          category === cat && styles.catOptionActive,
                         ]}
                       >
-                        {cat}
-                      </Text>
-                    </Pressable>
-                  ))}
+                        <Text
+                          style={[
+                            styles.catOptionText,
+                            category === cat && styles.catOptionTextActive,
+                          ]}
+                        >
+                          {categoryLabels[cat] || cat}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
               </View>
 
               <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Title</Text>
+                <Text style={styles.fieldLabel}>{t.blog.postTitle}</Text>
                 <TextInput
                   style={styles.fieldInput}
-                  placeholder="Give your post a title"
+                  placeholder={t.blog.postTitle}
                   placeholderTextColor={Colors.light.textSecondary}
                   value={title}
                   onChangeText={setTitle}
@@ -759,10 +780,10 @@ export default function BlogScreen() {
               </View>
 
               <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Content</Text>
+                <Text style={styles.fieldLabel}>{t.blog.postContent}</Text>
                 <TextInput
                   style={[styles.fieldInput, styles.fieldInputMulti]}
-                  placeholder="Write your story, tips, or insights..."
+                  placeholder={t.blog.postContent}
                   placeholderTextColor={Colors.light.textSecondary}
                   value={content}
                   onChangeText={setContent}
@@ -773,7 +794,7 @@ export default function BlogScreen() {
               </View>
 
               <View style={styles.formField}>
-                <Text style={styles.fieldLabel}>Cover Photo (optional)</Text>
+                <Text style={styles.fieldLabel}>{t.blog.addImage}</Text>
                 {imageUrl ? (
                   <View style={styles.coverPreviewWrap}>
                     <Image source={{ uri: imageUrl }} style={styles.coverPreview} />
@@ -787,7 +808,7 @@ export default function BlogScreen() {
                     style={({ pressed }) => [styles.coverPickBtn, { opacity: pressed ? 0.7 : 1 }]}
                   >
                     <Ionicons name="images" size={28} color={Colors.light.primary} />
-                    <Text style={styles.coverPickText}>Add a cover photo</Text>
+                    <Text style={styles.coverPickText}>{t.blog.addImage}</Text>
                   </Pressable>
                 )}
               </View>

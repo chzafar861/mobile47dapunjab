@@ -19,6 +19,7 @@ import { firebaseApi } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
+import { useI18n } from "@/lib/i18n";
 
 const SERVICES_REQUIRED = [
   { key: "transport", label: "Transport", icon: "car-outline" },
@@ -60,7 +61,7 @@ function FormField({
   number: number;
   placeholder: string;
   value: string;
-  onChangeText: (t: string) => void;
+  onChangeText: (v: string) => void;
   keyboardType?: "default" | "phone-pad" | "email-address";
   multiline?: boolean;
   optional?: boolean;
@@ -95,6 +96,7 @@ function FormField({
 
 export default function ProtocolRequestScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user } = useAuth();
@@ -268,9 +270,9 @@ export default function ProtocolRequestScreen() {
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </Pressable>
           <MaterialCommunityIcons name="shield-star" size={48} color="#fff" />
-          <Text style={styles.heroTitle}>Protocol Service</Text>
+          <Text style={styles.heroTitle}>{t.protocolRequest.title}</Text>
           <Text style={styles.heroSubtitle}>
-            VIP Protocol & Escort Service
+            {t.protocolRequest.subtitle}
           </Text>
           <Text style={styles.heroDesc}>
             Ensure a smooth, secure, and stress-free visit to Pakistan with our professional protocol services.
@@ -361,7 +363,7 @@ export default function ProtocolRequestScreen() {
           <View style={styles.sectionCard}>
             <FormField
               number={1}
-              label="Full Name"
+              label={t.protocolRequest.fullName}
               placeholder="Enter your full name"
               value={fullName}
               onChangeText={setFullName}
@@ -370,7 +372,7 @@ export default function ProtocolRequestScreen() {
             />
             <FormField
               number={2}
-              label="Contact Number (WhatsApp preferred)"
+              label={t.protocolRequest.contactNumber}
               placeholder="Enter your contact number"
               value={contactNumber}
               onChangeText={setContactNumber}
@@ -380,7 +382,7 @@ export default function ProtocolRequestScreen() {
             />
             <FormField
               number={3}
-              label="Email Address"
+              label={t.protocolRequest.email}
               placeholder="Enter your email"
               value={email}
               onChangeText={setEmail}
@@ -389,7 +391,7 @@ export default function ProtocolRequestScreen() {
             />
             <FormField
               number={4}
-              label="Country of Residence"
+              label={t.protocolRequest.countryOfResidence}
               placeholder="Where are you traveling from?"
               value={countryOfResidence}
               onChangeText={setCountryOfResidence}
@@ -402,7 +404,7 @@ export default function ProtocolRequestScreen() {
           <View style={styles.sectionCard}>
             <FormField
               number={5}
-              label="Arrival City / Airport"
+              label={t.protocolRequest.arrivalCity}
               placeholder="Enter arrival city or airport name"
               value={arrivalCity}
               onChangeText={setArrivalCity}
@@ -411,7 +413,7 @@ export default function ProtocolRequestScreen() {
             />
             <FormField
               number={6}
-              label="Arrival Date & Time"
+              label={t.protocolRequest.arrivalDate}
               placeholder="e.g. 15 March 2026, 2:00 PM"
               value={arrivalDate}
               onChangeText={setArrivalDate}
@@ -420,7 +422,7 @@ export default function ProtocolRequestScreen() {
             />
             <FormField
               number={7}
-              label="Duration of Stay"
+              label={t.protocolRequest.durationOfStay}
               placeholder="Number of days or hours"
               value={durationOfStay}
               onChangeText={setDurationOfStay}
@@ -528,7 +530,7 @@ export default function ProtocolRequestScreen() {
 
             <FormField
               number={10}
-              label="Special Requests"
+              label={t.protocolRequest.specialRequests}
               placeholder="Any specific needs, locations, or instructions"
               value={specialRequests}
               onChangeText={setSpecialRequests}
@@ -596,7 +598,7 @@ export default function ProtocolRequestScreen() {
             ) : (
               <>
                 <Ionicons name="send" size={18} color="#fff" />
-                <Text style={styles.submitBtnText}>Submit Booking Request</Text>
+                <Text style={styles.submitBtnText}>{t.protocolRequest.submitRequest}</Text>
               </>
             )}
           </Pressable>

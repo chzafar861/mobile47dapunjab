@@ -20,6 +20,7 @@ import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { getApiUrl } from "@/lib/query-client";
 
 type Mode = "login" | "signup";
@@ -29,6 +30,7 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { login, register, refreshUser } = useAuth();
+  const { t } = useI18n();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -285,9 +287,9 @@ export default function LoginScreen() {
             <View style={resetStyles.iconCircle}>
               <Ionicons name="mail-outline" size={32} color={Colors.light.primary} />
             </View>
-            <Text style={resetStyles.title}>Forgot Password?</Text>
+            <Text style={resetStyles.title}>{t.login.forgotPassword}</Text>
             <Text style={resetStyles.subtitle}>
-              Enter your email and we'll send you a code to reset your password.
+              {t.login.enterEmail}
             </Text>
 
             {resetError ? (
@@ -301,10 +303,10 @@ export default function LoginScreen() {
               <Ionicons name="mail-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Email address"
+                placeholder={t.login.enterYourEmail}
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={resetEmail}
-                onChangeText={(t) => { setResetEmail(t); setResetError(""); }}
+                onChangeText={(v) => { setResetEmail(v); setResetError(""); }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -329,7 +331,7 @@ export default function LoginScreen() {
                 ) : (
                   <>
                     <Ionicons name="send-outline" size={18} color="#fff" />
-                    <Text style={styles.submitText}>Send Reset Code</Text>
+                    <Text style={styles.submitText}>{t.login.sendCode}</Text>
                   </>
                 )}
               </LinearGradient>
@@ -343,9 +345,9 @@ export default function LoginScreen() {
             <View style={resetStyles.iconCircle}>
               <Ionicons name="keypad-outline" size={32} color={Colors.light.primary} />
             </View>
-            <Text style={resetStyles.title}>Enter Reset Code</Text>
+            <Text style={resetStyles.title}>{t.login.verificationCode}</Text>
             <Text style={resetStyles.subtitle}>
-              Enter the 6-digit code to verify your identity.
+              {t.login.codeSent}
             </Text>
 
             {resetCodeDisplay ? (
@@ -396,7 +398,7 @@ export default function LoginScreen() {
                 end={{ x: 1, y: 0 }}
               >
                 <Ionicons name="checkmark-outline" size={18} color="#fff" />
-                <Text style={styles.submitText}>Verify Code</Text>
+                <Text style={styles.submitText}>{t.login.verificationCode}</Text>
               </LinearGradient>
             </Pressable>
           </>
@@ -408,9 +410,9 @@ export default function LoginScreen() {
             <View style={resetStyles.iconCircle}>
               <Ionicons name="lock-open-outline" size={32} color={Colors.light.primary} />
             </View>
-            <Text style={resetStyles.title}>New Password</Text>
+            <Text style={resetStyles.title}>{t.login.newPassword}</Text>
             <Text style={resetStyles.subtitle}>
-              Choose a strong new password for your account.
+              {t.login.confirmPassword}
             </Text>
 
             {resetError ? (
@@ -424,10 +426,10 @@ export default function LoginScreen() {
               <Ionicons name="lock-closed-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
-                placeholder="New password (min 6 characters)"
+                placeholder={t.login.enterYourPassword}
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={newPassword}
-                onChangeText={(t) => { setNewPassword(t); setResetError(""); }}
+                onChangeText={(v) => { setNewPassword(v); setResetError(""); }}
                 secureTextEntry={!showNewPassword}
                 autoCapitalize="none"
                 testID="new-password-input"
@@ -441,10 +443,10 @@ export default function LoginScreen() {
               <Ionicons name="lock-closed-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Confirm new password"
+                placeholder={t.login.confirmPassword}
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={confirmPassword}
-                onChangeText={(t) => { setConfirmPassword(t); setResetError(""); }}
+                onChangeText={(v) => { setConfirmPassword(v); setResetError(""); }}
                 secureTextEntry={!showNewPassword}
                 autoCapitalize="none"
                 testID="confirm-password-input"
@@ -468,7 +470,7 @@ export default function LoginScreen() {
                 ) : (
                   <>
                     <Ionicons name="shield-checkmark-outline" size={18} color="#fff" />
-                    <Text style={styles.submitText}>Reset Password</Text>
+                    <Text style={styles.submitText}>{t.login.resetPasswordBtn}</Text>
                   </>
                 )}
               </LinearGradient>
@@ -482,9 +484,9 @@ export default function LoginScreen() {
             <View style={[resetStyles.iconCircle, { backgroundColor: "#E8F5E9" }]}>
               <Ionicons name="checkmark-circle" size={36} color="#2E7D32" />
             </View>
-            <Text style={resetStyles.title}>Password Reset!</Text>
+            <Text style={resetStyles.title}>{t.login.resetPassword}</Text>
             <Text style={resetStyles.subtitle}>
-              {resetSuccess || "Your password has been reset successfully. You can now sign in with your new password."}
+              {resetSuccess || t.login.passwordUpdated}
             </Text>
 
             <Pressable
@@ -499,7 +501,7 @@ export default function LoginScreen() {
                 end={{ x: 1, y: 0 }}
               >
                 <Ionicons name="log-in-outline" size={18} color="#fff" />
-                <Text style={styles.submitText}>Back to Sign In</Text>
+                <Text style={styles.submitText}>{t.login.signIn}</Text>
               </LinearGradient>
             </Pressable>
           </>
@@ -545,7 +547,7 @@ export default function LoginScreen() {
                 style={[styles.modeBtn, mode === "login" && styles.modeBtnActive]}
               >
                 <Text style={[styles.modeBtnText, mode === "login" && styles.modeBtnTextActive]}>
-                  Sign In
+                  {t.login.signIn}
                 </Text>
               </Pressable>
               <Pressable
@@ -553,7 +555,7 @@ export default function LoginScreen() {
                 style={[styles.modeBtn, mode === "signup" && styles.modeBtnActive]}
               >
                 <Text style={[styles.modeBtnText, mode === "signup" && styles.modeBtnTextActive]}>
-                  Sign Up
+                  {t.login.signUp}
                 </Text>
               </Pressable>
             </View>
@@ -581,10 +583,10 @@ export default function LoginScreen() {
                   <Ionicons name="person-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="Full Name"
+                    placeholder={t.login.enterYourName}
                     placeholderTextColor={Colors.light.tabIconDefault}
                     value={name}
-                    onChangeText={(t) => { setName(t); clearMessages(); }}
+                    onChangeText={(v) => { setName(v); clearMessages(); }}
                     autoCapitalize="words"
                     testID="name-input"
                   />
@@ -608,10 +610,10 @@ export default function LoginScreen() {
               <Ionicons name="mail-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Email"
+                placeholder={t.login.enterYourEmail}
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={email}
-                onChangeText={(t) => { setEmail(t); clearMessages(); }}
+                onChangeText={(v) => { setEmail(v); clearMessages(); }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -623,10 +625,10 @@ export default function LoginScreen() {
               <Ionicons name="lock-closed-outline" size={20} color={Colors.light.tabIconDefault} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
-                placeholder="Password (min 6 characters)"
+                placeholder={t.login.enterYourPassword}
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={password}
-                onChangeText={(t) => { setPassword(t); clearMessages(); }}
+                onChangeText={(v) => { setPassword(v); clearMessages(); }}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 testID="password-input"
@@ -638,7 +640,7 @@ export default function LoginScreen() {
 
             {mode === "login" && (
               <Pressable onPress={openResetModal} style={styles.forgotBtn} testID="forgot-password-btn">
-                <Text style={styles.forgotText}>Forgot Password?</Text>
+                <Text style={styles.forgotText}>{t.login.forgotPassword}</Text>
               </Pressable>
             )}
 
@@ -660,7 +662,7 @@ export default function LoginScreen() {
                   <>
                     <Ionicons name={mode === "login" ? "log-in-outline" : "person-add-outline"} size={20} color="#fff" />
                     <Text style={styles.submitText}>
-                      {mode === "login" ? "Sign In" : "Create Account"}
+                      {mode === "login" ? t.login.signIn : t.login.signUp}
                     </Text>
                   </>
                 )}
@@ -669,7 +671,7 @@ export default function LoginScreen() {
 
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or continue with</Text>
+              <Text style={styles.dividerText}>{t.login.orContinueWith}</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -690,7 +692,7 @@ export default function LoginScreen() {
                 ) : (
                   <>
                     <MaterialCommunityIcons name="google" size={22} color={oauthStatus.google ? "#DB4437" : "#999"} />
-                    <Text style={[styles.socialBtnText, !oauthStatus.google && styles.socialBtnTextDisabled]}>Google</Text>
+                    <Text style={[styles.socialBtnText, !oauthStatus.google && styles.socialBtnTextDisabled]}>{t.login.google}</Text>
                   </>
                 )}
               </Pressable>
@@ -711,7 +713,7 @@ export default function LoginScreen() {
                 ) : (
                   <>
                     <MaterialCommunityIcons name="facebook" size={22} color={oauthStatus.facebook ? "#1877F2" : "#999"} />
-                    <Text style={[styles.socialBtnText, !oauthStatus.facebook && styles.socialBtnTextDisabled]}>Facebook</Text>
+                    <Text style={[styles.socialBtnText, !oauthStatus.facebook && styles.socialBtnTextDisabled]}>{t.login.facebook}</Text>
                   </>
                 )}
               </Pressable>

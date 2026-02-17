@@ -19,6 +19,7 @@ import { firebaseApi } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
+import { useI18n } from "@/lib/i18n";
 
 const SERVICE_TYPES = [
   { key: "buy", label: "Buy goods in Pakistan", icon: "cart-outline" },
@@ -60,7 +61,7 @@ function FormField({
   number: number;
   placeholder: string;
   value: string;
-  onChangeText: (t: string) => void;
+  onChangeText: (v: string) => void;
   keyboardType?: "default" | "phone-pad" | "email-address";
   multiline?: boolean;
   optional?: boolean;
@@ -95,6 +96,7 @@ function FormField({
 
 export default function CustomsRequestScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user } = useAuth();
@@ -224,9 +226,9 @@ export default function CustomsRequestScreen() {
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </Pressable>
           <MaterialCommunityIcons name="passport" size={48} color="#fff" />
-          <Text style={styles.heroTitle}>Customs Service</Text>
+          <Text style={styles.heroTitle}>{t.customsRequest.title}</Text>
           <Text style={styles.heroSubtitle}>
-            Complete Customs Solutions for Pakistan
+            {t.customsRequest.subtitle}
           </Text>
           <Text style={styles.heroDesc}>
             Handle all your customs-related work in Pakistan with confidence.
@@ -298,7 +300,7 @@ export default function CustomsRequestScreen() {
           <View style={styles.sectionCard}>
             <FormField
               number={1}
-              label="Full Name"
+              label={t.customsRequest.fullName}
               placeholder="Enter your full name"
               value={fullName}
               onChangeText={setFullName}
@@ -307,7 +309,7 @@ export default function CustomsRequestScreen() {
             />
             <FormField
               number={2}
-              label="Contact Number (WhatsApp preferred)"
+              label={t.customsRequest.contactNumber}
               placeholder="Enter your contact number"
               value={contactNumber}
               onChangeText={setContactNumber}
@@ -317,7 +319,7 @@ export default function CustomsRequestScreen() {
             />
             <FormField
               number={3}
-              label="Email Address"
+              label={t.customsRequest.email}
               placeholder="Enter your email address"
               value={email}
               onChangeText={setEmail}
@@ -326,7 +328,7 @@ export default function CustomsRequestScreen() {
             />
             <FormField
               number={4}
-              label="Country of Residence"
+              label={t.customsRequest.countryOfResidence}
               placeholder="Where are you currently living?"
               value={countryOfResidence}
               onChangeText={setCountryOfResidence}
@@ -342,7 +344,7 @@ export default function CustomsRequestScreen() {
                 <View style={styles.fieldNumber}>
                   <Text style={styles.fieldNumberText}>5</Text>
                 </View>
-                <Text style={styles.fieldLabel}>Type of Service Required</Text>
+                <Text style={styles.fieldLabel}>{t.customsRequest.serviceType}</Text>
               </View>
               <View style={styles.checkboxGrid}>
                 {SERVICE_TYPES.map((item) => {
@@ -395,7 +397,7 @@ export default function CustomsRequestScreen() {
             </View>
             <FormField
               number={6}
-              label="Goods Description"
+              label={t.customsRequest.goodsDescription}
               placeholder="Briefly describe the items or products"
               value={goodsDescription}
               onChangeText={setGoodsDescription}
@@ -405,7 +407,7 @@ export default function CustomsRequestScreen() {
             />
             <FormField
               number={7}
-              label="Estimated Value of Goods"
+              label={t.customsRequest.estimatedValue}
               placeholder="Enter approximate value"
               value={estimatedValue}
               onChangeText={setEstimatedValue}
@@ -413,7 +415,7 @@ export default function CustomsRequestScreen() {
             />
             <FormField
               number={8}
-              label="Origin / Destination Country"
+              label={t.customsRequest.originDestination}
               placeholder="Enter country name"
               value={originDestination}
               onChangeText={setOriginDestination}
@@ -473,7 +475,7 @@ export default function CustomsRequestScreen() {
             </View>
             <FormField
               number={10}
-              label="Special Instructions"
+              label={t.customsRequest.specialInstructions}
               placeholder="Any additional details or requirements"
               value={specialInstructions}
               onChangeText={setSpecialInstructions}
@@ -541,7 +543,7 @@ export default function CustomsRequestScreen() {
             ) : (
               <>
                 <Ionicons name="send" size={18} color="#fff" />
-                <Text style={styles.submitBtnText}>Submit Request</Text>
+                <Text style={styles.submitBtnText}>{t.customsRequest.submitRequest}</Text>
               </>
             )}
           </Pressable>

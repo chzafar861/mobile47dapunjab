@@ -16,6 +16,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { getApiUrl } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
@@ -75,6 +76,7 @@ export default function MySubmissionsScreen() {
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user } = useAuth();
+  const { t } = useI18n();
 
   const [activeTab, setActiveTab] = useState<TabType>("property");
   const [properties, setProperties] = useState<PropertySubmission[]>([]);
@@ -160,7 +162,7 @@ export default function MySubmissionsScreen() {
   const saveProperty = async () => {
     if (!editingProperty) return;
     if (!propForm.ownerName.trim() || !propForm.phone.trim() || !propForm.location.trim()) {
-      Alert.alert("Required", "Owner name, phone, and location are required.");
+      Alert.alert(t.common.required, "Owner name, phone, and location are required.");
       return;
     }
     setSaving(true);
@@ -181,7 +183,7 @@ export default function MySubmissionsScreen() {
       setEditPropertyModal(false);
       loadSubmissions();
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Could not update.");
+      Alert.alert(t.common.error, err.message || "Could not update.");
     } finally {
       setSaving(false);
     }
@@ -190,7 +192,7 @@ export default function MySubmissionsScreen() {
   const savePerson = async () => {
     if (!editingPerson) return;
     if (!personForm.full_name.trim() || !personForm.village_of_origin.trim() || !personForm.district.trim() || !personForm.current_location.trim()) {
-      Alert.alert("Required", "Name, village, district, and location are required.");
+      Alert.alert(t.common.required, "Name, village, district, and location are required.");
       return;
     }
     setSaving(true);
@@ -213,7 +215,7 @@ export default function MySubmissionsScreen() {
       setEditPersonModal(false);
       loadSubmissions();
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Could not update.");
+      Alert.alert(t.common.error, err.message || "Could not update.");
     } finally {
       setSaving(false);
     }
@@ -226,15 +228,15 @@ export default function MySubmissionsScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         loadSubmissions();
       } catch (err: any) {
-        Alert.alert("Error", err.message || "Could not delete.");
+        Alert.alert(t.common.error, err.message || "Could not delete.");
       }
     };
     if (Platform.OS === "web") {
-      if (window.confirm("Delete this property submission?")) doDelete();
+      if (window.confirm(t.submissions.deleteConfirm)) doDelete();
     } else {
-      Alert.alert("Delete", "Are you sure you want to delete this property submission?", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: doDelete },
+      Alert.alert(t.common.delete, t.submissions.deleteConfirm, [
+        { text: t.common.cancel, style: "cancel" },
+        { text: t.common.delete, style: "destructive", onPress: doDelete },
       ]);
     }
   };
@@ -246,15 +248,15 @@ export default function MySubmissionsScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         loadSubmissions();
       } catch (err: any) {
-        Alert.alert("Error", err.message || "Could not delete.");
+        Alert.alert(t.common.error, err.message || "Could not delete.");
       }
     };
     if (Platform.OS === "web") {
-      if (window.confirm("Delete this person submission?")) doDelete();
+      if (window.confirm(t.submissions.deleteConfirm)) doDelete();
     } else {
-      Alert.alert("Delete", "Are you sure you want to delete this person submission?", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: doDelete },
+      Alert.alert(t.common.delete, t.submissions.deleteConfirm, [
+        { text: t.common.cancel, style: "cancel" },
+        { text: t.common.delete, style: "destructive", onPress: doDelete },
       ]);
     }
   };
@@ -268,7 +270,7 @@ export default function MySubmissionsScreen() {
     return (
       <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
         <ActivityIndicator size="large" color={Colors.light.primary} />
-        <Text style={styles.loadingText}>Loading your submissions...</Text>
+        <Text style={styles.loadingText}>{t.common.loading}</Text>
       </View>
     );
   }
@@ -279,7 +281,7 @@ export default function MySubmissionsScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.light.text} />
         </Pressable>
-        <Text style={styles.headerBarTitle}>My Submissions</Text>
+        <Text style={styles.headerBarTitle}>{t.submissions.title}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -294,7 +296,7 @@ export default function MySubmissionsScreen() {
             color={activeTab === "property" ? "#fff" : Colors.light.textSecondary}
           />
           <Text style={[styles.tabText, activeTab === "property" && styles.tabTextActive]}>
-            Properties ({properties.length})
+            {t.submissions.properties} ({properties.length})
           </Text>
         </Pressable>
         <Pressable
@@ -307,7 +309,7 @@ export default function MySubmissionsScreen() {
             color={activeTab === "person" ? "#fff" : Colors.light.textSecondary}
           />
           <Text style={[styles.tabText, activeTab === "person" && styles.tabTextActive]}>
-            Persons ({persons.length})
+            {t.submissions.people} ({persons.length})
           </Text>
         </Pressable>
       </View>
@@ -321,14 +323,14 @@ export default function MySubmissionsScreen() {
           properties.length === 0 ? (
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="home-city-outline" size={48} color={Colors.light.tabIconDefault} />
-              <Text style={styles.emptyTitle}>No Property Submissions</Text>
-              <Text style={styles.emptyDesc}>You haven't submitted any property details yet.</Text>
+              <Text style={styles.emptyTitle}>{t.submissions.noSubmissions}</Text>
+              <Text style={styles.emptyDesc}>{t.submissions.noSubmissionsDesc}</Text>
               <Pressable
                 onPress={() => router.push("/submit-details")}
                 style={({ pressed }) => [styles.addNewBtn, { opacity: pressed ? 0.9 : 1 }]}
               >
                 <Ionicons name="add" size={18} color="#fff" />
-                <Text style={styles.addNewBtnText}>Submit Property</Text>
+                <Text style={styles.addNewBtnText}>{t.submissions.submitNew}</Text>
               </Pressable>
             </View>
           ) : (
@@ -376,14 +378,14 @@ export default function MySubmissionsScreen() {
                       style={({ pressed }) => [styles.actionBtn, styles.editBtn, { opacity: pressed ? 0.8 : 1 }]}
                     >
                       <Ionicons name="create-outline" size={16} color={Colors.light.primary} />
-                      <Text style={[styles.actionBtnText, { color: Colors.light.primary }]}>Edit</Text>
+                      <Text style={[styles.actionBtnText, { color: Colors.light.primary }]}>{t.common.edit}</Text>
                     </Pressable>
                     <Pressable
                       onPress={() => deleteProperty(item)}
                       style={({ pressed }) => [styles.actionBtn, styles.deleteBtn, { opacity: pressed ? 0.8 : 1 }]}
                     >
                       <Ionicons name="trash-outline" size={16} color={Colors.light.danger} />
-                      <Text style={[styles.actionBtnText, { color: Colors.light.danger }]}>Delete</Text>
+                      <Text style={[styles.actionBtnText, { color: Colors.light.danger }]}>{t.common.delete}</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -394,14 +396,14 @@ export default function MySubmissionsScreen() {
           persons.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="people" size={48} color={Colors.light.tabIconDefault} />
-              <Text style={styles.emptyTitle}>No Person Submissions</Text>
-              <Text style={styles.emptyDesc}>You haven't added anyone to HumanFind yet.</Text>
+              <Text style={styles.emptyTitle}>{t.submissions.noSubmissions}</Text>
+              <Text style={styles.emptyDesc}>{t.submissions.noSubmissionsDesc}</Text>
               <Pressable
                 onPress={() => router.push("/submit-details")}
                 style={({ pressed }) => [styles.addNewBtn, { opacity: pressed ? 0.9 : 1 }]}
               >
                 <Ionicons name="add" size={18} color="#fff" />
-                <Text style={styles.addNewBtnText}>Add Person</Text>
+                <Text style={styles.addNewBtnText}>{t.submissions.submitNew}</Text>
               </Pressable>
             </View>
           ) : (
@@ -444,14 +446,14 @@ export default function MySubmissionsScreen() {
                       style={({ pressed }) => [styles.actionBtn, styles.editBtn, { opacity: pressed ? 0.8 : 1 }]}
                     >
                       <Ionicons name="create-outline" size={16} color={Colors.light.primary} />
-                      <Text style={[styles.actionBtnText, { color: Colors.light.primary }]}>Edit</Text>
+                      <Text style={[styles.actionBtnText, { color: Colors.light.primary }]}>{t.common.edit}</Text>
                     </Pressable>
                     <Pressable
                       onPress={() => deletePerson(item)}
                       style={({ pressed }) => [styles.actionBtn, styles.deleteBtn, { opacity: pressed ? 0.8 : 1 }]}
                     >
                       <Ionicons name="trash-outline" size={16} color={Colors.light.danger} />
-                      <Text style={[styles.actionBtnText, { color: Colors.light.danger }]}>Delete</Text>
+                      <Text style={[styles.actionBtnText, { color: Colors.light.danger }]}>{t.common.delete}</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -465,13 +467,13 @@ export default function MySubmissionsScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { paddingTop: insets.top + 20 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Property</Text>
+              <Text style={styles.modalTitle}>{t.common.edit} {t.submissions.properties}</Text>
               <Pressable onPress={() => setEditPropertyModal(false)} style={styles.modalClose}>
                 <Ionicons name="close" size={24} color={Colors.light.text} />
               </Pressable>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
-              <Text style={styles.formLabel}>Property Type</Text>
+              <Text style={styles.formLabel}>{t.submitDetails.propertyType}</Text>
               <View style={styles.typeRow}>
                 {propertyTypes.map((type) => (
                   <Pressable
@@ -484,20 +486,20 @@ export default function MySubmissionsScreen() {
                 ))}
               </View>
 
-              <Text style={styles.formLabel}>Owner Name *</Text>
-              <TextInput style={styles.input} value={propForm.ownerName} onChangeText={(t) => setPropForm({ ...propForm, ownerName: t })} placeholder="Owner name" placeholderTextColor={Colors.light.tabIconDefault} />
+              <Text style={styles.formLabel}>{t.submitDetails.ownerName} *</Text>
+              <TextInput style={styles.input} value={propForm.ownerName} onChangeText={(v) => setPropForm({ ...propForm, ownerName: v })} placeholder={t.submitDetails.ownerName} placeholderTextColor={Colors.light.tabIconDefault} />
 
-              <Text style={styles.formLabel}>Phone *</Text>
-              <TextInput style={styles.input} value={propForm.phone} onChangeText={(t) => setPropForm({ ...propForm, phone: t })} placeholder="Phone" placeholderTextColor={Colors.light.tabIconDefault} keyboardType="phone-pad" />
+              <Text style={styles.formLabel}>{t.submitDetails.phone} *</Text>
+              <TextInput style={styles.input} value={propForm.phone} onChangeText={(v) => setPropForm({ ...propForm, phone: v })} placeholder={t.submitDetails.phone} placeholderTextColor={Colors.light.tabIconDefault} keyboardType="phone-pad" />
 
-              <Text style={styles.formLabel}>Location *</Text>
-              <TextInput style={styles.input} value={propForm.location} onChangeText={(t) => setPropForm({ ...propForm, location: t })} placeholder="Location" placeholderTextColor={Colors.light.tabIconDefault} />
+              <Text style={styles.formLabel}>{t.submitDetails.location} *</Text>
+              <TextInput style={styles.input} value={propForm.location} onChangeText={(v) => setPropForm({ ...propForm, location: v })} placeholder={t.submitDetails.location} placeholderTextColor={Colors.light.tabIconDefault} />
 
-              <Text style={styles.formLabel}>Area / Size</Text>
-              <TextInput style={styles.input} value={propForm.area} onChangeText={(t) => setPropForm({ ...propForm, area: t })} placeholder="e.g. 5 Marla" placeholderTextColor={Colors.light.tabIconDefault} />
+              <Text style={styles.formLabel}>{t.submitDetails.area}</Text>
+              <TextInput style={styles.input} value={propForm.area} onChangeText={(v) => setPropForm({ ...propForm, area: v })} placeholder={t.submitDetails.area} placeholderTextColor={Colors.light.tabIconDefault} />
 
-              <Text style={styles.formLabel}>Description</Text>
-              <TextInput style={[styles.input, styles.textArea]} value={propForm.description} onChangeText={(t) => setPropForm({ ...propForm, description: t })} placeholder="Details..." placeholderTextColor={Colors.light.tabIconDefault} multiline numberOfLines={4} textAlignVertical="top" />
+              <Text style={styles.formLabel}>{t.submitDetails.description}</Text>
+              <TextInput style={[styles.input, styles.textArea]} value={propForm.description} onChangeText={(v) => setPropForm({ ...propForm, description: v })} placeholder={t.submitDetails.description} placeholderTextColor={Colors.light.tabIconDefault} multiline numberOfLines={4} textAlignVertical="top" />
 
               <Pressable
                 onPress={saveProperty}
@@ -509,7 +511,7 @@ export default function MySubmissionsScreen() {
                 ) : (
                   <>
                     <Ionicons name="checkmark" size={18} color="#fff" />
-                    <Text style={styles.saveBtnText}>Save Changes</Text>
+                    <Text style={styles.saveBtnText}>{t.profile.saveChanges}</Text>
                   </>
                 )}
               </Pressable>
@@ -522,28 +524,28 @@ export default function MySubmissionsScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { paddingTop: insets.top + 20 }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Person</Text>
+              <Text style={styles.modalTitle}>{t.common.edit} {t.submissions.people}</Text>
               <Pressable onPress={() => setEditPersonModal(false)} style={styles.modalClose}>
                 <Ionicons name="close" size={24} color={Colors.light.text} />
               </Pressable>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
-              <Text style={styles.formLabel}>Full Name *</Text>
-              <TextInput style={styles.input} value={personForm.full_name} onChangeText={(t) => setPersonForm({ ...personForm, full_name: t })} placeholder="Full name" placeholderTextColor={Colors.light.tabIconDefault} />
+              <Text style={styles.formLabel}>{t.submitDetails.personName} *</Text>
+              <TextInput style={styles.input} value={personForm.full_name} onChangeText={(v) => setPersonForm({ ...personForm, full_name: v })} placeholder={t.submitDetails.personName} placeholderTextColor={Colors.light.tabIconDefault} />
 
-              <Text style={styles.formLabel}>Village of Origin *</Text>
-              <TextInput style={styles.input} value={personForm.village_of_origin} onChangeText={(t) => setPersonForm({ ...personForm, village_of_origin: t })} placeholder="Village" placeholderTextColor={Colors.light.tabIconDefault} />
+              <Text style={styles.formLabel}>{t.submitDetails.villageOfOrigin} *</Text>
+              <TextInput style={styles.input} value={personForm.village_of_origin} onChangeText={(v) => setPersonForm({ ...personForm, village_of_origin: v })} placeholder={t.humanFind.village} placeholderTextColor={Colors.light.tabIconDefault} />
 
-              <Text style={styles.formLabel}>District *</Text>
-              <TextInput style={styles.input} value={personForm.district} onChangeText={(t) => setPersonForm({ ...personForm, district: t })} placeholder="District" placeholderTextColor={Colors.light.tabIconDefault} />
+              <Text style={styles.formLabel}>{t.submitDetails.district} *</Text>
+              <TextInput style={styles.input} value={personForm.district} onChangeText={(v) => setPersonForm({ ...personForm, district: v })} placeholder={t.humanFind.district} placeholderTextColor={Colors.light.tabIconDefault} />
 
-              <Text style={styles.formLabel}>Current Location *</Text>
-              <TextInput style={styles.input} value={personForm.current_location} onChangeText={(t) => setPersonForm({ ...personForm, current_location: t })} placeholder="Current location" placeholderTextColor={Colors.light.tabIconDefault} />
+              <Text style={styles.formLabel}>{t.submitDetails.currentLocation} *</Text>
+              <TextInput style={styles.input} value={personForm.current_location} onChangeText={(v) => setPersonForm({ ...personForm, current_location: v })} placeholder={t.humanFind.currentLocation} placeholderTextColor={Colors.light.tabIconDefault} />
 
-              <Text style={styles.formLabel}>Year of Migration</Text>
-              <TextInput style={styles.input} value={personForm.year_of_migration} onChangeText={(t) => setPersonForm({ ...personForm, year_of_migration: t })} placeholder="e.g. 1947" placeholderTextColor={Colors.light.tabIconDefault} keyboardType="numeric" maxLength={4} />
+              <Text style={styles.formLabel}>{t.submitDetails.migrationYear}</Text>
+              <TextInput style={styles.input} value={personForm.year_of_migration} onChangeText={(v) => setPersonForm({ ...personForm, year_of_migration: v })} placeholder="e.g. 1947" placeholderTextColor={Colors.light.tabIconDefault} keyboardType="numeric" maxLength={4} />
 
-              <Text style={styles.formLabel}>Migration Period</Text>
+              <Text style={styles.formLabel}>{t.submitDetails.familyInfo}</Text>
               <View style={styles.periodRow}>
                 <Pressable
                   onPress={() => setPersonForm({ ...personForm, migration_period: "before_1947" })}
@@ -559,11 +561,11 @@ export default function MySubmissionsScreen() {
                 </Pressable>
               </View>
 
-              <Text style={styles.formLabel}>Contact Info</Text>
-              <TextInput style={styles.input} value={personForm.contact_info} onChangeText={(t) => setPersonForm({ ...personForm, contact_info: t })} placeholder="Phone or email" placeholderTextColor={Colors.light.tabIconDefault} />
+              <Text style={styles.formLabel}>{t.submitDetails.phone}</Text>
+              <TextInput style={styles.input} value={personForm.contact_info} onChangeText={(v) => setPersonForm({ ...personForm, contact_info: v })} placeholder={t.submitDetails.phone} placeholderTextColor={Colors.light.tabIconDefault} />
 
-              <Text style={styles.formLabel}>Notes</Text>
-              <TextInput style={[styles.input, styles.textArea]} value={personForm.notes} onChangeText={(t) => setPersonForm({ ...personForm, notes: t })} placeholder="Story or notes..." placeholderTextColor={Colors.light.tabIconDefault} multiline numberOfLines={4} textAlignVertical="top" />
+              <Text style={styles.formLabel}>{t.submitDetails.additionalNotes}</Text>
+              <TextInput style={[styles.input, styles.textArea]} value={personForm.notes} onChangeText={(v) => setPersonForm({ ...personForm, notes: v })} placeholder={t.submitDetails.additionalNotes} placeholderTextColor={Colors.light.tabIconDefault} multiline numberOfLines={4} textAlignVertical="top" />
 
               <Pressable
                 onPress={savePerson}
@@ -575,7 +577,7 @@ export default function MySubmissionsScreen() {
                 ) : (
                   <>
                     <Ionicons name="checkmark" size={18} color="#fff" />
-                    <Text style={styles.saveBtnText}>Save Changes</Text>
+                    <Text style={styles.saveBtnText}>{t.profile.saveChanges}</Text>
                   </>
                 )}
               </Pressable>

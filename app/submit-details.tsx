@@ -20,12 +20,14 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
+import { useI18n } from "@/lib/i18n";
 
 type FormTab = "property" | "person";
 
 const propertyTypes = ["Land", "House", "Shop", "Farm", "Other"];
 
 export default function SubmitDetailsScreen() {
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
@@ -220,21 +222,21 @@ export default function SubmitDetailsScreen() {
             <Ionicons name="checkmark" size={48} color={Colors.light.success} />
           </View>
           <Text style={styles.successTitle}>
-            {submittedType === "property" ? "Property Submitted" : "Person Submitted"}
+            {t.submitDetails.submittedSuccess}
           </Text>
           <Text style={styles.successDesc}>
             {submittedType === "property"
-              ? "Your property details and photos have been saved. Our team will review and contact you soon."
-              : "Person info has been added to HumanFind. Others can now find and connect with this person."}
+              ? t.submitDetails.submitProperty
+              : t.submitDetails.submitPerson}
           </Text>
           <Pressable
             onPress={resetAll}
             style={({ pressed }) => [styles.anotherBtn, { opacity: pressed ? 0.9 : 1 }]}
           >
-            <Text style={styles.anotherBtnText}>Submit Another</Text>
+            <Text style={styles.anotherBtnText}>{t.common.submit}</Text>
           </Pressable>
           <Pressable onPress={() => router.back()} style={styles.backLink}>
-            <Text style={styles.backLinkText}>Go Back</Text>
+            <Text style={styles.backLinkText}>{t.common.back}</Text>
           </Pressable>
         </View>
       </View>
@@ -247,7 +249,7 @@ export default function SubmitDetailsScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.light.text} />
         </Pressable>
-        <Text style={styles.headerBarTitle}>Submit Your Request</Text>
+        <Text style={styles.headerBarTitle}>{t.submitDetails.title}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -262,7 +264,7 @@ export default function SubmitDetailsScreen() {
             color={activeTab === "property" ? "#fff" : Colors.light.textSecondary}
           />
           <Text style={[styles.tabText, activeTab === "property" && styles.tabTextActive]}>
-            Property Details
+            {t.submitDetails.propertyTab}
           </Text>
         </Pressable>
         <Pressable
@@ -275,7 +277,7 @@ export default function SubmitDetailsScreen() {
             color={activeTab === "person" ? "#fff" : Colors.light.textSecondary}
           />
           <Text style={[styles.tabText, activeTab === "person" && styles.tabTextActive]}>
-            Person Info
+            {t.submitDetails.personTab}
           </Text>
         </Pressable>
       </View>
@@ -295,7 +297,7 @@ export default function SubmitDetailsScreen() {
             </View>
 
             <View style={styles.formSection}>
-              <Text style={styles.formLabel}>Property Type</Text>
+              <Text style={styles.formLabel}>{t.submitDetails.propertyType}</Text>
               <View style={styles.typeRow}>
                 {propertyTypes.map((type) => (
                   <Pressable
@@ -308,7 +310,7 @@ export default function SubmitDetailsScreen() {
                 ))}
               </View>
 
-              <Text style={styles.formLabel}>Owner Name <Text style={{ color: Colors.light.danger }}>*</Text></Text>
+              <Text style={styles.formLabel}>{t.submitDetails.ownerName} <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
                 style={[styles.input, showErrors && !ownerName.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="Full name of the owner"
@@ -317,7 +319,7 @@ export default function SubmitDetailsScreen() {
                 onChangeText={setOwnerName}
               />
 
-              <Text style={styles.formLabel}>Contact Phone <Text style={{ color: Colors.light.danger }}>*</Text></Text>
+              <Text style={styles.formLabel}>{t.submitDetails.phone} <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
                 style={[styles.input, showErrors && !phone.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="Phone number"
@@ -327,7 +329,7 @@ export default function SubmitDetailsScreen() {
                 keyboardType="phone-pad"
               />
 
-              <Text style={styles.formLabel}>Location / Address <Text style={{ color: Colors.light.danger }}>*</Text></Text>
+              <Text style={styles.formLabel}>{t.submitDetails.location} <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
                 style={[styles.input, showErrors && !location.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="Village, city, or full address"
@@ -336,7 +338,7 @@ export default function SubmitDetailsScreen() {
                 onChangeText={setLocation}
               />
 
-              <Text style={styles.formLabel}>Area / Size</Text>
+              <Text style={styles.formLabel}>{t.submitDetails.area}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="e.g., 5 Marla, 1 Kanal, 10 Acres"
@@ -345,7 +347,7 @@ export default function SubmitDetailsScreen() {
                 onChangeText={setArea}
               />
 
-              <Text style={styles.formLabel}>Property Photos (up to 5)</Text>
+              <Text style={styles.formLabel}>{t.submitDetails.addPhotos}</Text>
               <View style={styles.imageSection}>
                 <View style={styles.imageGrid}>
                   {images.map((uri, index) => (
@@ -378,11 +380,11 @@ export default function SubmitDetailsScreen() {
                   )}
                 </View>
                 {images.length > 0 && (
-                  <Text style={styles.imageCount}>{images.length}/5 photos added</Text>
+                  <Text style={styles.imageCount}>{images.length}/5 {t.submitDetails.photosAdded}</Text>
                 )}
               </View>
 
-              <Text style={styles.formLabel}>Description</Text>
+              <Text style={styles.formLabel}>{t.submitDetails.description}</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="Additional details about the property, its history, current condition, etc."
@@ -404,7 +406,7 @@ export default function SubmitDetailsScreen() {
                 ) : (
                   <>
                     <Ionicons name="send" size={18} color="#fff" />
-                    <Text style={styles.submitBtnText}>Submit Property</Text>
+                    <Text style={styles.submitBtnText}>{t.submitDetails.submitProperty}</Text>
                   </>
                 )}
               </Pressable>
@@ -420,13 +422,13 @@ export default function SubmitDetailsScreen() {
             </View>
 
             <View style={styles.formSection}>
-              <Text style={styles.formLabel}>Full Name <Text style={{ color: Colors.light.danger }}>*</Text></Text>
+              <Text style={styles.formLabel}>{t.submitDetails.personName} <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
                 style={[styles.input, showErrors && !personForm.full_name.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="e.g. Muhammad Aslam Khan"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={personForm.full_name}
-                onChangeText={(t) => setPersonForm({ ...personForm, full_name: t })}
+                onChangeText={(v) => setPersonForm({ ...personForm, full_name: v })}
                 testID="person-name"
               />
 
@@ -445,40 +447,40 @@ export default function SubmitDetailsScreen() {
                 </Pressable>
               )}
 
-              <Text style={styles.formLabel}>Village of Origin <Text style={{ color: Colors.light.danger }}>*</Text></Text>
+              <Text style={styles.formLabel}>{t.submitDetails.villageOfOrigin} <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
                 style={[styles.input, showErrors && !personForm.village_of_origin.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="e.g. Amritsar, Jullundur"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={personForm.village_of_origin}
-                onChangeText={(t) => setPersonForm({ ...personForm, village_of_origin: t })}
+                onChangeText={(v) => setPersonForm({ ...personForm, village_of_origin: v })}
               />
 
-              <Text style={styles.formLabel}>District <Text style={{ color: Colors.light.danger }}>*</Text></Text>
+              <Text style={styles.formLabel}>{t.submitDetails.district} <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
                 style={[styles.input, showErrors && !personForm.district.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="e.g. Jalandhar, Amritsar"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={personForm.district}
-                onChangeText={(t) => setPersonForm({ ...personForm, district: t })}
+                onChangeText={(v) => setPersonForm({ ...personForm, district: v })}
               />
 
-              <Text style={styles.formLabel}>Current Location <Text style={{ color: Colors.light.danger }}>*</Text></Text>
+              <Text style={styles.formLabel}>{t.submitDetails.currentLocation} <Text style={{ color: Colors.light.danger }}>*</Text></Text>
               <TextInput
                 style={[styles.input, showErrors && !personForm.current_location.trim() && { borderColor: Colors.light.danger }]}
                 placeholder="e.g. Lahore, Pakistan"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={personForm.current_location}
-                onChangeText={(t) => setPersonForm({ ...personForm, current_location: t })}
+                onChangeText={(v) => setPersonForm({ ...personForm, current_location: v })}
               />
 
-              <Text style={styles.formLabel}>Year of Migration</Text>
+              <Text style={styles.formLabel}>{t.submitDetails.migrationYear}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="e.g. 1947"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={personForm.year_of_migration}
-                onChangeText={(t) => setPersonForm({ ...personForm, year_of_migration: t })}
+                onChangeText={(v) => setPersonForm({ ...personForm, year_of_migration: v })}
                 keyboardType="numeric"
                 maxLength={4}
               />
@@ -499,22 +501,22 @@ export default function SubmitDetailsScreen() {
                 </Pressable>
               </View>
 
-              <Text style={styles.formLabel}>Contact Info (optional)</Text>
+              <Text style={styles.formLabel}>{t.submitDetails.familyInfo}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Phone or email"
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={personForm.contact_info}
-                onChangeText={(t) => setPersonForm({ ...personForm, contact_info: t })}
+                onChangeText={(v) => setPersonForm({ ...personForm, contact_info: v })}
               />
 
-              <Text style={styles.formLabel}>Notes / Story (optional)</Text>
+              <Text style={styles.formLabel}>{t.submitDetails.additionalNotes}</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="Share their story..."
                 placeholderTextColor={Colors.light.tabIconDefault}
                 value={personForm.notes}
-                onChangeText={(t) => setPersonForm({ ...personForm, notes: t })}
+                onChangeText={(v) => setPersonForm({ ...personForm, notes: v })}
                 multiline
                 numberOfLines={4}
               />
@@ -529,7 +531,7 @@ export default function SubmitDetailsScreen() {
                 ) : (
                   <>
                     <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
-                    <Text style={styles.submitBtnText}>Submit Person</Text>
+                    <Text style={styles.submitBtnText}>{t.submitDetails.submitPerson}</Text>
                   </>
                 )}
               </Pressable>

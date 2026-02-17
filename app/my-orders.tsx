@@ -15,6 +15,7 @@ import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import { getApiUrl } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
@@ -43,13 +44,13 @@ interface Order {
 }
 
 const STATUS_STEPS = [
-  { key: "pending", label: "Order Placed", icon: "receipt-outline" },
-  { key: "confirmed", label: "Confirmed", icon: "checkmark-circle-outline" },
-  { key: "processing", label: "Processing", icon: "cube-outline" },
-  { key: "shipped", label: "Shipped", icon: "airplane-outline" },
-  { key: "out_for_delivery", label: "Out for Delivery", icon: "bicycle-outline" },
-  { key: "delivered", label: "Delivered", icon: "checkmark-done-circle-outline" },
-];
+  { key: "pending", labelKey: "statusPending", icon: "receipt-outline" },
+  { key: "confirmed", labelKey: "statusConfirmed", icon: "checkmark-circle-outline" },
+  { key: "processing", labelKey: "statusProcessing", icon: "cube-outline" },
+  { key: "shipped", labelKey: "statusShipped", icon: "airplane-outline" },
+  { key: "out_for_delivery", labelKey: "statusOutForDelivery", icon: "bicycle-outline" },
+  { key: "delivered", labelKey: "statusDelivered", icon: "checkmark-done-circle-outline" },
+] as const;
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "#F59E0B",
@@ -98,6 +99,7 @@ export default function MyOrdersScreen() {
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
+  const { t } = useI18n();
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,7 +158,7 @@ export default function MyOrdersScreen() {
         <Pressable onPress={() => { if (router.canGoBack()) { router.back(); } else { router.replace("/(tabs)/profile"); } }} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>My Orders</Text>
+        <Text style={styles.headerTitle}>{t.orders.title}</Text>
         <View style={{ width: 36 }} />
       </LinearGradient>
 
@@ -168,14 +170,14 @@ export default function MyOrdersScreen() {
       ) : orders.length === 0 ? (
         <View style={styles.emptyContainer}>
           <MaterialCommunityIcons name="package-variant" size={56} color={Colors.light.tabIconDefault} />
-          <Text style={styles.emptyTitle}>No Orders Yet</Text>
-          <Text style={styles.emptyText}>Your orders will appear here after you make a purchase</Text>
+          <Text style={styles.emptyTitle}>{t.orders.noOrders}</Text>
+          <Text style={styles.emptyText}>{t.orders.noOrdersDesc}</Text>
           <Pressable
             onPress={() => router.push("/(tabs)/shop")}
             style={({ pressed }) => [styles.shopBtn, { opacity: pressed ? 0.9 : 1 }]}
           >
             <Ionicons name="bag-handle" size={18} color="#fff" />
-            <Text style={styles.shopBtnText}>Browse Shop</Text>
+            <Text style={styles.shopBtnText}>{t.orders.browseShop}</Text>
           </Pressable>
         </View>
       ) : (
@@ -184,7 +186,7 @@ export default function MyOrdersScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.light.primary} />}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.orderCount}>{orders.length} order{orders.length !== 1 ? "s" : ""}</Text>
+          <Text style={styles.orderCount}>{orders.length} {orders.length !== 1 ? t.orders.orderCount : t.orders.orderSingle}</Text>
 
           {orders.map((order) => {
             const statusIdx = getStatusIndex(order.status);
@@ -209,13 +211,13 @@ export default function MyOrdersScreen() {
                       />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.orderId}>Order #{order.id}</Text>
+                      <Text style={styles.orderId}>{t.orders.orderId} #{order.id}</Text>
                       <Text style={styles.orderDate}>{formatDate(order.created_at)}</Text>
                     </View>
                     <View style={[styles.statusBadge, { backgroundColor: statusColor + "18" }]}>
                       <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
                       <Text style={[styles.statusText, { color: statusColor }]}>
-                        {isCancelled ? "Cancelled" : STATUS_STEPS[statusIdx]?.label || order.status}
+                        {isCancelled ? t.orders.statusCancelled : (STATUS_STEPS[statusIdx] ? t.orders[STATUS_STEPS[statusIdx].labelKey] : order.status)}
                       </Text>
                     </View>
                   </View>
@@ -232,7 +234,7 @@ export default function MyOrdersScreen() {
                 <View style={styles.orderCardBottom}>
                   <View style={styles.orderMeta}>
                     <Ionicons name="cube-outline" size={14} color={Colors.light.textSecondary} />
-                    <Text style={styles.metaText}>{itemCount} item{itemCount !== 1 ? "s" : ""}</Text>
+                    <Text style={styles.metaText}>{itemCount} {itemCount !== 1 ? t.orders.items : t.orders.item}</Text>
                   </View>
                   <View style={styles.orderMeta}>
                     <Ionicons
@@ -294,6 +296,7 @@ function OrderDetail({
   webTopInset: number;
   webBottomInset: number;
 }) {
+  const { t } = useI18n();
   const statusIdx = getStatusIndex(order.status);
   const isCancelled = order.status === "cancelled";
   const isDelivered = order.status === "delivered";
@@ -306,7 +309,7 @@ function OrderDetail({
           <Pressable onPress={onClose} style={styles.detailBackBtn}>
             <Ionicons name="close" size={24} color={Colors.light.text} />
           </Pressable>
-          <Text style={styles.detailHeaderTitle}>Order #{order.id}</Text>
+          <Text style={styles.detailHeaderTitle}>{t.orders.orderId} #{order.id}</Text>
           <View style={{ width: 36 }} />
         </View>
 
@@ -323,16 +326,16 @@ function OrderDetail({
               />
             </View>
             <Text style={[styles.statusHeroLabel, { color: statusColor }]}>
-              {isCancelled ? "Order Cancelled" : isDelivered ? "Delivered" : STATUS_STEPS[statusIdx]?.label || order.status}
+              {isCancelled ? t.orders.statusCancelled : isDelivered ? t.orders.statusDelivered : (STATUS_STEPS[statusIdx] ? t.orders[STATUS_STEPS[statusIdx].labelKey] : order.status)}
             </Text>
             <Text style={styles.statusHeroDate}>
-              {isDelivered ? "Delivered on " : "Last updated "}{formatDate(order.status_updated_at || order.created_at)}
+              {isDelivered ? `${t.orders.deliveredOn} ` : `${t.orders.lastUpdated} `}{formatDate(order.status_updated_at || order.created_at)}
             </Text>
           </View>
 
           {!isCancelled && (
             <View style={styles.trackingSection}>
-              <Text style={styles.sectionLabel}>Order Tracking</Text>
+              <Text style={styles.sectionLabel}>{t.orders.orderTracking}</Text>
               <View style={styles.timeline}>
                 {STATUS_STEPS.map((step, i) => {
                   const isActive = i <= statusIdx;
@@ -360,10 +363,10 @@ function OrderDetail({
                       </View>
                       <View style={[styles.timelineContent, isCurrent && styles.timelineContentActive]}>
                         <Text style={[styles.timelineLabel, isActive && { color: Colors.light.text, fontWeight: "600" as const }]}>
-                          {step.label}
+                          {t.orders[step.labelKey]}
                         </Text>
                         {isCurrent && (
-                          <Text style={styles.timelineSubtext}>Current status</Text>
+                          <Text style={styles.timelineSubtext}>{t.orders.currentStatus}</Text>
                         )}
                       </View>
                     </View>
@@ -377,14 +380,14 @@ function OrderDetail({
             <View style={styles.trackingNumCard}>
               <Feather name="hash" size={16} color={Colors.light.primary} />
               <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.trackingNumLabel}>Tracking Number</Text>
+                <Text style={styles.trackingNumLabel}>{t.orders.trackingNumber}</Text>
                 <Text style={styles.trackingNumValue}>{order.tracking_number}</Text>
               </View>
             </View>
           )}
 
           <View style={styles.detailSection}>
-            <Text style={styles.sectionLabel}>Items Ordered</Text>
+            <Text style={styles.sectionLabel}>{t.orders.itemsOrdered}</Text>
             {order.items.map((item, i) => (
               <View key={i} style={styles.itemRow}>
                 <View style={styles.itemQtyBadge}>
@@ -401,7 +404,7 @@ function OrderDetail({
           </View>
 
           <View style={styles.detailSection}>
-            <Text style={styles.sectionLabel}>Delivery Details</Text>
+            <Text style={styles.sectionLabel}>{t.orders.deliveryDetails}</Text>
             <DetailRow icon="person-outline" label="Name" value={order.customer_name} />
             <DetailRow icon="call-outline" label="Phone" value={order.customer_phone} />
             <DetailRow icon="location-outline" label="Address" value={`${order.customer_address}, ${order.customer_city}`} />
@@ -409,13 +412,13 @@ function OrderDetail({
           </View>
 
           <View style={styles.detailSection}>
-            <Text style={styles.sectionLabel}>Payment</Text>
+            <Text style={styles.sectionLabel}>{t.orders.payment}</Text>
             <DetailRow
               icon={order.payment_method === "cod" ? "cash-outline" : "card-outline"}
-              label="Method"
-              value={order.payment_method === "cod" ? "Cash on Delivery" : "Credit/Debit Card"}
+              label={t.orders.method}
+              value={order.payment_method === "cod" ? t.orders.cashOnDelivery : t.orders.creditCard}
             />
-            <DetailRow icon="calendar-outline" label="Order Date" value={`${formatDate(order.created_at)} at ${formatTime(order.created_at)}`} />
+            <DetailRow icon="calendar-outline" label={t.orders.orderDate} value={`${formatDate(order.created_at)} at ${formatTime(order.created_at)}`} />
           </View>
         </ScrollView>
       </View>

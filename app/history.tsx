@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
+import { useI18n } from "@/lib/i18n";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_IMG_HEIGHT = 160;
@@ -296,6 +297,7 @@ function PlaceCard({ place }: { place: HistoricalPlace }) {
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const [selectedTab, setSelectedTab] = useState("All");
@@ -329,7 +331,7 @@ export default function HistoryScreen() {
             </Pressable>
 
             <MaterialCommunityIcons name="mosque" size={40} color={Colors.light.accent} />
-            <Text style={styles.heroTitle}>History & Heritage</Text>
+            <Text style={styles.heroTitle}>{t.history.title}</Text>
             <Text style={styles.heroDesc}>
               Pakistan Through Time - From the ancient Indus Valley to the modern CPEC era. Explore 5,000 years of history, culture, and transformation.
             </Text>

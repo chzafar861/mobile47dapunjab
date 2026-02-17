@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
+import { useI18n } from "@/lib/i18n";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -277,6 +278,7 @@ function CurrentServicesPage() {
 }
 
 function PakistanInfoPage() {
+  const { t } = useI18n();
   return (
     <View style={styles.pageContent}>
       <View style={styles.infoHeroBanner}>
@@ -306,7 +308,7 @@ function PakistanInfoPage() {
         image={require("@/assets/images/lahore-fort.jpg")}
         icon="time-outline"
         iconColor="#8B0000"
-        title="Punjab 1947 - The Partition"
+        title={t.pakistanGuide.partition}
         subtitle="The event that shaped South Asia forever"
       >
         <Text style={styles.infoBody}>
@@ -324,7 +326,7 @@ function PakistanInfoPage() {
         image={require("@/assets/images/mohenjo-daro.jpg")}
         icon="library-outline"
         iconColor="#4A148C"
-        title="Pakistan Old History"
+        title={t.pakistanGuide.oldHistory}
         subtitle="5,000+ years of civilization"
       >
         <Text style={styles.infoBody}>
@@ -347,7 +349,7 @@ function PakistanInfoPage() {
         image={require("@/assets/images/modern-city.jpg")}
         icon="rocket-outline"
         iconColor="#0D47A1"
-        title="Pakistan Modern History"
+        title={t.pakistanGuide.modernHistory}
         subtitle="From independence to a nuclear power"
       >
         <Text style={styles.infoBody}>
@@ -365,7 +367,7 @@ function PakistanInfoPage() {
         image={require("@/assets/images/islamabad.jpg")}
         icon="business-outline"
         iconColor="#1B5E20"
-        title="Capital City - Islamabad"
+        title={t.pakistanGuide.capital}
         subtitle="One of the most beautiful capitals in the world"
       >
         <Text style={styles.infoBody}>
@@ -387,7 +389,7 @@ function PakistanInfoPage() {
       <ImageInfoSection
         icon="trending-up-outline"
         iconColor="#E65100"
-        title="Industries & Economy"
+        title={t.pakistanGuide.economy}
         subtitle="A diverse and growing economy"
       >
         <Text style={styles.infoBody}>
@@ -433,7 +435,7 @@ function PakistanInfoPage() {
         image={require("@/assets/images/hunza-valley.jpg")}
         icon="airplane-outline"
         iconColor="#00695C"
-        title="Tourism & Natural Beauty"
+        title={t.pakistanGuide.tourism}
         subtitle="From the highest peaks to ancient deserts"
       >
         <Text style={styles.infoBody}>
@@ -481,6 +483,7 @@ function PakistanInfoPage() {
 
 export default function PakistanGuideScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const [activeTab, setActiveTab] = useState<"services" | "info">("services");
@@ -521,9 +524,9 @@ export default function PakistanGuideScreen() {
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </Pressable>
           <MaterialCommunityIcons name="star-crescent" size={44} color={Colors.light.accent} />
-          <Text style={styles.heroTitle}>Our Services & Pakistan Guide</Text>
+          <Text style={styles.heroTitle}>{t.pakistanGuide.title}</Text>
           <Text style={styles.heroSubtitle}>
-            Everything you need for your visit to Pakistan
+            {t.pakistanGuide.subtitle}
           </Text>
         </LinearGradient>
 

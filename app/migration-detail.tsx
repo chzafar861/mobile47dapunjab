@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth-context";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
+import { useI18n } from "@/lib/i18n";
 
 interface MigrationRecord {
   id: number;
@@ -97,6 +98,7 @@ function CommentItem({ item }: { item: Comment }) {
 
 export default function MigrationDetailScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -164,9 +166,9 @@ export default function MigrationDetailScreen() {
     return (
       <View style={[styles.container, styles.centerWrap]}>
         <MaterialCommunityIcons name="file-search-outline" size={48} color={Colors.light.tabIconDefault} />
-        <Text style={styles.notFoundText}>Record not found</Text>
+        <Text style={styles.notFoundText}>{t.common.noResults}</Text>
         <Pressable onPress={() => router.back()} style={styles.goBackBtn}>
-          <Text style={styles.goBackText}>Go Back</Text>
+          <Text style={styles.goBackText}>{t.common.back}</Text>
         </Pressable>
       </View>
     );
@@ -219,11 +221,11 @@ export default function MigrationDetailScreen() {
           </LinearGradient>
 
           <View style={styles.detailsSection}>
-            <Text style={styles.sectionTitle}>Migration Details</Text>
+            <Text style={styles.sectionTitle}>{t.migrationDetail.title}</Text>
             <View style={styles.detailsCard}>
-              <DetailRow icon="home" label="Village of Origin" value={record.village_of_origin} />
-              <DetailRow icon="map" label="District" value={record.district} iconColor={Colors.light.accent} />
-              <DetailRow icon="location" label="Current Location" value={record.current_location} iconColor="#E74C3C" />
+              <DetailRow icon="home" label={t.humanFind.village} value={record.village_of_origin} />
+              <DetailRow icon="map" label={t.humanFind.district} value={record.district} iconColor={Colors.light.accent} />
+              <DetailRow icon="location" label={t.humanFind.currentLocation} value={record.current_location} iconColor="#E74C3C" />
               {record.contact_info && (
                 <DetailRow icon="call" label="Contact" value={record.contact_info} iconColor="#3498DB" />
               )}
@@ -244,7 +246,7 @@ export default function MigrationDetailScreen() {
             <View style={styles.commentsTitleRow}>
               <Ionicons name="chatbubbles" size={20} color={Colors.light.primary} />
               <Text style={styles.sectionTitle}>
-                Comments {comments.length > 0 ? `(${comments.length})` : ""}
+                {t.migrationDetail.comments} {comments.length > 0 ? `(${comments.length})` : ""}
               </Text>
             </View>
 
@@ -252,7 +254,7 @@ export default function MigrationDetailScreen() {
               {!user?.name && (
                 <TextInput
                   style={styles.nameInput}
-                  placeholder="Your name"
+                  placeholder={t.humanFind.name}
                   placeholderTextColor={Colors.light.textSecondary}
                   value={commentName}
                   onChangeText={setCommentName}
@@ -261,7 +263,7 @@ export default function MigrationDetailScreen() {
               <View style={styles.commentInputRow}>
                 <TextInput
                   style={styles.commentInput}
-                  placeholder="Share your thoughts or family connection..."
+                  placeholder={t.migrationDetail.addComment}
                   placeholderTextColor={Colors.light.textSecondary}
                   value={commentText}
                   onChangeText={setCommentText}
@@ -292,7 +294,7 @@ export default function MigrationDetailScreen() {
             ) : comments.length === 0 ? (
               <View style={styles.noComments}>
                 <Ionicons name="chatbubble-outline" size={32} color={Colors.light.tabIconDefault} />
-                <Text style={styles.noCommentsText}>No comments yet. Be the first to share!</Text>
+                <Text style={styles.noCommentsText}>{t.migrationDetail.noComments}. {t.migrationDetail.beFirst}</Text>
               </View>
             ) : (
               <View style={styles.commentsList}>

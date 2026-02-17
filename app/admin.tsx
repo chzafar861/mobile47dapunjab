@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getApiUrl } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
+import { useI18n } from "@/lib/i18n";
 
 interface AuthUser {
   id: number;
@@ -45,6 +46,7 @@ export default function AdminScreen() {
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user: currentUser, isAdmin } = useAuth();
+  const { t } = useI18n();
   const [bookings, setBookings] = useState<any[]>([]);
   const [propertyDetails, setPropertyDetails] = useState<any[]>([]);
   const [users, setUsers] = useState<AuthUser[]>([]);
@@ -88,10 +90,10 @@ export default function AdminScreen() {
   };
 
   const deleteBooking = async (id: string) => {
-    Alert.alert("Delete Booking", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t.admin.deleteBooking, "Are you sure?", [
+      { text: t.common.cancel, style: "cancel" },
       {
-        text: "Delete",
+        text: t.common.delete,
         style: "destructive",
         onPress: async () => {
           try { await firebaseApi.deleteBooking(id); } catch {}
@@ -103,10 +105,10 @@ export default function AdminScreen() {
   };
 
   const deleteProperty = async (id: string) => {
-    Alert.alert("Delete Property", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t.admin.deleteProperty, "Are you sure?", [
+      { text: t.common.cancel, style: "cancel" },
       {
-        text: "Delete",
+        text: t.common.delete,
         style: "destructive",
         onPress: async () => {
           try { await firebaseApi.deletePropertyDetail(id); } catch {}
@@ -120,12 +122,12 @@ export default function AdminScreen() {
   const toggleUserRole = async (targetUser: AuthUser) => {
     const newRole = targetUser.role === "admin" ? "user" : "admin";
     Alert.alert(
-      "Change Role",
+      t.admin.changeRole,
       `Make ${targetUser.name || targetUser.email} a${newRole === "admin" ? "n admin" : " regular user"}?`,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t.common.cancel, style: "cancel" },
         {
-          text: "Confirm",
+          text: t.common.confirm,
           onPress: async () => {
             try {
               await adminFetch(`/api/auth/users/${targetUser.id}/role`, {
@@ -135,7 +137,7 @@ export default function AdminScreen() {
               setUsers((prev) => prev.map((u) => u.id === targetUser.id ? { ...u, role: newRole } : u));
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } catch {
-              Alert.alert("Error", "Failed to update role");
+              Alert.alert(t.common.error, "Failed to update role");
             }
           },
         },
@@ -145,13 +147,13 @@ export default function AdminScreen() {
 
   const deleteUser = async (targetUser: AuthUser) => {
     if (targetUser.id === currentUser?.id) {
-      Alert.alert("Error", "You cannot delete your own account.");
+      Alert.alert(t.common.error, "You cannot delete your own account.");
       return;
     }
-    Alert.alert("Delete User", `Delete ${targetUser.name || targetUser.email}? This cannot be undone.`, [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t.admin.deleteUser, `Delete ${targetUser.name || targetUser.email}? This cannot be undone.`, [
+      { text: t.common.cancel, style: "cancel" },
       {
-        text: "Delete",
+        text: t.common.delete,
         style: "destructive",
         onPress: async () => {
           try {
@@ -159,7 +161,7 @@ export default function AdminScreen() {
             setUsers((prev) => prev.filter((u) => u.id !== targetUser.id));
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           } catch {
-            Alert.alert("Error", "Failed to delete user");
+            Alert.alert(t.common.error, "Failed to delete user");
           }
         },
       },
@@ -175,15 +177,15 @@ export default function AdminScreen() {
       setWriteRequests((prev) => prev.map((r) => r.id === reqId ? { ...r, status: "approved" } : r));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
-      Alert.alert("Error", "Failed to approve request");
+      Alert.alert(t.common.error, "Failed to approve request");
     }
   };
 
   const rejectWriteRequest = async (reqId: number) => {
-    Alert.alert("Reject Request", "Are you sure you want to reject this writing request?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t.admin.reject, "Are you sure you want to reject this writing request?", [
+      { text: t.common.cancel, style: "cancel" },
       {
-        text: "Reject",
+        text: t.admin.reject,
         style: "destructive",
         onPress: async () => {
           try {
@@ -194,7 +196,7 @@ export default function AdminScreen() {
             setWriteRequests((prev) => prev.map((r) => r.id === reqId ? { ...r, status: "rejected" } : r));
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           } catch {
-            Alert.alert("Error", "Failed to reject request");
+            Alert.alert(t.common.error, "Failed to reject request");
           }
         },
       },
@@ -210,7 +212,7 @@ export default function AdminScreen() {
         body: JSON.stringify(body),
       });
       if (result.error) {
-        Alert.alert("Error", result.error);
+        Alert.alert(t.common.error, result.error);
         return;
       }
       setOrders((prev) => prev.map((o) => o.id === orderId ? {
@@ -219,7 +221,7 @@ export default function AdminScreen() {
       } : o));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
-      Alert.alert("Error", "Failed to update order status");
+      Alert.alert(t.common.error, "Failed to update order status");
     }
   };
 
@@ -242,11 +244,19 @@ export default function AdminScreen() {
           updateOrderStatus(order.id, s);
         },
       }));
-    buttons.push({ text: "Cancel", onPress: () => {} });
-    Alert.alert("Update Status", `Current: ${labels[order.status]}\nOrder #${order.id}`, buttons);
+    buttons.push({ text: t.common.cancel, onPress: () => {} });
+    Alert.alert(t.admin.updateStatus, `${t.admin.current}: ${labels[order.status]}\nOrder #${order.id}`, buttons);
   };
 
   const sections = ["overview", "bookings", "properties", "users", "writers", "orders"] as const;
+  const sectionLabels: Record<string, string> = {
+    overview: t.admin.overview,
+    bookings: t.admin.bookings,
+    properties: t.admin.properties,
+    users: t.admin.users,
+    writers: t.admin.writers,
+    orders: t.admin.orders,
+  };
 
   return (
     <View style={styles.container}>
@@ -261,7 +271,7 @@ export default function AdminScreen() {
           <Pressable onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color={Colors.light.text} />
           </Pressable>
-          <Text style={styles.headerTitle}>Admin Dashboard</Text>
+          <Text style={styles.headerTitle}>{t.admin.title}</Text>
           <Pressable onPress={loadData}>
             <Ionicons name="refresh" size={22} color={Colors.light.primary} />
           </Pressable>
@@ -273,22 +283,22 @@ export default function AdminScreen() {
         >
           <View style={styles.statItem}>
             <Text style={styles.statNum}>{bookings.length}</Text>
-            <Text style={styles.statLabel}>Bookings</Text>
+            <Text style={styles.statLabel}>{t.admin.bookings}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statNum}>{propertyDetails.length}</Text>
-            <Text style={styles.statLabel}>Properties</Text>
+            <Text style={styles.statLabel}>{t.admin.properties}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statNum}>{users.length}</Text>
-            <Text style={styles.statLabel}>Users</Text>
+            <Text style={styles.statLabel}>{t.admin.users}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statNum}>{orders.length}</Text>
-            <Text style={styles.statLabel}>Orders</Text>
+            <Text style={styles.statLabel}>{t.admin.orders}</Text>
           </View>
         </LinearGradient>
 
@@ -300,7 +310,7 @@ export default function AdminScreen() {
               style={[styles.navChip, activeSection === sec && styles.navChipActive]}
             >
               <Text style={[styles.navText, activeSection === sec && styles.navTextActive]}>
-                {sec.charAt(0).toUpperCase() + sec.slice(1)}
+                {sectionLabels[sec]}
               </Text>
             </Pressable>
           ))}
@@ -311,40 +321,40 @@ export default function AdminScreen() {
             <Pressable onPress={() => setActiveSection("bookings")} style={styles.actionCard}>
               <MaterialCommunityIcons name="calendar-check" size={28} color={Colors.light.primary} />
               <View style={styles.actionInfo}>
-                <Text style={styles.actionTitle}>Service Bookings</Text>
-                <Text style={styles.actionDesc}>{bookings.length} total bookings</Text>
+                <Text style={styles.actionTitle}>{t.admin.serviceBookings}</Text>
+                <Text style={styles.actionDesc}>{bookings.length} {t.admin.totalBookings}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
             </Pressable>
             <Pressable onPress={() => setActiveSection("properties")} style={styles.actionCard}>
               <MaterialCommunityIcons name="file-document" size={28} color={Colors.light.accent} />
               <View style={styles.actionInfo}>
-                <Text style={styles.actionTitle}>Property Submissions</Text>
-                <Text style={styles.actionDesc}>{propertyDetails.length} submissions</Text>
+                <Text style={styles.actionTitle}>{t.admin.propertySubmissions}</Text>
+                <Text style={styles.actionDesc}>{propertyDetails.length} {t.admin.submissions}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
             </Pressable>
             <Pressable onPress={() => setActiveSection("users")} style={styles.actionCard}>
               <Ionicons name="people" size={28} color="#1976D2" />
               <View style={styles.actionInfo}>
-                <Text style={styles.actionTitle}>User Management</Text>
-                <Text style={styles.actionDesc}>{users.length} registered users</Text>
+                <Text style={styles.actionTitle}>{t.admin.userManagement}</Text>
+                <Text style={styles.actionDesc}>{users.length} {t.admin.registeredUsers}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
             </Pressable>
             <Pressable onPress={() => setActiveSection("orders")} style={styles.actionCard}>
               <MaterialCommunityIcons name="package-variant" size={28} color="#E65100" />
               <View style={styles.actionInfo}>
-                <Text style={styles.actionTitle}>Shop Orders</Text>
-                <Text style={styles.actionDesc}>{orders.length} total orders</Text>
+                <Text style={styles.actionTitle}>{t.admin.shopOrders}</Text>
+                <Text style={styles.actionDesc}>{orders.length} {t.admin.totalOrders}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
             </Pressable>
             <Pressable onPress={() => setActiveSection("writers")} style={styles.actionCard}>
               <MaterialCommunityIcons name="pencil-lock" size={28} color="#9C27B0" />
               <View style={styles.actionInfo}>
-                <Text style={styles.actionTitle}>Writer Requests</Text>
-                <Text style={styles.actionDesc}>{writeRequests.filter(r => r.status === "pending").length} pending requests</Text>
+                <Text style={styles.actionTitle}>{t.admin.writerRequests}</Text>
+                <Text style={styles.actionDesc}>{writeRequests.filter(r => r.status === "pending").length} {t.admin.pendingRequests}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
             </Pressable>
@@ -356,7 +366,7 @@ export default function AdminScreen() {
             {bookings.length === 0 ? (
               <View style={styles.emptyState}>
                 <MaterialCommunityIcons name="calendar-blank" size={48} color={Colors.light.tabIconDefault} />
-                <Text style={styles.emptyText}>No bookings yet</Text>
+                <Text style={styles.emptyText}>{t.admin.noBookings}</Text>
               </View>
             ) : (
               bookings.map((b, i) => (
@@ -384,7 +394,7 @@ export default function AdminScreen() {
             {propertyDetails.length === 0 ? (
               <View style={styles.emptyState}>
                 <MaterialCommunityIcons name="file-document-outline" size={48} color={Colors.light.tabIconDefault} />
-                <Text style={styles.emptyText}>No property submissions yet</Text>
+                <Text style={styles.emptyText}>{t.admin.noProperties}</Text>
               </View>
             ) : (
               propertyDetails.map((p, i) => (
@@ -414,7 +424,7 @@ export default function AdminScreen() {
             {users.length === 0 ? (
               <View style={styles.emptyState}>
                 <Ionicons name="people-outline" size={48} color={Colors.light.tabIconDefault} />
-                <Text style={styles.emptyText}>No users yet</Text>
+                <Text style={styles.emptyText}>{t.admin.noUsers}</Text>
               </View>
             ) : (
               users.map((u) => (
@@ -457,7 +467,7 @@ export default function AdminScreen() {
                     </Text>
                   </View>
                   <Text style={styles.itemDate}>
-                    Joined {new Date(u.created_at).toLocaleDateString()}
+                    {t.admin.joined} {new Date(u.created_at).toLocaleDateString()}
                   </Text>
                 </View>
               ))
@@ -470,7 +480,7 @@ export default function AdminScreen() {
             {orders.length === 0 ? (
               <View style={styles.emptyState}>
                 <MaterialCommunityIcons name="package-variant" size={48} color={Colors.light.tabIconDefault} />
-                <Text style={styles.emptyText}>No orders yet</Text>
+                <Text style={styles.emptyText}>{t.admin.noOrders}</Text>
               </View>
             ) : (
               orders.map((o) => {
@@ -485,7 +495,7 @@ export default function AdminScreen() {
                 };
                 const sColor = statusColors[o.status] || Colors.light.primary;
                 const items = Array.isArray(o.items) ? o.items : [];
-                const itemCount = items.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0);
+                const itemCount = items.reduce((sum: number, v: any) => sum + (v.quantity || 1), 0);
                 return (
                   <View key={o.id} style={styles.itemCard}>
                     <View style={styles.itemHeader}>
@@ -503,7 +513,7 @@ export default function AdminScreen() {
                       {itemCount} item{itemCount !== 1 ? "s" : ""} - ${Number(o.total).toFixed(2)}
                     </Text>
                     <Text style={styles.itemDetail}>
-                      {items.map((item: any) => `${item.name} x${item.quantity || 1}`).join(", ")}
+                      {items.map((v: any) => `${v.name} x${v.quantity || 1}`).join(", ")}
                     </Text>
                     <Text style={styles.itemDetail}>
                       {o.customer_phone} | {o.customer_city}, {o.customer_country || "Pakistan"}
@@ -531,7 +541,7 @@ export default function AdminScreen() {
             {writeRequests.length === 0 ? (
               <View style={styles.emptyState}>
                 <MaterialCommunityIcons name="pencil-lock-outline" size={48} color={Colors.light.tabIconDefault} />
-                <Text style={styles.emptyText}>No writer requests yet</Text>
+                <Text style={styles.emptyText}>{t.admin.noWriters}</Text>
               </View>
             ) : (
               writeRequests.map((r) => (
@@ -567,7 +577,7 @@ export default function AdminScreen() {
                   {r.topics && <Text style={styles.itemDetail}>Topics: {r.topics}</Text>}
                   {r.sample_title && <Text style={styles.itemDetail}>Sample: {r.sample_title}</Text>}
                   <Text style={styles.itemDate}>
-                    Requested {new Date(r.created_at).toLocaleDateString()}
+                    {t.admin.requested} {new Date(r.created_at).toLocaleDateString()}
                   </Text>
                 </View>
               ))
