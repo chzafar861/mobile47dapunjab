@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   StyleSheet,
   Text,
@@ -262,10 +262,37 @@ export default function ShopScreen() {
   const categoryLabels: Record<string, string> = {
     "All": t.shop.all,
     "Clothing": t.shop.clothing,
-    "Kitchen": t.shop.food,
+    "Kitchen": t.products.kitchen,
     "Art": t.shop.art,
     "Home": t.shop.home,
   };
+
+  const productTranslations: Record<string, { name: string; desc: string; details: string }> = {
+    "1": { name: t.products.p1_name, desc: t.products.p1_desc, details: t.products.p1_details },
+    "2": { name: t.products.p2_name, desc: t.products.p2_desc, details: t.products.p2_details },
+    "3": { name: t.products.p3_name, desc: t.products.p3_desc, details: t.products.p3_details },
+    "4": { name: t.products.p4_name, desc: t.products.p4_desc, details: t.products.p4_details },
+    "5": { name: t.products.p5_name, desc: t.products.p5_desc, details: t.products.p5_details },
+    "6": { name: t.products.p6_name, desc: t.products.p6_desc, details: t.products.p6_details },
+    "7": { name: t.products.p7_name, desc: t.products.p7_desc, details: t.products.p7_details },
+    "8": { name: t.products.p8_name, desc: t.products.p8_desc, details: t.products.p8_details },
+  };
+
+  const translatedProducts = useMemo(() => {
+    return defaultProducts.map((p) => {
+      const tr = productTranslations[p.id];
+      if (!tr) return p;
+      return {
+        ...p,
+        name: tr.name,
+        description: tr.desc,
+        details: tr.details,
+        category: categoryLabels[p.category] || p.category,
+        _originalCategory: p.category,
+      };
+    });
+  }, [t]);
+
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -393,8 +420,9 @@ export default function ShopScreen() {
     }
   };
 
-  const filteredProducts = defaultProducts.filter((p) => {
-    const matchesCategory = selectedCategory === "All" || p.category === selectedCategory;
+  const filteredProducts = translatedProducts.filter((p: any) => {
+    const origCategory = p._originalCategory || p.category;
+    const matchesCategory = selectedCategory === "All" || origCategory === selectedCategory;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -522,7 +550,7 @@ export default function ShopScreen() {
                     )}
                   </View>
                   <View style={styles.detailDivider} />
-                  <Text style={styles.detailSectionTitle}>About this product</Text>
+                  <Text style={styles.detailSectionTitle}>{t.products.aboutProduct}</Text>
                   <Text style={styles.detailDescription}>{showProduct.details}</Text>
                   <View style={styles.detailDivider} />
                   <View style={styles.detailFeatures}>
