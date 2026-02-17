@@ -142,6 +142,22 @@ export default function MigrationDetailScreen() {
     },
   });
 
+  const { translated: recordTranslated } = useTranslate(
+    record
+      ? [
+          record.full_name,
+          record.village_of_origin,
+          record.district,
+          record.current_location,
+          record.notes || "",
+          record.contact_info || "",
+        ]
+      : []
+  );
+  const [trName, trVillage, trDistrict, trLocation, trNotes, trContact] = record
+    ? recordTranslated
+    : ["", "", "", "", "", ""];
+
   const handlePostComment = () => {
     if (!commentText.trim()) return;
     if (!commentName.trim()) {
@@ -163,22 +179,6 @@ export default function MigrationDetailScreen() {
       </View>
     );
   }
-
-  const { translated: recordTranslated } = useTranslate(
-    record
-      ? [
-          record.full_name,
-          record.village_of_origin,
-          record.district,
-          record.current_location,
-          record.notes || "",
-          record.contact_info || "",
-        ]
-      : []
-  );
-  const [trName, trVillage, trDistrict, trLocation, trNotes, trContact] = record
-    ? recordTranslated
-    : ["", "", "", "", "", ""];
 
   if (!record) {
     return (
