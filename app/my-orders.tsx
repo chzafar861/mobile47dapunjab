@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
+import { useCurrency } from "@/lib/currency";
 import { getApiUrl } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
@@ -100,6 +101,7 @@ export default function MyOrdersScreen() {
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { t } = useI18n();
+  const { formatPrice } = useCurrency();
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -244,7 +246,7 @@ export default function MyOrdersScreen() {
                     />
                     <Text style={styles.metaText}>{order.payment_method === "cod" ? "COD" : "Card"}</Text>
                   </View>
-                  <Text style={styles.orderTotal}>${Number(order.total).toFixed(2)}</Text>
+                  <Text style={styles.orderTotal}>{formatPrice(Number(order.total))}</Text>
                 </View>
 
                 {!isCancelled && !isDelivered && (
@@ -297,6 +299,7 @@ function OrderDetail({
   webBottomInset: number;
 }) {
   const { t } = useI18n();
+  const { formatPrice } = useCurrency();
   const statusIdx = getStatusIndex(order.status);
   const isCancelled = order.status === "cancelled";
   const isDelivered = order.status === "delivered";
@@ -394,12 +397,12 @@ function OrderDetail({
                   <Text style={styles.itemQtyText}>{item.quantity}x</Text>
                 </View>
                 <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.itemPrice}>${(item.price * item.quantity).toFixed(2)}</Text>
+                <Text style={styles.itemPrice}>{formatPrice(item.price * item.quantity)}</Text>
               </View>
             ))}
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalValue}>${Number(order.total).toFixed(2)}</Text>
+              <Text style={styles.totalLabel}>{t.shop.total}</Text>
+              <Text style={styles.totalValue}>{formatPrice(Number(order.total))}</Text>
             </View>
           </View>
 
