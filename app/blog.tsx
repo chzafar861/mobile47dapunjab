@@ -392,18 +392,6 @@ export default function BlogScreen() {
     });
   };
 
-  const handleFabPress = () => {
-    if (!user) {
-      Alert.alert("Login Required", "Please login first.");
-      return;
-    }
-    if (isAdmin) {
-      setShowWriteModal(true);
-    } else {
-      router.push("/subscription");
-    }
-  };
-
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -843,23 +831,6 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_600SemiBold",
     fontSize: 13,
     color: "#E53935",
-  },
-  fab: {
-    position: "absolute",
-    right: 20,
-    zIndex: 10,
-  },
-  fabGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: Colors.light.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
   },
   modalContainer: {
     flex: 1,
