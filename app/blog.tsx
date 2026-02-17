@@ -328,26 +328,17 @@ export default function BlogScreen() {
   const { isAdmin, user } = useAuth();
   const [activeCategory, setActiveCategory] = useState("All");
   const [showWriteModal, setShowWriteModal] = useState(false);
-  const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("General");
   const [imageUrl, setImageUrl] = useState("");
-  const [permReason, setPermReason] = useState("");
-  const [permTopics, setPermTopics] = useState("");
-  const [permSampleTitle, setPermSampleTitle] = useState("");
 
   const { data: posts = [], isLoading } = useQuery<BlogPost[]>({
     queryKey: ["/api/blog-posts"],
   });
 
-  const { data: myWriteStatus } = useQuery<{ id: number; status: string; admin_note?: string } | null>({
-    queryKey: ["/api/blog-write-requests/my-status"],
-    enabled: !!user && !isAdmin,
-  });
-
-  const canWrite = isAdmin || myWriteStatus?.status === "approved";
+  const canWrite = isAdmin;
 
   const filteredPosts = activeCategory === "All" ? posts : posts.filter(p => p.category === activeCategory);
 
@@ -394,58 +385,15 @@ export default function BlogScreen() {
     });
   };
 
-  const permissionMutation = useMutation({
-    mutationFn: async (data: any) => {
-      await apiRequest("POST", "/api/blog-write-requests", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/blog-write-requests/my-status"] });
-      setShowPermissionModal(false);
-      setPermReason("");
-      setPermTopics("");
-      setPermSampleTitle("");
-      Alert.alert("Request Sent!", "Your writing permission request has been submitted. Admin will review it shortly.");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    },
-    onError: (err: any) => {
-      Alert.alert("Error", err.message || "Could not submit request");
-    },
-  });
-
-  const handlePermissionSubmit = () => {
-    if (!permReason.trim()) {
-      Alert.alert("Required", "Please explain why you want to write.");
-      return;
-    }
-    permissionMutation.mutate({
-      reason: permReason.trim(),
-      topics: permTopics.trim() || null,
-      sample_title: permSampleTitle.trim() || null,
-    });
-  };
-
   const handleFabPress = () => {
     if (!user) {
-      Alert.alert("Login Required", "Please login to request writing permission.");
+      Alert.alert("Login Required", "Please login first.");
       return;
     }
-    if (canWrite) {
+    if (isAdmin) {
       setShowWriteModal(true);
-    } else if (myWriteStatus?.status === "pending") {
-      Alert.alert("Request Pending", "Your writing permission request is being reviewed by admin.");
-    } else if (myWriteStatus?.status === "rejected") {
-      Alert.alert(
-        "Request Rejected",
-        myWriteStatus.admin_note
-          ? `Admin note: ${myWriteStatus.admin_note}\n\nYou can submit a new request.`
-          : "Your previous request was rejected. You can submit a new request.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "New Request", onPress: () => setShowPermissionModal(true) },
-        ]
-      );
     } else {
-      setShowPermissionModal(true);
+      router.push("/subscription");
     }
   };
 
@@ -565,10 +513,10 @@ export default function BlogScreen() {
           ]}
         >
           <LinearGradient
-            colors={canWrite ? [Colors.light.accent, "#C4972E"] : [Colors.light.primary, "#2D6A4F"] as [string, string]}
+            colors={isAdmin ? [Colors.light.accent, "#C4972E"] : [Colors.light.primary, "#2D6A4F"] as [string, string]}
             style={styles.fabGradient}
           >
-            <Feather name={canWrite ? "edit-3" : "send"} size={24} color="#fff" />
+            <Feather name={isAdmin ? "edit-3" : "send"} size={24} color="#fff" />
           </LinearGradient>
         </Pressable>
       )}
@@ -579,120 +527,6 @@ export default function BlogScreen() {
         onClose={() => setSelectedPost(null)}
         onLike={(id) => likeMutation.mutate(id)}
       />
-
-      <Modal visible={showPermissionModal} animationType="slide" presentationStyle="pageSheet">
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
-        >
-          <View style={[styles.detailContainer, { paddingTop: Platform.OS === "web" ? 20 : insets.top }]}>
-            <View style={styles.detailHeader}>
-              <Pressable onPress={() => setShowPermissionModal(false)}>
-                <Ionicons name="close" size={26} color={Colors.light.text} />
-              </Pressable>
-              <Text style={styles.detailHeaderTitle}>{t.blog.requestWriteAccess}</Text>
-              <View style={{ width: 26 }} />
-            </View>
-            <ScrollView contentContainerStyle={{ padding: 20, gap: 18, paddingBottom: 40 }}>
-              <LinearGradient
-                colors={[Colors.light.primary, "#2D6A4F"] as [string, string]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.permHeroBanner}
-              >
-                <MaterialCommunityIcons name="pencil-lock-outline" size={40} color={Colors.light.accent} />
-                <Text style={styles.permHeroTitle}>Become a Writer</Text>
-                <Text style={styles.permHeroSubtitle}>
-                  Share your stories, experiences and insights about Punjab with the community
-                </Text>
-              </LinearGradient>
-
-              {myWriteStatus?.status === "pending" && (
-                <View style={styles.permStatusCard}>
-                  <Ionicons name="time-outline" size={24} color="#F9A825" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.permStatusTitle}>{t.blog.writeAccessPending}</Text>
-                    <Text style={styles.permStatusText}>{t.blog.writeAccessPending}</Text>
-                  </View>
-                </View>
-              )}
-
-              {myWriteStatus?.status === "rejected" && (
-                <View style={[styles.permStatusCard, { borderColor: "#EF5350" }]}>
-                  <Ionicons name="close-circle-outline" size={24} color="#EF5350" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.permStatusTitle, { color: "#EF5350" }]}>Previous Request Rejected</Text>
-                    {myWriteStatus.admin_note && (
-                      <Text style={styles.permStatusText}>Admin note: {myWriteStatus.admin_note}</Text>
-                    )}
-                    <Text style={styles.permStatusText}>You can submit a new request below</Text>
-                  </View>
-                </View>
-              )}
-
-              <View style={styles.permFieldGroup}>
-                <Text style={styles.permLabel}>Why do you want to write? *</Text>
-                <TextInput
-                  style={[styles.permInput, { height: 100, textAlignVertical: "top" }]}
-                  value={permReason}
-                  onChangeText={setPermReason}
-                  placeholder="Tell us about your connection to Punjab, your experiences, or why you'd like to share..."
-                  placeholderTextColor={Colors.light.textSecondary}
-                  multiline
-                  numberOfLines={4}
-                />
-              </View>
-
-              <View style={styles.permFieldGroup}>
-                <Text style={styles.permLabel}>Topics you'd like to write about</Text>
-                <TextInput
-                  style={styles.permInput}
-                  value={permTopics}
-                  onChangeText={setPermTopics}
-                  placeholder="e.g., Migration stories, Travel tips, Cultural traditions..."
-                  placeholderTextColor={Colors.light.textSecondary}
-                />
-              </View>
-
-              <View style={styles.permFieldGroup}>
-                <Text style={styles.permLabel}>Sample blog post title</Text>
-                <TextInput
-                  style={styles.permInput}
-                  value={permSampleTitle}
-                  onChangeText={setPermSampleTitle}
-                  placeholder="e.g., My grandfather's journey from Jalandhar in 1947"
-                  placeholderTextColor={Colors.light.textSecondary}
-                />
-              </View>
-
-              <Pressable
-                onPress={handlePermissionSubmit}
-                disabled={permissionMutation.isPending || !permReason.trim()}
-                style={({ pressed }) => [
-                  styles.permSubmitBtn,
-                  {
-                    opacity: (!permReason.trim() || permissionMutation.isPending) ? 0.5 : pressed ? 0.85 : 1,
-                  },
-                ]}
-              >
-                <LinearGradient
-                  colors={[Colors.light.accent, "#C4972E"] as [string, string]}
-                  style={styles.permSubmitGradient}
-                >
-                  {permissionMutation.isPending ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <>
-                      <Ionicons name="paper-plane" size={20} color="#fff" />
-                      <Text style={styles.permSubmitText}>{t.blog.requestWriteAccess}</Text>
-                    </>
-                  )}
-                </LinearGradient>
-              </Pressable>
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
 
       <Modal visible={showWriteModal} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView
