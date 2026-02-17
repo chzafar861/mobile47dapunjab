@@ -187,63 +187,64 @@ function PlaceCard({ name, desc, icon }: { name: string; desc: string; icon: str
 }
 
 function CurrentServicesPage() {
+  const { t } = useI18n();
   return (
     <View style={styles.pageContent}>
       <Text style={styles.pageIntro}>
-        We offer premium services tailored for overseas Pakistanis and international visitors. Each service includes professional support, transparent pricing, and dedicated customer care.
+        {t.pakistanGuide.servicesIntro}
       </Text>
 
       <ServiceShowcase
         icon="videocam"
         iconFamily="ionicons"
-        title="Village Video Service"
-        description="Capture personal or memorable village locations in professional HD video. Relive the streets, homes, fields, and sacred places of your childhood village."
-        price="$100"
-        priceNote="1-hour HD video, no editing, same-day delivery"
+        title={t.pakistanGuide.villageVideoTitle}
+        description={t.pakistanGuide.villageVideoDesc}
+        price={t.pakistanGuide.villageVideoPrice}
+        priceNote={t.pakistanGuide.villageVideoPriceNote}
         features={[
-          { icon: "camera", label: "HD Quality" },
-          { icon: "time", label: "1 Hour" },
-          { icon: "today", label: "Same Day" },
-          { icon: "videocam-outline", label: "Raw Footage" },
+          { icon: "camera", label: t.pakistanGuide.hdQuality },
+          { icon: "time", label: t.pakistanGuide.oneHour },
+          { icon: "today", label: t.pakistanGuide.sameDay },
+          { icon: "videocam-outline", label: t.pakistanGuide.rawFootage },
         ]}
         gradient={[Colors.light.accent, "#E8C96A"]}
-        buttonLabel="Request Video"
+        buttonLabel={t.pakistanGuide.requestVideo}
         onPress={() => router.push("/video-request")}
       />
 
       <ServiceShowcase
         icon="shield-star"
         iconFamily="mci"
-        title="Protocol Service"
-        description="VIP protocol, transport, security, and experienced guide assistance for visitors to Pakistan. From airport pickup to full city escort, we ensure a smooth, secure visit."
-        price="Custom Quote"
-        priceNote="Price based on duration, coverage & requirements"
+        title={t.pakistanGuide.protocolTitle}
+        description={t.pakistanGuide.protocolDesc}
+        price={t.pakistanGuide.customQuote}
+        priceNote={t.pakistanGuide.protocolPriceNote}
         features={[
-          { icon: "car", label: "Transport" },
-          { icon: "shield-checkmark", label: "Security" },
-          { icon: "navigate", label: "Guide" },
-          { icon: "airplane", label: "Airport Pickup" },
+          { icon: "car", label: t.pakistanGuide.transport },
+          { icon: "shield-checkmark", label: t.pakistanGuide.security },
+          { icon: "navigate", label: t.pakistanGuide.guide },
+          { icon: "airplane", label: t.pakistanGuide.airportPickup },
         ]}
         gradient={[Colors.light.primary, "#14A76C"]}
-        buttonLabel="Book Now"
+        buttonLabel={t.pakistanGuide.bookNow}
         onPress={() => router.push("/protocol-request")}
       />
 
       <ServiceShowcase
         icon="passport"
         iconFamily="mci"
-        title="Customs Service"
-        description="Full support for buying goods, importing, exporting, and handling all customs procedures in Pakistan. Legal, documented, and hassle-free customs clearance."
-        price="Custom Quote"
-        priceNote="Price based on type and scope of work"
+        title={t.pakistanGuide.customsTitle}
+        description={t.pakistanGuide.customsDesc}
+        price={t.pakistanGuide.customQuote}
+        priceNote={t.pakistanGuide.customsPriceNote}
         features={[
-          { icon: "cart", label: "Buy Goods" },
-          { icon: "arrow-down-circle", label: "Import" },
-          { icon: "arrow-up-circle", label: "Export" },
-          { icon: "document-text", label: "Clearance" },
+          { icon: "cart", label: t.pakistanGuide.buyGoods },
+          { icon: "arrow-down-circle", label: t.pakistanGuide.importLabel },
+          { icon: "arrow-up-circle", label: t.pakistanGuide.exportLabel },
+          { icon: "document-text", label: t.pakistanGuide.clearance },
         ]}
         gradient={["#1B4332", "#2D6A4F"]}
-        buttonLabel="Get Started"
+        buttonLabel={t.pakistanGuide.getStarted}
         onPress={() => router.push("/customs-request")}
       />
 
@@ -255,9 +256,9 @@ function CurrentServicesPage() {
           style={styles.contactBannerInner}
         >
           <Ionicons name="call" size={28} color="#fff" />
-          <Text style={styles.contactBannerTitle}>Need a Custom Package?</Text>
+          <Text style={styles.contactBannerTitle}>{t.pakistanGuide.needCustomPackage}</Text>
           <Text style={styles.contactBannerDesc}>
-            Contact us for personalized service combinations and special pricing for extended stays or group visits.
+            {t.pakistanGuide.customPackageDesc}
           </Text>
           <Pressable
             onPress={() => {
@@ -269,7 +270,7 @@ function CurrentServicesPage() {
               { opacity: pressed ? 0.85 : 1 },
             ]}
           >
-            <Text style={styles.contactBannerBtnText}>Contact Us</Text>
+            <Text style={styles.contactBannerBtnText}>{t.pakistanGuide.contactUs}</Text>
           </Pressable>
         </LinearGradient>
       </View>
@@ -291,17 +292,17 @@ function PakistanInfoPage() {
           colors={["transparent", "rgba(0,0,0,0.8)"]}
           style={styles.infoHeroOverlay}
         >
-          <Text style={styles.infoHeroTitle}>Discover Pakistan</Text>
+          <Text style={styles.infoHeroTitle}>{t.pakistanGuide.discoverPakistan}</Text>
           <Text style={styles.infoHeroDesc}>
-            From the ancient Indus Valley to a nuclear power and tech hub - 5,000+ years of civilization, culture, and progress.
+            {t.pakistanGuide.discoverDesc}
           </Text>
         </LinearGradient>
       </View>
 
       <View style={styles.statsRow}>
-        <StatCard value="220M+" label="Population" icon="people" color={Colors.light.primary} />
-        <StatCard value="1947" label="Founded" icon="flag" color={Colors.light.accent} />
-        <StatCard value="796K" label="Area (km2)" icon="map" color="#1B4332" />
+        <StatCard value="220M+" label={t.pakistanGuide.population} icon="people" color={Colors.light.primary} />
+        <StatCard value="1947" label={t.pakistanGuide.founded} icon="flag" color={Colors.light.accent} />
+        <StatCard value="796K" label={t.pakistanGuide.areaKm} icon="map" color="#1B4332" />
       </View>
 
       <ImageInfoSection
@@ -309,17 +310,17 @@ function PakistanInfoPage() {
         icon="time-outline"
         iconColor="#8B0000"
         title={t.pakistanGuide.partition}
-        subtitle="The event that shaped South Asia forever"
+        subtitle={t.pakistanGuide.partitionSubtitle}
       >
         <Text style={styles.infoBody}>
-          The partition of British India in 1947 was one of the most significant events in South Asian history. Punjab, the "Land of Five Rivers," was divided between Pakistan and India, reshaping millions of lives forever. It remains one of the largest mass migrations in human history, affecting over 14 million people.
+          {t.pakistanGuide.partitionBody}
         </Text>
-        <InfoBullet icon="flag" text="August 14, 1947: Pakistan gained independence under the leadership of Quaid-e-Azam Muhammad Ali Jinnah, the Father of the Nation" />
-        <InfoBullet icon="cut" text="The Radcliffe Line divided Punjab, separating communities, families, and friendships that had coexisted for centuries" />
-        <InfoBullet icon="people" text="Over 7 million Muslims migrated to West Punjab (Pakistan), while Hindus and Sikhs moved east in the largest mass migration ever" />
-        <InfoBullet icon="business" text="Lahore, the cultural and intellectual capital of Punjab, became part of Pakistan and remains the heart of Pakistani Punjab" />
-        <InfoBullet icon="heart" text="Despite the immense tragedy and loss, Pakistan emerged as a sovereign nation with rich cultural heritage, resilience, and hope" />
-        <InfoBullet icon="book" text="The stories of partition are preserved through oral histories, literature, and the Bronze Migration Portal on this app" />
+        <InfoBullet icon="flag" text={t.pakistanGuide.partitionBullet1} />
+        <InfoBullet icon="cut" text={t.pakistanGuide.partitionBullet2} />
+        <InfoBullet icon="people" text={t.pakistanGuide.partitionBullet3} />
+        <InfoBullet icon="business" text={t.pakistanGuide.partitionBullet4} />
+        <InfoBullet icon="heart" text={t.pakistanGuide.partitionBullet5} />
+        <InfoBullet icon="book" text={t.pakistanGuide.partitionBullet6} />
       </ImageInfoSection>
 
       <ImageInfoSection
@@ -327,21 +328,21 @@ function PakistanInfoPage() {
         icon="library-outline"
         iconColor="#4A148C"
         title={t.pakistanGuide.oldHistory}
-        subtitle="5,000+ years of civilization"
+        subtitle={t.pakistanGuide.oldHistorySubtitle}
       >
         <Text style={styles.infoBody}>
-          The land that is now Pakistan has been home to some of the world's oldest and most sophisticated civilizations, spanning over 5,000 years of recorded history. From the advanced urban planning of Mohenjo-daro to the Greco-Buddhist art of Gandhara, this region has been at the crossroads of major world civilizations.
+          {t.pakistanGuide.oldHistoryBody}
         </Text>
-        <InfoBullet icon="business" text="Indus Valley Civilization (3300-1300 BC): Mohenjo-daro and Harappa were among the world's most advanced ancient cities with grid streets, drainage, and public baths" />
-        <InfoBullet icon="school" text="Gandhara Civilization: Taxila University (Takshashila) was one of the world's earliest universities, predating Oxford by over 1,500 years" />
-        <InfoBullet icon="globe" text="Persian & Greek Influence: Alexander the Great passed through in 326 BC, leaving a legacy of Greco-Buddhist art and culture" />
-        <InfoBullet icon="shield" text="Mughal Empire (1526-1857): Lahore became a jewel of Mughal architecture with the Badshahi Mosque, Lahore Fort, and Shalimar Gardens" />
-        <InfoBullet icon="people" text="Sikh Empire (1799-1849): Maharaja Ranjit Singh ruled Punjab from Lahore, expanding the Lahore Fort and preserving Mughal heritage" />
-        <InfoBullet icon="train" text="British Colonial Period (1849-1947): Railways, canals, and institutions were built, along with the seeds of the independence movement" />
+        <InfoBullet icon="business" text={t.pakistanGuide.oldHistoryBullet1} />
+        <InfoBullet icon="school" text={t.pakistanGuide.oldHistoryBullet2} />
+        <InfoBullet icon="globe" text={t.pakistanGuide.oldHistoryBullet3} />
+        <InfoBullet icon="shield" text={t.pakistanGuide.oldHistoryBullet4} />
+        <InfoBullet icon="people" text={t.pakistanGuide.oldHistoryBullet5} />
+        <InfoBullet icon="train" text={t.pakistanGuide.oldHistoryBullet6} />
         <View style={styles.infoPlaces}>
-          <ImagePlaceCard name="Mohenjo-daro" desc="Ancient Indus Valley city - UNESCO World Heritage" image={require("@/assets/images/mohenjo-daro.jpg")} />
-          <ImagePlaceCard name="Taxila" desc="Ancient Gandhara university town" image={require("@/assets/images/taxila.jpg")} />
-          <ImagePlaceCard name="Lahore Fort" desc="Mughal citadel - UNESCO World Heritage" image={require("@/assets/images/lahore-fort.jpg")} />
+          <ImagePlaceCard name={t.pakistanGuide.mohenjoDaro} desc={t.pakistanGuide.mohenjoDaroDesc} image={require("@/assets/images/mohenjo-daro.jpg")} />
+          <ImagePlaceCard name={t.pakistanGuide.taxila} desc={t.pakistanGuide.taxilaDesc} image={require("@/assets/images/taxila.jpg")} />
+          <ImagePlaceCard name={t.pakistanGuide.lahoreFort} desc={t.pakistanGuide.lahoreFortDesc} image={require("@/assets/images/lahore-fort.jpg")} />
         </View>
       </ImageInfoSection>
 
@@ -350,17 +351,17 @@ function PakistanInfoPage() {
         icon="rocket-outline"
         iconColor="#0D47A1"
         title={t.pakistanGuide.modernHistory}
-        subtitle="From independence to a nuclear power"
+        subtitle={t.pakistanGuide.modernHistorySubtitle}
       >
         <Text style={styles.infoBody}>
-          Since independence in 1947, Pakistan has grown into a dynamic nation with significant achievements in defense, science, infrastructure, culture, and technology. The journey from a newly born nation to the world's 7th nuclear power is a story of resilience and ambition.
+          {t.pakistanGuide.modernHistoryBody}
         </Text>
-        <InfoBullet icon="document-text" text="1956: Pakistan became an Islamic Republic with its first constitution, establishing democratic governance" />
-        <InfoBullet icon="trending-up" text="1960s: 'Decade of Development' - rapid industrialization, the new capital Islamabad was built, and Pakistan's GDP grew at 6%+ annually" />
-        <InfoBullet icon="nuclear" text="1998: Pakistan becomes the 7th nuclear power in the world, ensuring strategic defense capability" />
-        <InfoBullet icon="construct" text="CPEC (2015+): China-Pakistan Economic Corridor - $62 billion infrastructure investment transforming roads, ports, and energy" />
-        <InfoBullet icon="code-slash" text="IT & Tech: Rapidly growing freelance and tech industry - one of the top 4 freelancing countries globally with $2.6B+ IT exports" />
-        <InfoBullet icon="phone-portrait" text="2023+: Digital Pakistan initiative expanding 5G, fintech, e-commerce, and startup ecosystem" />
+        <InfoBullet icon="document-text" text={t.pakistanGuide.modernHistoryBullet1} />
+        <InfoBullet icon="trending-up" text={t.pakistanGuide.modernHistoryBullet2} />
+        <InfoBullet icon="nuclear" text={t.pakistanGuide.modernHistoryBullet3} />
+        <InfoBullet icon="construct" text={t.pakistanGuide.modernHistoryBullet4} />
+        <InfoBullet icon="code-slash" text={t.pakistanGuide.modernHistoryBullet5} />
+        <InfoBullet icon="phone-portrait" text={t.pakistanGuide.modernHistoryBullet6} />
       </ImageInfoSection>
 
       <ImageInfoSection
@@ -368,21 +369,21 @@ function PakistanInfoPage() {
         icon="business-outline"
         iconColor="#1B5E20"
         title={t.pakistanGuide.capital}
-        subtitle="One of the most beautiful capitals in the world"
+        subtitle={t.pakistanGuide.capitalSubtitle}
       >
         <Text style={styles.infoBody}>
-          Islamabad, the capital city, is one of the most beautiful and well-planned capitals in the world. Nestled at the foot of the Margalla Hills, it combines modern governance with natural beauty. Built as a purpose-designed capital in the 1960s, it features wide tree-lined avenues, modern architecture, and abundant green spaces.
+          {t.pakistanGuide.capitalBody}
         </Text>
-        <InfoBullet icon="calendar" text="Founded in 1960 as a purpose-built capital to replace Karachi, designed by Greek architect Constantinos Doxiadis" />
-        <InfoBullet icon="star" text="Home to Faisal Mosque, the largest mosque in South Asia with capacity for 300,000 worshippers" />
-        <InfoBullet icon="business" text="Parliament House, Supreme Court, Aiwan-e-Sadr (Presidential Palace), and all federal institutions" />
-        <InfoBullet icon="leaf" text="Margalla Hills National Park offers hiking trails, wildlife, monkeys, leopards, and stunning panoramic views" />
-        <InfoBullet icon="restaurant" text="F-7 Jinnah Super, F-6 Super Market, and vibrant food scenes from street food to five-star dining" />
-        <InfoBullet icon="globe" text="Diplomatic enclave hosts 75+ embassies, international organizations, and United Nations offices" />
+        <InfoBullet icon="calendar" text={t.pakistanGuide.capitalBullet1} />
+        <InfoBullet icon="star" text={t.pakistanGuide.capitalBullet2} />
+        <InfoBullet icon="business" text={t.pakistanGuide.capitalBullet3} />
+        <InfoBullet icon="leaf" text={t.pakistanGuide.capitalBullet4} />
+        <InfoBullet icon="restaurant" text={t.pakistanGuide.capitalBullet5} />
+        <InfoBullet icon="globe" text={t.pakistanGuide.capitalBullet6} />
         <View style={styles.infoPlaces}>
-          <ImagePlaceCard name="Faisal Mosque" desc="Iconic Turkish-designed mosque - largest in South Asia" image={require("@/assets/images/faisal-mosque.jpg")} />
-          <PlaceCard name="Margalla Hills" desc="National park & hiking trails with stunning views" icon="leaf-outline" />
-          <PlaceCard name="Pakistan Monument" desc="Petal-shaped national landmark celebrating unity" icon="flag-outline" />
+          <ImagePlaceCard name={t.pakistanGuide.faisalMosque} desc={t.pakistanGuide.faisalMosqueDesc} image={require("@/assets/images/faisal-mosque.jpg")} />
+          <PlaceCard name={t.pakistanGuide.margallaHills} desc={t.pakistanGuide.margallaHillsDesc} icon="leaf-outline" />
+          <PlaceCard name={t.pakistanGuide.pakistanMonument} desc={t.pakistanGuide.pakistanMonumentDesc} icon="flag-outline" />
         </View>
       </ImageInfoSection>
 
@@ -390,45 +391,45 @@ function PakistanInfoPage() {
         icon="trending-up-outline"
         iconColor="#E65100"
         title={t.pakistanGuide.economy}
-        subtitle="A diverse and growing economy"
+        subtitle={t.pakistanGuide.economySubtitle}
       >
         <Text style={styles.infoBody}>
-          Pakistan has a diverse and growing economy driven by agriculture, textiles, IT services, and strategic trade partnerships. With a GDP of $350+ billion (PPP) and a young population, Pakistan is positioned among the Next Eleven economies with high growth potential.
+          {t.pakistanGuide.economyBody}
         </Text>
         <View style={styles.industryGrid}>
           <View style={styles.industryItem}>
             <View style={[styles.industryIcon, { backgroundColor: "#E8F5E9" }]}>
               <Ionicons name="leaf" size={20} color="#2E7D32" />
             </View>
-            <Text style={styles.industryName}>Agriculture</Text>
-            <Text style={styles.industryDesc}>World's 5th largest cotton producer, 4th largest milk producer, major wheat & rice exporter</Text>
+            <Text style={styles.industryName}>{t.pakistanGuide.agriculture}</Text>
+            <Text style={styles.industryDesc}>{t.pakistanGuide.agricultureDesc}</Text>
           </View>
           <View style={styles.industryItem}>
             <View style={[styles.industryIcon, { backgroundColor: "#E3F2FD" }]}>
               <MaterialCommunityIcons name="tshirt-crew" size={20} color="#1565C0" />
             </View>
-            <Text style={styles.industryName}>Textiles</Text>
-            <Text style={styles.industryDesc}>Largest export sector, global supplier of denim, bed linen, surgical instruments</Text>
+            <Text style={styles.industryName}>{t.pakistanGuide.textiles}</Text>
+            <Text style={styles.industryDesc}>{t.pakistanGuide.textilesDesc}</Text>
           </View>
           <View style={styles.industryItem}>
             <View style={[styles.industryIcon, { backgroundColor: "#FFF3E0" }]}>
               <Ionicons name="code-slash" size={20} color="#E65100" />
             </View>
-            <Text style={styles.industryName}>IT & Tech</Text>
-            <Text style={styles.industryDesc}>$2.6B+ IT exports, 4th largest freelancing nation, growing startup ecosystem</Text>
+            <Text style={styles.industryName}>{t.pakistanGuide.itTech}</Text>
+            <Text style={styles.industryDesc}>{t.pakistanGuide.itTechDesc}</Text>
           </View>
           <View style={styles.industryItem}>
             <View style={[styles.industryIcon, { backgroundColor: "#F3E5F5" }]}>
               <Ionicons name="construct" size={20} color="#6A1B9A" />
             </View>
-            <Text style={styles.industryName}>Construction</Text>
-            <Text style={styles.industryDesc}>CPEC highways, new cities, Diamer-Bhasha dam, M-tag motorway network</Text>
+            <Text style={styles.industryName}>{t.pakistanGuide.construction}</Text>
+            <Text style={styles.industryDesc}>{t.pakistanGuide.constructionDesc}</Text>
           </View>
         </View>
-        <InfoBullet icon="cash" text="GDP: $350+ billion (PPP), one of the Next Eleven economies identified by Goldman Sachs" />
-        <InfoBullet icon="swap-horizontal" text="Key trade partners: China, UAE, Saudi Arabia, USA, EU, Turkey" />
-        <InfoBullet icon="send" text="Remittances from overseas Pakistanis exceed $30 billion annually - a lifeline for the economy" />
-        <InfoBullet icon="people" text="65% of population is under 30 years old - one of the youngest demographics globally" />
+        <InfoBullet icon="cash" text={t.pakistanGuide.economyBullet1} />
+        <InfoBullet icon="swap-horizontal" text={t.pakistanGuide.economyBullet2} />
+        <InfoBullet icon="send" text={t.pakistanGuide.economyBullet3} />
+        <InfoBullet icon="people" text={t.pakistanGuide.economyBullet4} />
       </ImageInfoSection>
 
       <ImageInfoSection
@@ -436,30 +437,30 @@ function PakistanInfoPage() {
         icon="airplane-outline"
         iconColor="#00695C"
         title={t.pakistanGuide.tourism}
-        subtitle="From the highest peaks to ancient deserts"
+        subtitle={t.pakistanGuide.tourismSubtitle}
       >
         <Text style={styles.infoBody}>
-          Pakistan is home to some of the world's most breathtaking landscapes, from the highest peaks of the Karakoram to the golden beaches of Makran coast. Named the "Best Holiday Destination" by Conde Nast Traveller in 2020, Pakistan is rapidly emerging as a top tourism destination.
+          {t.pakistanGuide.tourismBody}
         </Text>
         <View style={styles.infoPlaces}>
-          <ImagePlaceCard name="Hunza Valley" desc="Stunning mountain valley - the 'Shangri-La' of Pakistan" image={require("@/assets/images/hunza-valley.jpg")} />
-          <ImagePlaceCard name="K2 & Karakoram" desc="World's 2nd highest peak - trekker's ultimate dream" image={require("@/assets/images/k2-mountain.jpg")} />
-          <ImagePlaceCard name="Swat Valley" desc="'Switzerland of the East' - lush green paradise" image={require("@/assets/images/swat-valley.jpg")} />
+          <ImagePlaceCard name={t.pakistanGuide.hunzaValley} desc={t.pakistanGuide.hunzaValleyDesc} image={require("@/assets/images/hunza-valley.jpg")} />
+          <ImagePlaceCard name={t.pakistanGuide.k2} desc={t.pakistanGuide.k2Desc} image={require("@/assets/images/k2-mountain.jpg")} />
+          <ImagePlaceCard name={t.pakistanGuide.swatValley} desc={t.pakistanGuide.swatValleyDesc} image={require("@/assets/images/swat-valley.jpg")} />
         </View>
-        <PlaceCard name="Skardu" desc="Gateway to the Karakoram, crystal-clear Shangrila Lake" icon="water-outline" />
-        <PlaceCard name="Lahore Old City" desc="Mughal heritage, food capital of Pakistan" icon="restaurant-outline" />
-        <PlaceCard name="Fairy Meadows" desc="Green alpine meadow with Nanga Parbat views" icon="flower-outline" />
-        <PlaceCard name="Deosai National Park" desc="World's 2nd highest plateau, home to Himalayan brown bear" icon="paw-outline" />
-        <PlaceCard name="Makran Coast" desc="Golden beaches along the Arabian Sea in Balochistan" icon="sunny-outline" />
+        <PlaceCard name={t.pakistanGuide.skardu} desc={t.pakistanGuide.skarduDesc} icon="water-outline" />
+        <PlaceCard name={t.pakistanGuide.lahoreOldCity} desc={t.pakistanGuide.lahoreOldCityDesc} icon="restaurant-outline" />
+        <PlaceCard name={t.pakistanGuide.fairyMeadows} desc={t.pakistanGuide.fairyMeadowsDesc} icon="flower-outline" />
+        <PlaceCard name={t.pakistanGuide.deosaiPark} desc={t.pakistanGuide.deosaiParkDesc} icon="paw-outline" />
+        <PlaceCard name={t.pakistanGuide.makranCoast} desc={t.pakistanGuide.makranCoastDesc} icon="sunny-outline" />
         <View style={styles.tourContactCard}>
           <LinearGradient
             colors={[Colors.light.primary + "10", Colors.light.primary + "05"]}
             style={styles.tourContactInner}
           >
             <Ionicons name="globe-outline" size={28} color={Colors.light.primary} />
-            <Text style={styles.tourContactTitle}>Planning a Trip to Pakistan?</Text>
+            <Text style={styles.tourContactTitle}>{t.pakistanGuide.planningTrip}</Text>
             <Text style={styles.tourContactDesc}>
-              We help overseas Pakistanis and international visitors plan their visits. From protocol services to guided tours, we've got you covered.
+              {t.pakistanGuide.planningTripDesc}
             </Text>
             <Pressable
               onPress={() => {
@@ -471,7 +472,7 @@ function PakistanInfoPage() {
                 { opacity: pressed ? 0.85 : 1 },
               ]}
             >
-              <Text style={styles.tourContactBtnText}>View Our Services</Text>
+              <Text style={styles.tourContactBtnText}>{t.pakistanGuide.viewOurServices}</Text>
               <Ionicons name="arrow-forward" size={16} color="#fff" />
             </Pressable>
           </LinearGradient>
@@ -552,7 +553,7 @@ export default function PakistanGuideScreen() {
                 activeTab === "services" && styles.tabLabelActive,
               ]}
             >
-              Current Services
+              {t.pakistanGuide.currentServices}
             </Text>
           </Pressable>
           <Pressable
@@ -570,7 +571,7 @@ export default function PakistanGuideScreen() {
                 activeTab === "info" && styles.tabLabelActive,
               ]}
             >
-              Pakistan Info
+              {t.pakistanGuide.pakistanInfo}
             </Text>
           </Pressable>
         </View>
