@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   StyleSheet,
   Text,
@@ -103,6 +103,21 @@ export default function MyOrdersScreen() {
   const { t } = useI18n();
   const { formatPrice } = useCurrency();
   const { user } = useAuth();
+  const productNameMap: Record<string, string> = useMemo(() => ({
+    "1": t.products.p1_name,
+    "2": t.products.p2_name,
+    "3": t.products.p3_name,
+    "4": t.products.p4_name,
+    "5": t.products.p5_name,
+    "6": t.products.p6_name,
+    "7": t.products.p7_name,
+    "8": t.products.p8_name,
+  }), [t]);
+
+  const getItemName = useCallback((item: OrderItem) => {
+    return productNameMap[item.id] || item.name;
+  }, [productNameMap]);
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -228,7 +243,7 @@ export default function MyOrdersScreen() {
                 <View style={styles.orderCardMid}>
                   <View style={styles.orderItemsPreview}>
                     <Text style={styles.itemsText} numberOfLines={1}>
-                      {order.items.map((item) => `${item.name}${item.quantity > 1 ? ` x${item.quantity}` : ""}`).join(", ")}
+                      {order.items.map((item) => `${getItemName(item)}${item.quantity > 1 ? ` x${item.quantity}` : ""}`).join(", ")}
                     </Text>
                   </View>
                 </View>
@@ -304,6 +319,21 @@ function OrderDetail({
   const isCancelled = order.status === "cancelled";
   const isDelivered = order.status === "delivered";
   const statusColor = STATUS_COLORS[order.status] || Colors.light.primary;
+
+  const productNameMap: Record<string, string> = useMemo(() => ({
+    "1": t.products.p1_name,
+    "2": t.products.p2_name,
+    "3": t.products.p3_name,
+    "4": t.products.p4_name,
+    "5": t.products.p5_name,
+    "6": t.products.p6_name,
+    "7": t.products.p7_name,
+    "8": t.products.p8_name,
+  }), [t]);
+
+  const getItemName = useCallback((item: OrderItem) => {
+    return productNameMap[item.id] || item.name;
+  }, [productNameMap]);
 
   return (
     <View style={styles.detailOverlay}>
@@ -396,7 +426,7 @@ function OrderDetail({
                 <View style={styles.itemQtyBadge}>
                   <Text style={styles.itemQtyText}>{item.quantity}x</Text>
                 </View>
-                <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.itemName} numberOfLines={1}>{getItemName(item)}</Text>
                 <Text style={styles.itemPrice}>{formatPrice(item.price * item.quantity)}</Text>
               </View>
             ))}

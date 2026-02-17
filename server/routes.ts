@@ -818,7 +818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         try {
           const result = await translate(text, { to: target });
-          const translated = result.text;
+          const translated = (result as any).text as string;
           translationCache.set(cacheKey, { text: translated, timestamp: Date.now() });
           results.push(translated);
         } catch (err) {

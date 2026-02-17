@@ -9,7 +9,7 @@ function getCacheKey(text: string, lang: string): string {
 }
 
 export function useTranslate(texts: string[]): { translated: string[]; loading: boolean } {
-  const { language } = useI18n();
+  const { lang: language } = useI18n();
   const [translated, setTranslated] = useState<string[]>(texts);
   const [loading, setLoading] = useState(false);
   const prevKey = useRef("");

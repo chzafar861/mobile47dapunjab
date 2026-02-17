@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   StyleSheet,
   Text,
@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
+import { useTranslate } from "@/lib/useTranslate";
 import { getApiUrl } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
@@ -70,6 +71,11 @@ async function authFetch(path: string, options: RequestInit = {}) {
 }
 
 const propertyTypes = ["Land", "House", "Shop", "Farm", "Other"];
+
+function TranslatedText({ text, style, numberOfLines }: { text: string; style?: any; numberOfLines?: number }) {
+  const { translated } = useTranslate([text]);
+  return <Text style={style} numberOfLines={numberOfLines}>{translated[0]}</Text>;
+}
 
 export default function MySubmissionsScreen() {
   const insets = useSafeAreaInsets();
@@ -342,7 +348,7 @@ export default function MySubmissionsScreen() {
                       <MaterialCommunityIcons name="home-city" size={20} color={Colors.light.primary} />
                     </View>
                     <View style={styles.cardHeaderText}>
-                      <Text style={styles.cardTitle} numberOfLines={1}>{item.data.ownerName || "Unknown"}</Text>
+                      <TranslatedText style={styles.cardTitle} numberOfLines={1} text={item.data.ownerName || "Unknown"} />
                       <Text style={styles.cardSubtitle}>{item.data.propertyType || "Property"} - {formatDate(item.created_at)}</Text>
                     </View>
                     {item.data.hasImages && (
@@ -356,7 +362,7 @@ export default function MySubmissionsScreen() {
                     {item.data.location && (
                       <View style={styles.cardRow}>
                         <Ionicons name="location-outline" size={14} color={Colors.light.textSecondary} />
-                        <Text style={styles.cardRowText} numberOfLines={1}>{item.data.location}</Text>
+                        <TranslatedText style={styles.cardRowText} numberOfLines={1} text={item.data.location} />
                       </View>
                     )}
                     {item.data.phone && (
@@ -368,7 +374,7 @@ export default function MySubmissionsScreen() {
                     {item.data.area && (
                       <View style={styles.cardRow}>
                         <Ionicons name="resize-outline" size={14} color={Colors.light.textSecondary} />
-                        <Text style={styles.cardRowText}>{item.data.area}</Text>
+                        <TranslatedText style={styles.cardRowText} text={item.data.area} />
                       </View>
                     )}
                   </View>
@@ -415,7 +421,7 @@ export default function MySubmissionsScreen() {
                       <Ionicons name="person" size={20} color={Colors.light.accent} />
                     </View>
                     <View style={styles.cardHeaderText}>
-                      <Text style={styles.cardTitle} numberOfLines={1}>{item.full_name}</Text>
+                      <TranslatedText style={styles.cardTitle} numberOfLines={1} text={item.full_name} />
                       <Text style={styles.cardSubtitle}>{item.district} - {formatDate(item.created_at)}</Text>
                     </View>
                     <View style={[styles.statusBadge, item.status === "approved" ? styles.statusApproved : styles.statusPending]}>
@@ -427,11 +433,11 @@ export default function MySubmissionsScreen() {
                   <View style={styles.cardBody}>
                     <View style={styles.cardRow}>
                       <MaterialCommunityIcons name="home-group" size={14} color={Colors.light.textSecondary} />
-                      <Text style={styles.cardRowText} numberOfLines={1}>{item.village_of_origin}</Text>
+                      <TranslatedText style={styles.cardRowText} numberOfLines={1} text={item.village_of_origin} />
                     </View>
                     <View style={styles.cardRow}>
                       <Ionicons name="location-outline" size={14} color={Colors.light.textSecondary} />
-                      <Text style={styles.cardRowText} numberOfLines={1}>{item.current_location}</Text>
+                      <TranslatedText style={styles.cardRowText} numberOfLines={1} text={item.current_location} />
                     </View>
                     {item.year_of_migration && (
                       <View style={styles.cardRow}>
