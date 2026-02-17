@@ -918,6 +918,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/access-requests", async (req: Request, res: Response) => {
+    try {
+      const { user_name, user_email, phone, reason, request_type } = req.body;
+      if (!user_name || !user_email || !reason) {
+        return res.status(400).json({ error: "Name, email and reason are required" });
+      }
+      const existing = await pool.query(
+        "SELECT * FROM access_requests WHERE user_email = $1 AND status = 'pending'",
+        [user_email]
+      );
+      if (existing.rows.length > 0) {
+        return res.status(400).json({ error: "You already have a pending request" });
+      }
+      const result = await pool.query(
+        `INSERT INTO access_requests (user_name, user_email, phone, reason, request_type)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [user_name, user_email, phone || null, reason, request_type || "premium"]
+      );
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/access-requests/my-status", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Login required" });
+      const userResult = await pool.query("SELECT email FROM auth_users WHERE id = $1", [userId]);
+      if (!userResult.rows.length) return res.json(null);
+      const result = await pool.query(
+        "SELECT * FROM access_requests WHERE user_email = $1 ORDER BY created_at DESC LIMIT 1",
+        [userResult.rows[0].email]
+      );
+      res.json(result.rows[0] || null);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/admin/access-requests", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Login required" });
+      const roleCheck = await pool.query("SELECT role FROM auth_users WHERE id = $1", [userId]);
+      if (!roleCheck.rows.length || roleCheck.rows[0].role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const result = await pool.query("SELECT * FROM access_requests ORDER BY created_at DESC");
+      res.json(result.rows);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/admin/access-requests/:id", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Login required" });
+      const roleCheck = await pool.query("SELECT role FROM auth_users WHERE id = $1", [userId]);
+      if (!roleCheck.rows.length || roleCheck.rows[0].role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
+      const { status, admin_note } = req.body;
+      const result = await pool.query(
+        "UPDATE access_requests SET status = $1, admin_note = $2, updated_at = NOW() WHERE id = $3 RETURNING *",
+        [status, admin_note || null, req.params.id]
+      );
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

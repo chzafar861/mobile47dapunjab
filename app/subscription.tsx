@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,65 +7,93 @@ import {
   Pressable,
   Platform,
   Alert,
+  TextInput,
+  ActivityIndicator,
+  KeyboardAvoidingView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/lib/auth-context";
-import { useI18n } from "@/lib/i18n";
-
-const ADMIN_EMAIL = "47dapunjab@gmail.com";
-
-const FEATURES = [
-  {
-    icon: "storefront" as const,
-    title: "Post & Sell Products",
-    description: "List your products in the marketplace and reach thousands of buyers across Punjab and beyond.",
-    gradient: ["#0A6847", "#2D6A4F"] as [string, string],
-  },
-  {
-    icon: "create" as const,
-    title: "Write Blog Posts",
-    description: "Share your stories, travel tips, and cultural insights with the community through blog posts.",
-    gradient: ["#053B2F", "#0A6847"] as [string, string],
-  },
-  {
-    icon: "headset" as const,
-    title: "Priority Support",
-    description: "Get dedicated customer support with faster response times and personalized assistance.",
-    gradient: ["#8B6914", "#D4A843"] as [string, string],
-  },
-];
 
 export default function SubscriptionScreen() {
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user } = useAuth();
-  const { t } = useI18n();
 
-  const handleContactAdmin = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const message = `To request premium access, please contact the admin at:\n\n${ADMIN_EMAIL}\n\nInclude your name and registered email in your request.`;
-    if (Platform.OS === "web") {
-      window.alert(message);
-    } else {
-      Alert.alert("Contact Admin", message, [{ text: "OK" }]);
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [reason, setReason] = useState("");
+  const [showErrors, setShowErrors] = useState(false);
+
+  const { data: myStatus, isLoading: statusLoading } = useQuery<any>({
+    queryKey: ["/api/access-requests/my-status"],
+    enabled: !!user,
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", "/api/access-requests", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/access-requests/my-status"] });
+      setReason("");
+      setShowErrors(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (Platform.OS === "web") {
+        window.alert("Your request has been submitted! Admin will review it shortly.");
+      } else {
+        Alert.alert("Request Submitted", "Your access request has been sent to the admin for review.");
+      }
+    },
+    onError: (err: any) => {
+      if (Platform.OS === "web") {
+        window.alert(err.message || "Could not submit request");
+      } else {
+        Alert.alert("Error", err.message || "Could not submit request");
+      }
+    },
+  });
+
+  const handleSubmit = () => {
+    setShowErrors(true);
+    if (!name.trim() || !email.trim() || !reason.trim()) {
+      if (Platform.OS === "web") {
+        window.alert("Please fill in all required fields");
+      } else {
+        Alert.alert("Required", "Please fill in name, email, and reason.");
+      }
+      return;
     }
+    submitMutation.mutate({
+      user_name: name.trim(),
+      user_email: email.trim(),
+      phone: phone.trim() || null,
+      reason: reason.trim(),
+      request_type: "premium",
+    });
   };
 
-  const handleGoBack = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.back();
-  };
+  const isPending = myStatus?.status === "pending";
+  const isApproved = myStatus?.status === "approved";
+  const isRejected = myStatus?.status === "rejected";
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={90}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           paddingTop: insets.top + webTopInset,
           paddingBottom: insets.bottom + webBottomInset + 40,
@@ -77,7 +105,7 @@ export default function SubscriptionScreen() {
           end={{ x: 1, y: 1 }}
           style={styles.hero}
         >
-          <Pressable onPress={handleGoBack} style={styles.backBtn}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
 
@@ -89,107 +117,199 @@ export default function SubscriptionScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.crownGradient}
               >
-                <Ionicons name="diamond" size={36} color="#053B2F" />
+                <Ionicons name="key" size={32} color="#053B2F" />
               </LinearGradient>
             </View>
-            <Text style={styles.heroTitle}>Premium Access</Text>
+            <Text style={styles.heroTitle}>Request Access</Text>
             <Text style={styles.heroSubtitle}>
-              Posting products and writing blog posts requires premium or admin access. Upgrade to unlock all features.
+              Submit a request to get premium access for posting products and writing blog posts.
             </Text>
-
-            <View style={styles.heroBadge}>
-              <Ionicons name="lock-closed" size={14} color={Colors.light.accent} />
-              <Text style={styles.heroBadgeText}>Exclusive Features</Text>
-            </View>
           </View>
         </LinearGradient>
 
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionLine} />
-          <Text style={styles.sectionTitle}>What You Get</Text>
-          <View style={styles.sectionLine} />
-        </View>
+        {isPending && (
+          <View style={styles.statusBanner}>
+            <LinearGradient
+              colors={["#FFF8E1", "#FFFDE7"]}
+              style={styles.statusGradient}
+            >
+              <Ionicons name="time" size={28} color="#F9A825" />
+              <View style={styles.statusTextWrap}>
+                <Text style={styles.statusTitle}>Request Pending</Text>
+                <Text style={styles.statusDesc}>
+                  Your access request is being reviewed by the admin. You will be notified once it is approved.
+                </Text>
+              </View>
+            </LinearGradient>
+          </View>
+        )}
 
-        <View style={styles.featuresContainer}>
-          {FEATURES.map((feature, index) => (
-            <View key={index} style={styles.featureCard}>
-              <LinearGradient
-                colors={feature.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.featureIconWrap}
+        {isApproved && (
+          <View style={styles.statusBanner}>
+            <LinearGradient
+              colors={["#E8F5E9", "#F1F8E9"]}
+              style={styles.statusGradient}
+            >
+              <Ionicons name="checkmark-circle" size={28} color={Colors.light.primary} />
+              <View style={styles.statusTextWrap}>
+                <Text style={[styles.statusTitle, { color: Colors.light.primary }]}>Access Approved</Text>
+                <Text style={styles.statusDesc}>
+                  Your request has been approved! You now have premium access.
+                </Text>
+              </View>
+            </LinearGradient>
+          </View>
+        )}
+
+        {isRejected && (
+          <View style={styles.statusBanner}>
+            <LinearGradient
+              colors={["#FFEBEE", "#FFF3F3"]}
+              style={styles.statusGradient}
+            >
+              <Ionicons name="close-circle" size={28} color="#E53935" />
+              <View style={styles.statusTextWrap}>
+                <Text style={[styles.statusTitle, { color: "#E53935" }]}>Request Rejected</Text>
+                <Text style={styles.statusDesc}>
+                  {myStatus?.admin_note
+                    ? `Admin note: ${myStatus.admin_note}`
+                    : "Your previous request was not approved. You can submit a new request below."}
+                </Text>
+              </View>
+            </LinearGradient>
+          </View>
+        )}
+
+        {!isPending && !isApproved && (
+          <View style={styles.formSection}>
+            <View style={styles.formHeader}>
+              <MaterialCommunityIcons name="form-textbox" size={22} color={Colors.light.primary} />
+              <Text style={styles.formHeaderTitle}>Access Request Form</Text>
+            </View>
+
+            <View style={styles.formCard}>
+              <View style={styles.fieldWrap}>
+                <Text style={styles.fieldLabel}>Full Name *</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    showErrors && !name.trim() && styles.inputError,
+                  ]}
+                  placeholder="Enter your full name"
+                  placeholderTextColor={Colors.light.tabIconDefault}
+                  value={name}
+                  onChangeText={setName}
+                />
+              </View>
+
+              <View style={styles.fieldWrap}>
+                <Text style={styles.fieldLabel}>Email *</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    showErrors && !email.trim() && styles.inputError,
+                  ]}
+                  placeholder="Enter your email address"
+                  placeholderTextColor={Colors.light.tabIconDefault}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.fieldWrap}>
+                <Text style={styles.fieldLabel}>Phone (Optional)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your phone number"
+                  placeholderTextColor={Colors.light.tabIconDefault}
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              <View style={styles.fieldWrap}>
+                <Text style={styles.fieldLabel}>Reason for Access *</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.textArea,
+                    showErrors && !reason.trim() && styles.inputError,
+                  ]}
+                  placeholder="Tell us why you need premium access (e.g., sell products, write blog posts, share cultural stories...)"
+                  placeholderTextColor={Colors.light.tabIconDefault}
+                  value={reason}
+                  onChangeText={setReason}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <Pressable
+                onPress={handleSubmit}
+                disabled={submitMutation.isPending}
+                style={({ pressed }) => [
+                  styles.submitBtn,
+                  { opacity: submitMutation.isPending ? 0.6 : pressed ? 0.9 : 1 },
+                ]}
               >
-                <Ionicons name={feature.icon} size={24} color="#fff" />
-              </LinearGradient>
-              <View style={styles.featureTextWrap}>
-                <Text style={styles.featureTitle}>{feature.title}</Text>
-                <Text style={styles.featureDesc}>{feature.description}</Text>
+                <LinearGradient
+                  colors={[Colors.light.accent, "#C4972E"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.submitBtnGradient}
+                >
+                  {submitMutation.isPending ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="paper-plane" size={20} color="#fff" />
+                      <Text style={styles.submitBtnText}>Submit Request</Text>
+                    </>
+                  )}
+                </LinearGradient>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        <View style={styles.infoSection}>
+          <View style={styles.infoHeader}>
+            <View style={styles.infoLine} />
+            <Text style={styles.infoHeaderText}>What You Get</Text>
+            <View style={styles.infoLine} />
+          </View>
+
+          {[
+            { icon: "storefront", title: "Post & Sell Products", desc: "List products in the marketplace" },
+            { icon: "create", title: "Write Blog Posts", desc: "Share stories and cultural insights" },
+            { icon: "headset", title: "Priority Support", desc: "Faster response and assistance" },
+          ].map((item, i) => (
+            <View key={i} style={styles.infoCard}>
+              <View style={styles.infoIconWrap}>
+                <Ionicons name={item.icon as any} size={22} color={Colors.light.primary} />
               </View>
-              <View style={styles.featureAccent}>
-                <Ionicons name="checkmark-circle" size={22} color={Colors.light.accent} />
+              <View style={styles.infoTextWrap}>
+                <Text style={styles.infoTitle}>{item.title}</Text>
+                <Text style={styles.infoDesc}>{item.desc}</Text>
               </View>
+              <Ionicons name="checkmark-circle" size={20} color={Colors.light.accent} />
             </View>
           ))}
         </View>
 
-        <View style={styles.ctaSection}>
-          <LinearGradient
-            colors={["#D4A843", "#C4972E"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.ctaGradientBorder}
-          >
-            <View style={styles.ctaInner}>
-              <Ionicons name="star" size={28} color={Colors.light.accent} />
-              <Text style={styles.ctaTitle}>Ready to Unlock Premium?</Text>
-              <Text style={styles.ctaDesc}>
-                Contact the admin to request premium access and start posting products and writing blog posts today.
-              </Text>
-            </View>
-          </LinearGradient>
-        </View>
-
-        <View style={styles.buttonsContainer}>
-          <Pressable
-            onPress={handleContactAdmin}
-            style={({ pressed }) => [
-              styles.contactBtn,
-              { transform: [{ scale: pressed ? 0.97 : 1 }] },
-            ]}
-          >
-            <LinearGradient
-              colors={[Colors.light.accent, "#C4972E"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.contactBtnGradient}
-            >
-              <Ionicons name="mail" size={20} color="#fff" />
-              <Text style={styles.contactBtnText}>Request Access</Text>
-            </LinearGradient>
-          </Pressable>
-
-          <Pressable
-            onPress={handleGoBack}
-            style={({ pressed }) => [
-              styles.goBackBtn,
-              { opacity: pressed ? 0.7 : 1 },
-            ]}
-          >
-            <Ionicons name="arrow-back-circle-outline" size={20} color={Colors.light.textSecondary} />
-            <Text style={styles.goBackBtnText}>Go Back</Text>
-          </Pressable>
-        </View>
-
-        {user && (
-          <View style={styles.userInfo}>
-            <Ionicons name="person-circle-outline" size={16} color={Colors.light.textSecondary} />
-            <Text style={styles.userInfoText}>
-              Logged in as {user.name || user.email}
-            </Text>
-          </View>
-        )}
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.goBackBtn, { opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Ionicons name="arrow-back-circle-outline" size={20} color={Colors.light.textSecondary} />
+          <Text style={styles.goBackBtnText}>Go Back</Text>
+        </Pressable>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -248,133 +368,152 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     paddingHorizontal: 16,
   },
-  heroBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginTop: 16,
-  },
-  heroBadgeText: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 12,
-    color: Colors.light.accent,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    marginTop: 28,
-    marginBottom: 16,
-    gap: 12,
-  },
-  sectionLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.light.border,
-  },
-  sectionTitle: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 16,
-    color: Colors.light.text,
-  },
-  featuresContainer: {
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  featureCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.light.background,
+  statusBanner: {
+    marginHorizontal: 16,
+    marginTop: 20,
     borderRadius: 16,
+    overflow: "hidden",
+  },
+  statusGradient: {
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
+    gap: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.light.border,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-    gap: 14,
   },
-  featureIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  featureTextWrap: {
+  statusTextWrap: {
     flex: 1,
   },
-  featureTitle: {
+  statusTitle: {
     fontFamily: "Poppins_600SemiBold",
-    fontSize: 14,
-    color: Colors.light.text,
-    marginBottom: 3,
+    fontSize: 15,
+    color: "#F9A825",
+    marginBottom: 4,
   },
-  featureDesc: {
+  statusDesc: {
     fontFamily: "Poppins_400Regular",
     fontSize: 12,
     color: Colors.light.textSecondary,
     lineHeight: 18,
   },
-  featureAccent: {
-    marginLeft: 4,
-  },
-  ctaSection: {
-    paddingHorizontal: 16,
-    marginTop: 28,
-  },
-  ctaGradientBorder: {
-    borderRadius: 18,
-    padding: 2,
-  },
-  ctaInner: {
-    backgroundColor: Colors.light.card,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: "center",
-  },
-  ctaTitle: {
-    fontFamily: "Poppins_700Bold",
-    fontSize: 18,
-    color: Colors.light.text,
-    marginTop: 10,
-    textAlign: "center",
-  },
-  ctaDesc: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    textAlign: "center",
-    marginTop: 8,
-    lineHeight: 20,
-  },
-  buttonsContainer: {
+  formSection: {
     paddingHorizontal: 16,
     marginTop: 24,
-    gap: 12,
   },
-  contactBtn: {
+  formHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 14,
+  },
+  formHeaderTitle: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 16,
+    color: Colors.light.text,
+  },
+  formCard: {
+    backgroundColor: Colors.light.card,
     borderRadius: 16,
-    overflow: "hidden",
+    padding: 18,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    gap: 14,
   },
-  contactBtnGradient: {
+  fieldWrap: {},
+  fieldLabel: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 13,
+    color: Colors.light.text,
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: Colors.light.backgroundSecondary,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontFamily: "Poppins_400Regular",
+    fontSize: 14,
+    color: Colors.light.text,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: "top",
+  },
+  inputError: {
+    borderColor: "#E53935",
+  },
+  submitBtn: {
+    borderRadius: 14,
+    overflow: "hidden",
+    marginTop: 6,
+  },
+  submitBtnGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    paddingVertical: 16,
-    borderRadius: 16,
+    paddingVertical: 15,
   },
-  contactBtnText: {
+  submitBtnText: {
     fontFamily: "Poppins_600SemiBold",
-    fontSize: 16,
+    fontSize: 15,
     color: "#fff",
+  },
+  infoSection: {
+    paddingHorizontal: 16,
+    marginTop: 28,
+  },
+  infoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 14,
+  },
+  infoLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.light.border,
+  },
+  infoHeaderText: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+  },
+  infoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.light.card,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    gap: 12,
+  },
+  infoIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: Colors.light.primary + "12",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  infoTextWrap: {
+    flex: 1,
+  },
+  infoTitle: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 14,
+    color: Colors.light.text,
+  },
+  infoDesc: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 12,
+    color: Colors.light.textSecondary,
   },
   goBackBtn: {
     flexDirection: "row",
@@ -382,7 +521,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     paddingVertical: 14,
-    borderRadius: 16,
+    marginHorizontal: 16,
+    marginTop: 20,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.light.border,
     backgroundColor: Colors.light.backgroundSecondary,
@@ -390,19 +531,6 @@ const styles = StyleSheet.create({
   goBackBtnText: {
     fontFamily: "Poppins_500Medium",
     fontSize: 14,
-    color: Colors.light.textSecondary,
-  },
-  userInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    marginTop: 20,
-    paddingHorizontal: 16,
-  },
-  userInfoText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 12,
     color: Colors.light.textSecondary,
   },
 });
