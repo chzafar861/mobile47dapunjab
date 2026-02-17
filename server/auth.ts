@@ -6,7 +6,7 @@ import crypto from "crypto";
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const router = Router();
 
-const ADMIN_EMAILS = ["47dapunjab@gmail.com"];
+const ADMIN_EMAILS = ["47dapunjab@gmail.com", "47dapunjab@gamil.com"];
 
 function getBaseUrl(req: Request): string {
   const forwardedProto = req.header("x-forwarded-proto") || req.protocol || "https";
