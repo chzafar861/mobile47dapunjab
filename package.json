@@ -51,6 +51,7 @@
     "express": "^5.0.1",
     "express-session": "^1.19.0",
     "firebase": "^12.9.0",
+    "google-translate-api-x": "^10.7.2",
     "http-proxy-middleware": "^3.0.5",
     "pg": "^8.18.0",
     "react": "19.1.0",

@@ -1,6 +1,10 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { addDocument, getDocuments, deleteDocument, setDocument, getDocument, pool } from "./firebase";
+import translate from "google-translate-api-x";
+
+const translationCache = new Map<string, { text: string; timestamp: number }>();
+const CACHE_TTL = 24 * 60 * 60 * 1000;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/bookings", async (req: Request, res: Response) => {
@@ -774,6 +778,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ success: true });
     } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/translate", async (req: Request, res: Response) => {
+    try {
+      const { texts, targetLang } = req.body;
+      if (!texts || !targetLang) {
+        return res.status(400).json({ error: "texts and targetLang are required" });
+      }
+
+      const langMap: Record<string, string> = {
+        en: "en",
+        ur: "ur",
+        hi: "hi",
+        pa: "pa",
+      };
+
+      const target = langMap[targetLang] || "en";
+
+      if (target === "en") {
+        return res.json({ translations: texts });
+      }
+
+      const results: string[] = [];
+      for (const text of texts) {
+        if (!text || text.trim() === "") {
+          results.push(text);
+          continue;
+        }
+
+        const cacheKey = `${text}:${target}`;
+        const cached = translationCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+          results.push(cached.text);
+          continue;
+        }
+
+        try {
+          const result = await translate(text, { to: target });
+          const translated = result.text;
+          translationCache.set(cacheKey, { text: translated, timestamp: Date.now() });
+          results.push(translated);
+        } catch (err) {
+          results.push(text);
+        }
+      }
+
+      res.json({ translations: results });
+    } catch (e: any) {
+      console.error("Translation error:", e);
       res.status(500).json({ error: e.message });
     }
   });
