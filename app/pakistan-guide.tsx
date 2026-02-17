@@ -17,6 +17,7 @@ import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useI18n } from "@/lib/i18n";
+import { useCurrency } from "@/lib/currency";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -188,6 +189,7 @@ function PlaceCard({ name, desc, icon }: { name: string; desc: string; icon: str
 
 function CurrentServicesPage() {
   const { t } = useI18n();
+  const { formatPrice } = useCurrency();
   return (
     <View style={styles.pageContent}>
       <Text style={styles.pageIntro}>
@@ -199,7 +201,7 @@ function CurrentServicesPage() {
         iconFamily="ionicons"
         title={t.pakistanGuide.villageVideoTitle}
         description={t.pakistanGuide.villageVideoDesc}
-        price={t.pakistanGuide.villageVideoPrice}
+        price={formatPrice(100)}
         priceNote={t.pakistanGuide.villageVideoPriceNote}
         features={[
           { icon: "camera", label: t.pakistanGuide.hdQuality },
@@ -485,6 +487,7 @@ function PakistanInfoPage() {
 export default function PakistanGuideScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
+  const { formatPrice } = useCurrency();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const [activeTab, setActiveTab] = useState<"services" | "info">("services");

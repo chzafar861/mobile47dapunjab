@@ -20,6 +20,7 @@ import { useAuth } from "@/lib/auth-context";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useI18n } from "@/lib/i18n";
+import { useCurrency } from "@/lib/currency";
 
 const VIDEO_INCLUDES = [
   { key: "streets", label: "Village streets", icon: "trail-sign-outline" },
@@ -92,6 +93,7 @@ function FormField({
 export default function VideoRequestScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
+  const { formatPrice } = useCurrency();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user } = useAuth();
@@ -178,7 +180,7 @@ export default function VideoRequestScreen() {
       `Includes: ${includeLabels.join(", ")}`,
       specialInstructions.trim() ? `Instructions: ${specialInstructions.trim()}` : "",
       `Current Location: ${currentLocation.trim()}`,
-      `Package: $100 - 1 Hour HD - No Editing - Same Day`,
+      `Package: ${formatPrice(100)} - 1 Hour HD - No Editing - Same Day`,
     ]
       .filter(Boolean)
       .join("\n");
@@ -417,7 +419,7 @@ export default function VideoRequestScreen() {
               </View>
               <View style={styles.packagePriceRow}>
                 <Text style={styles.packagePriceLabel}>Price</Text>
-                <Text style={styles.packagePrice}>$100</Text>
+                <Text style={styles.packagePrice}>{formatPrice(100)}</Text>
               </View>
             </LinearGradient>
           </View>

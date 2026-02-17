@@ -782,6 +782,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const exchangeRateCache: { rates: Record<string, number> | null; timestamp: number } = { rates: null, timestamp: 0 };
+  const EXCHANGE_CACHE_TTL = 6 * 60 * 60 * 1000;
+
+  app.get("/api/exchange-rates", async (_req: Request, res: Response) => {
+    try {
+      if (exchangeRateCache.rates && Date.now() - exchangeRateCache.timestamp < EXCHANGE_CACHE_TTL) {
+        return res.json({ rates: exchangeRateCache.rates, cached: true });
+      }
+
+      const currencies = ["PKR", "INR", "GBP", "EUR", "CAD", "AED", "SAR", "AUD"];
+      const apiUrl = `https://open.er-api.com/v6/latest/USD`;
+      const response = await fetch(apiUrl);
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.rates) {
+          const filteredRates: Record<string, number> = { USD: 1 };
+          for (const code of currencies) {
+            if (data.rates[code]) {
+              filteredRates[code] = Math.round(data.rates[code] * 100) / 100;
+            }
+          }
+          exchangeRateCache.rates = filteredRates;
+          exchangeRateCache.timestamp = Date.now();
+          return res.json({ rates: filteredRates, cached: false });
+        }
+      }
+
+      const fallbackRates: Record<string, number> = {
+        USD: 1, PKR: 278.5, INR: 83.5, GBP: 0.79, EUR: 0.92,
+        CAD: 1.36, AED: 3.67, SAR: 3.75, AUD: 1.53,
+      };
+      res.json({ rates: fallbackRates, cached: false, fallback: true });
+    } catch (e: any) {
+      const fallbackRates: Record<string, number> = {
+        USD: 1, PKR: 278.5, INR: 83.5, GBP: 0.79, EUR: 0.92,
+        CAD: 1.36, AED: 3.67, SAR: 3.75, AUD: 1.53,
+      };
+      res.json({ rates: fallbackRates, cached: false, fallback: true });
+    }
+  });
+
   app.post("/api/translate", async (req: Request, res: Response) => {
     try {
       const { texts, targetLang } = req.body;

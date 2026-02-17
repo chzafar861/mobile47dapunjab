@@ -79,7 +79,7 @@ export default function ProfileScreen() {
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { user, isAdmin, logout, updateProfile } = useAuth();
   const { t, lang, setLanguage, isRTL } = useI18n();
-  const { currency, setCurrency, currencyInfo } = useCurrency();
+  const { currency, setCurrency, setCurrencyFromCountry, currencyInfo } = useCurrency();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editData, setEditData] = useState({
@@ -152,6 +152,9 @@ export default function ProfileScreen() {
     setIsSaving(true);
     try {
       await updateProfile(editData);
+      if (editData.country) {
+        setCurrencyFromCountry(editData.country);
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setIsEditing(false);
       if (Platform.OS === "web") {
