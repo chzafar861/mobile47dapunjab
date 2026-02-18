@@ -110,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const result = await pool.query(
         `SELECT id, data, created_at FROM property_details WHERE id = $1`,
-        [req.params.id]
+        [req.params.id as string]
       );
       if (result.rows.length === 0) {
         return res.status(404).json({ error: "Not found" });
@@ -214,7 +214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const pool = (await import("pg")).default;
       const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      await dbPool.query(`DELETE FROM migration_records WHERE id = $1`, [parseInt(req.params.id)]);
+      const result = await dbPool.query(`DELETE FROM migration_records WHERE id = $1`, [parseInt(req.params.id as string)]);
       res.json({ success: true });
     } catch (e: any) {
       console.error("Error deleting migration record:", e);
@@ -229,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
       const result = await dbPool.query(
         `UPDATE migration_records SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
-        [status, parseInt(req.params.id)]
+        [status, parseInt(req.params.id as string)]
       );
       res.json(result.rows[0]);
     } catch (e: any) {
@@ -241,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const pool = (await import("pg")).default;
       const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
-      const result = await dbPool.query(`SELECT * FROM migration_records WHERE id = $1`, [parseInt(req.params.id)]);
+      const result = await dbPool.query(`SELECT * FROM migration_records WHERE id = $1`, [parseInt(req.params.id as string)]);
       if (result.rows.length === 0) {
         return res.status(404).json({ error: "Record not found" });
       }
@@ -257,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
       const result = await dbPool.query(
         `SELECT * FROM migration_comments WHERE record_id = $1 ORDER BY created_at DESC`,
-        [parseInt(req.params.id)]
+        [parseInt(req.params.id as string)]
       );
       res.json(result.rows);
     } catch (e: any) {
@@ -275,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dbPool = new pool.Pool({ connectionString: process.env.DATABASE_URL });
       const result = await dbPool.query(
         `INSERT INTO migration_comments (record_id, user_name, user_email, comment) VALUES ($1, $2, $3, $4) RETURNING *`,
-        [parseInt(req.params.id), user_name, user_email || null, comment]
+        [parseInt(req.params.id as string), user_name, user_email || null, comment]
       );
       res.json(result.rows[0]);
     } catch (e: any) {
@@ -613,14 +613,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const check = await pool.query(
         `SELECT id FROM property_details WHERE id = $1 AND submitted_by = $2`,
-        [parseInt(req.params.id), userId]
+        [parseInt(req.params.id as string), userId]
       );
       if (check.rows.length === 0) {
         return res.status(403).json({ error: "You can only edit your own submissions" });
       }
       await pool.query(
         `UPDATE property_details SET data = $1 WHERE id = $2`,
-        [JSON.stringify(req.body), parseInt(req.params.id)]
+        [JSON.stringify(req.body), parseInt(req.params.id as string)]
       );
       res.json({ success: true });
     } catch (e: any) {
@@ -636,7 +636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const check = await pool.query(
         `SELECT id FROM migration_records WHERE id = $1 AND submitted_by = $2`,
-        [parseInt(req.params.id), userId]
+        [parseInt(req.params.id as string), userId]
       );
       if (check.rows.length === 0) {
         return res.status(403).json({ error: "You can only edit your own submissions" });
@@ -644,7 +644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { full_name, village_of_origin, district, current_location, year_of_migration, migration_period, contact_info, notes, image_url } = req.body;
       await pool.query(
         `UPDATE migration_records SET full_name = $1, village_of_origin = $2, district = $3, current_location = $4, year_of_migration = $5, migration_period = $6, contact_info = $7, notes = $8, image_url = $9, updated_at = NOW() WHERE id = $10`,
-        [full_name, village_of_origin, district, current_location, year_of_migration ? parseInt(year_of_migration) : null, migration_period, contact_info || null, notes || null, image_url || null, parseInt(req.params.id)]
+        [full_name, village_of_origin, district, current_location, year_of_migration ? parseInt(year_of_migration) : null, migration_period, contact_info || null, notes || null, image_url || null, parseInt(req.params.id as string)]
       );
       res.json({ success: true });
     } catch (e: any) {
@@ -660,12 +660,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const check = await pool.query(
         `SELECT id FROM property_details WHERE id = $1 AND submitted_by = $2`,
-        [parseInt(req.params.id), userId]
+        [parseInt(req.params.id as string), userId]
       );
       if (check.rows.length === 0) {
         return res.status(403).json({ error: "You can only delete your own submissions" });
       }
-      await pool.query(`DELETE FROM property_details WHERE id = $1`, [parseInt(req.params.id)]);
+      await pool.query(`DELETE FROM property_details WHERE id = $1`, [parseInt(req.params.id as string)]);
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -680,12 +680,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const check = await pool.query(
         `SELECT id FROM migration_records WHERE id = $1 AND submitted_by = $2`,
-        [parseInt(req.params.id), userId]
+        [parseInt(req.params.id as string), userId]
       );
       if (check.rows.length === 0) {
         return res.status(403).json({ error: "You can only delete your own submissions" });
       }
-      await pool.query(`DELETE FROM migration_records WHERE id = $1`, [parseInt(req.params.id)]);
+      await pool.query(`DELETE FROM migration_records WHERE id = $1`, [parseInt(req.params.id as string)]);
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -700,7 +700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const result = await pool.query(
         `SELECT * FROM orders WHERE id = $1 AND user_id = $2`,
-        [req.params.id, userId]
+        [req.params.id as string, userId]
       );
       if (result.rows.length === 0) {
         return res.status(404).json({ error: "Order not found" });
@@ -732,7 +732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         values.push(tracking_number);
         paramIndex++;
       }
-      values.push(req.params.id);
+      values.push(req.params.id as string);
       const result = await pool.query(
         `UPDATE orders SET ${updates.join(", ")} WHERE id = $${paramIndex} RETURNING *`,
         values
@@ -820,7 +820,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!roleCheck.rows.length || roleCheck.rows[0].role !== "admin") {
         return res.status(403).json({ error: "Admin access required" });
       }
-      await pool.query("DELETE FROM shop_products WHERE id = $1", [req.params.id]);
+      await pool.query("DELETE FROM shop_products WHERE id = $1", [req.params.id as string]);
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -984,7 +984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { status, admin_note } = req.body;
       const result = await pool.query(
         "UPDATE access_requests SET status = $1, admin_note = $2, updated_at = NOW() WHERE id = $3 RETURNING *",
-        [status, admin_note || null, req.params.id]
+        [status, admin_note || null, req.params.id as string]
       );
       res.json(result.rows[0]);
     } catch (e: any) {
