@@ -2,19 +2,52 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper: Check if user is authenticated
+    // ==========================================
+    // Helper Functions
+    // ==========================================
+
+    // Check if user is authenticated
     function isAuth() {
       return request.auth != null;
     }
 
-    // Helper: Check if user owns the document
+    // Check if user owns the document (by matching userId field)
     function isOwner(userId) {
       return isAuth() && request.auth.uid == userId;
     }
 
-    // Helper: Check if user is admin
+    // Check if the authenticated user has admin role
     function isAdmin() {
-      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuth() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Validate that a string field exists and is non-empty
+    function isNonEmptyString(field) {
+      return field is string && field.size() > 0;
+    }
+
+    // Validate that the request data contains the required userId matching auth
+    function hasValidUserId() {
+      return request.resource.data.userId == request.auth.uid;
+    }
+
+    // Validate status field is one of allowed values
+    function isValidStatus(status) {
+      return status in ['pending', 'approved', 'in_progress', 'completed', 'rejected'];
+    }
+
+    // Prevent users from modifying their own role
+    function noRoleEscalation() {
+      return !('role' in request.resource.data) ||
+        request.resource.data.role == resource.data.role;
+    }
+
+    // ==========================================
+    // Default: Deny all access unless explicitly allowed
+    // ==========================================
+    match /{document=**} {
+      allow read, write: if false;
     }
 
     // ==========================================
@@ -22,8 +55,10 @@ service cloud.firestore {
     // ==========================================
     match /users/{userId} {
       allow read: if isAuth();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId)
+        && isNonEmptyString(request.resource.data.name)
+        && request.resource.data.role == 'user';
+      allow update: if (isOwner(userId) && noRoleEscalation()) || isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -32,7 +67,11 @@ service cloud.firestore {
     // ==========================================
     match /protocol_requests/{requestId} {
       allow read: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow create: if isAuth()
+        && hasValidUserId()
+        && isNonEmptyString(request.resource.data.serviceType)
+        && isNonEmptyString(request.resource.data.location)
+        && request.resource.data.status == 'pending';
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -42,7 +81,11 @@ service cloud.firestore {
     // ==========================================
     match /village_video_requests/{requestId} {
       allow read: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow create: if isAuth()
+        && hasValidUserId()
+        && isNonEmptyString(request.resource.data.villageName)
+        && isNonEmptyString(request.resource.data.district)
+        && request.resource.data.status == 'pending';
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -52,7 +95,11 @@ service cloud.firestore {
     // ==========================================
     match /customs_assistance/{requestId} {
       allow read: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow create: if isAuth()
+        && hasValidUserId()
+        && isNonEmptyString(request.resource.data.itemType)
+        && isNonEmptyString(request.resource.data.description)
+        && request.resource.data.status == 'pending';
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -62,7 +109,12 @@ service cloud.firestore {
     // ==========================================
     match /products/{productId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create: if isAdmin()
+        && isNonEmptyString(request.resource.data.name_en)
+        && request.resource.data.price is number
+        && request.resource.data.price > 0;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // ==========================================
@@ -70,26 +122,36 @@ service cloud.firestore {
     // ==========================================
     match /orders/{orderId} {
       allow read: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow create: if isAuth()
+        && hasValidUserId()
+        && request.resource.data.products is list
+        && request.resource.data.products.size() > 0
+        && request.resource.data.totalPrice is number
+        && request.resource.data.totalPrice > 0
+        && request.resource.data.status == 'pending';
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
     // ==========================================
-    // HumanFind People (Public read, Auth write)
+    // HumanFind People (Public read, Auth create)
     // ==========================================
     match /humanfind_people/{personId} {
       allow read: if true;
-      allow create: if isAuth();
+      allow create: if isAuth()
+        && isNonEmptyString(request.resource.data.name)
+        && isNonEmptyString(request.resource.data.location);
       allow update, delete: if isAdmin();
     }
 
     // ==========================================
-    // HumanFind Properties (Public read, Auth write)
+    // HumanFind Properties (Public read, Auth create)
     // ==========================================
     match /humanfind_properties/{propertyId} {
       allow read: if true;
-      allow create: if isAuth();
+      allow create: if isAuth()
+        && isNonEmptyString(request.resource.data.title)
+        && isNonEmptyString(request.resource.data.location);
       allow update, delete: if isAdmin();
     }
 
@@ -98,7 +160,12 @@ service cloud.firestore {
     // ==========================================
     match /property_submissions/{submissionId} {
       allow read: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow create: if isAuth()
+        && hasValidUserId()
+        && isNonEmptyString(request.resource.data.title)
+        && isNonEmptyString(request.resource.data.location)
+        && isNonEmptyString(request.resource.data.description)
+        && request.resource.data.verificationStatus == 'pending';
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -108,24 +175,34 @@ service cloud.firestore {
     // ==========================================
     match /history_articles/{articleId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create: if isAdmin()
+        && isNonEmptyString(request.resource.data.title_en)
+        && isNonEmptyString(request.resource.data.content_en);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // ==========================================
-    // Translation Cache (Public read, Functions write)
+    // Translation Cache
+    // Read: public (for translation lookups)
+    // Write: denied (only Cloud Functions via Admin SDK)
     // ==========================================
     match /translations_cache/{cacheId} {
       allow read: if true;
-      allow write: if false; // Only Cloud Functions can write
+      allow write: if false;
     }
 
     // ==========================================
     // Notifications
+    // Read/Update: owner only (mark as read)
+    // Create/Delete: denied (only Cloud Functions via Admin SDK)
     // ==========================================
     match /notifications/{notificationId} {
       allow read: if isAuth() && resource.data.userId == request.auth.uid;
-      allow update: if isAuth() && resource.data.userId == request.auth.uid;
-      allow create, delete: if false; // Only Cloud Functions
+      allow update: if isAuth()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow create, delete: if false;
     }
   }
 }

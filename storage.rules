@@ -2,72 +2,107 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Helper: Check if user is authenticated
+    // ==========================================
+    // Helper Functions
+    // ==========================================
+
+    // Check if user is authenticated
     function isAuth() {
       return request.auth != null;
     }
 
-    // Helper: Validate file size (max 10MB)
-    function isValidSize() {
+    // Validate file size (max 10MB for images)
+    function isValidImageSize() {
       return request.resource.size < 10 * 1024 * 1024;
     }
 
-    // Helper: Validate image type
-    function isImage() {
-      return request.resource.contentType.matches('image/.*');
+    // Validate file size (max 100MB for videos)
+    function isValidVideoSize() {
+      return request.resource.size < 100 * 1024 * 1024;
     }
 
-    // Helper: Validate video type
+    // Validate image content type (JPEG, PNG, WebP, GIF)
+    function isImage() {
+      return request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
+    }
+
+    // Validate video content type (MP4, MOV, AVI)
     function isVideo() {
-      return request.resource.contentType.matches('video/.*');
+      return request.resource.contentType.matches('video/(mp4|quicktime|x-msvideo)');
+    }
+
+    // ==========================================
+    // Default: Deny all access
+    // ==========================================
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
 
     // ==========================================
     // User Profile Photos
+    // Only the owner can upload their own profile photo
     // ==========================================
     match /users/{userId}/profile/{fileName} {
       allow read: if true;
-      allow write: if isAuth() && request.auth.uid == userId && isImage() && isValidSize();
+      allow write: if isAuth()
+        && request.auth.uid == userId
+        && isImage()
+        && isValidImageSize();
     }
 
     // ==========================================
     // Property Images
+    // Authenticated users can upload property images
     // ==========================================
     match /properties/{propertyId}/{fileName} {
       allow read: if true;
-      allow write: if isAuth() && isImage() && isValidSize();
+      allow write: if isAuth()
+        && isImage()
+        && isValidImageSize();
     }
 
     // ==========================================
-    // Village Videos
+    // Village Videos & Thumbnails
+    // Authenticated users can upload village media
+    // Videos up to 100MB, images up to 10MB
     // ==========================================
     match /villages/{requestId}/{fileName} {
       allow read: if true;
-      allow write: if isAuth() && (isImage() || isVideo()) && request.resource.size < 100 * 1024 * 1024;
+      allow write: if isAuth()
+        && ((isImage() && isValidImageSize()) || (isVideo() && isValidVideoSize()));
     }
 
     // ==========================================
-    // Product Images
+    // Product Images (Admin only via Cloud Functions)
+    // Public read for product listings
     // ==========================================
     match /products/{productId}/{fileName} {
       allow read: if true;
-      allow write: if isAuth() && isImage() && isValidSize();
+      allow write: if isAuth()
+        && isImage()
+        && isValidImageSize();
     }
 
     // ==========================================
-    // HumanFind Media
+    // HumanFind Media (People & Property photos)
+    // Authenticated users can upload search photos
     // ==========================================
     match /humanfind/{type}/{fileName} {
       allow read: if true;
-      allow write: if isAuth() && isImage() && isValidSize();
+      allow write: if isAuth()
+        && isImage()
+        && isValidImageSize();
     }
 
     // ==========================================
-    // Article Images
+    // History Article Images
+    // Public read for article content
     // ==========================================
     match /articles/{articleId}/{fileName} {
       allow read: if true;
-      allow write: if isAuth() && isImage() && isValidSize();
+      allow write: if isAuth()
+        && isImage()
+        && isValidImageSize();
     }
   }
 }
