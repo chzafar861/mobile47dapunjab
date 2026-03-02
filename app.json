@@ -4,61 +4,40 @@
     "slug": "47dapunjab",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "47dapunjab",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0D7C3D"
+      "backgroundColor": "#1B5E20"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fordapunjab.app",
-      "infoPlist": {
-        "NSCameraUsageDescription": "47daPunjab needs camera access to take photos for property submissions and profile pictures.",
-        "NSPhotoLibraryUsageDescription": "47daPunjab needs photo library access to upload images for property submissions, blog posts, and products.",
-        "NSLocationWhenInUseUsageDescription": "47daPunjab uses your location to show nearby services and properties."
-      }
+      "bundleIdentifier": "com.47dapunjab.app",
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
-      "package": "com.fordapunjab.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0D7C3D",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1B5E20"
       },
-      "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
-      ]
+      "package": "com.fortysevenda.punjab",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
-      "favicon": "./assets/images/favicon.png",
-      "name": "47daPunjab",
-      "shortName": "47daPunjab",
-      "description": "Your complete service platform for Punjab, Pakistan - protocol services, customs assistance, marketplace, and more.",
-      "themeColor": "#0D7C3D",
-      "backgroundColor": "#FFFFFF"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "plugins": [
-      [
-        "expo-router",
-        {
-          "origin": "https://replit.com/"
-        }
-      ],
-      "expo-font",
-      "expo-web-browser"
+      "expo-router",
+      "expo-font"
     ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+    "scheme": "47dapunjab",
+    "extra": {
+      "router": {
+        "origin": false
+      }
     }
   }
 }

@@ -1,116 +1,66 @@
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Stack, router, useSegments, useRootNavigationState } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useState } from "react";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { queryClient } from "@/lib/query-client";
-import { AuthProvider, useAuth } from "@/lib/auth-context";
-import { I18nProvider } from "@/lib/i18n";
-import { CurrencyProvider } from "@/lib/currency";
-import { View, ActivityIndicator, StyleSheet, Platform } from "react-native";
-import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold } from "@expo-google-fonts/poppins";
-import Colors from "@/constants/colors";
+import React, { useEffect } from 'react';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { I18nProvider } from '../src/i18n/I18nProvider';
+import { useThemeStore } from '../src/store/themeStore';
+import { useAuthStore } from '../src/store/authStore';
+import { onAuthChange } from '../src/services/auth';
+import { getUserProfile } from '../src/services/auth';
 
-SplashScreen.preventAutoHideAsync();
-
-function AuthGate() {
-  const { user, isLoading } = useAuth();
-  const segments = useSegments();
-  const navigationState = useRootNavigationState();
+function RootLayoutInner() {
+  const { colors, mode, loadTheme } = useThemeStore();
+  const { setUser, setLoading } = useAuthStore();
 
   useEffect(() => {
-    if (isLoading) return;
-    if (!navigationState?.key) return;
+    loadTheme();
+  }, [loadTheme]);
 
-    const inAuthScreen = segments[0] === "login";
-
-    if (user && inAuthScreen) {
-      router.replace("/(tabs)");
-    } else if (!user && !inAuthScreen) {
-      router.replace("/login");
-    }
-  }, [user, isLoading, segments, navigationState?.key]);
-
-  if (isLoading) {
-    return (
-      <View style={loadStyles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.light.primary} />
-      </View>
-    );
-  }
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const profile = await getUserProfile(firebaseUser.uid);
+          setUser(profile);
+        } catch {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+    });
+    return unsubscribe;
+  }, [setUser, setLoading]);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="history" options={{ headerShown: false }} />
-      <Stack.Screen name="submit-details" options={{ headerShown: false }} />
-      <Stack.Screen name="video-request" options={{ headerShown: false }} />
-      <Stack.Screen name="protocol-request" options={{ headerShown: false }} />
-      <Stack.Screen name="customs-request" options={{ headerShown: false }} />
-      <Stack.Screen name="pakistan-guide" options={{ headerShown: false }} />
-      <Stack.Screen name="admin" options={{ headerShown: false }} />
-      <Stack.Screen name="migration-detail" options={{ headerShown: false }} />
-      <Stack.Screen name="blog" options={{ headerShown: false }} />
-      <Stack.Screen name="my-submissions" options={{ headerShown: false }} />
-      <Stack.Screen name="my-orders" options={{ headerShown: false }} />
-      <Stack.Screen name="property-detail" options={{ headerShown: false }} />
-    </Stack>
+    <>
+      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.primary },
+          headerTintColor: '#FFFFFF',
+          headerTitleStyle: { fontWeight: '600' },
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
+        <Stack.Screen name="protocol" options={{ headerShown: false }} />
+        <Stack.Screen name="village" options={{ headerShown: false }} />
+        <Stack.Screen name="customs" options={{ headerShown: false }} />
+        <Stack.Screen name="shop" options={{ headerShown: false }} />
+        <Stack.Screen name="humanfind" options={{ headerShown: false }} />
+        <Stack.Screen name="property" options={{ headerShown: false }} />
+        <Stack.Screen name="history" options={{ headerShown: false }} />
+        <Stack.Screen name="admin" options={{ headerShown: false }} />
+      </Stack>
+    </>
   );
 }
 
-const loadStyles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.light.background,
-  },
-});
-
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    Poppins_400Regular,
-    Poppins_500Medium,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
-  });
-  const [fontTimeout, setFontTimeout] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!fontsLoaded && !fontError) {
-        setFontTimeout(true);
-      }
-    }, 8000);
-    return () => clearTimeout(timer);
-  }, [fontsLoaded, fontError]);
-
-  useEffect(() => {
-    if (fontsLoaded || fontError || fontTimeout) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError, fontTimeout]);
-
-  if (!fontsLoaded && !fontError && !fontTimeout) return null;
-
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView>
-          <KeyboardProvider>
-            <I18nProvider>
-              <CurrencyProvider>
-                <AuthProvider>
-                  <AuthGate />
-                </AuthProvider>
-              </CurrencyProvider>
-            </I18nProvider>
-          </KeyboardProvider>
-        </GestureHandlerRootView>
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <I18nProvider>
+      <RootLayoutInner />
+    </I18nProvider>
   );
 }

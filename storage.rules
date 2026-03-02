@@ -1,0 +1,73 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper: Check if user is authenticated
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Helper: Validate file size (max 10MB)
+    function isValidSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Helper: Validate image type
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // Helper: Validate video type
+    function isVideo() {
+      return request.resource.contentType.matches('video/.*');
+    }
+
+    // ==========================================
+    // User Profile Photos
+    // ==========================================
+    match /users/{userId}/profile/{fileName} {
+      allow read: if true;
+      allow write: if isAuth() && request.auth.uid == userId && isImage() && isValidSize();
+    }
+
+    // ==========================================
+    // Property Images
+    // ==========================================
+    match /properties/{propertyId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuth() && isImage() && isValidSize();
+    }
+
+    // ==========================================
+    // Village Videos
+    // ==========================================
+    match /villages/{requestId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuth() && (isImage() || isVideo()) && request.resource.size < 100 * 1024 * 1024;
+    }
+
+    // ==========================================
+    // Product Images
+    // ==========================================
+    match /products/{productId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuth() && isImage() && isValidSize();
+    }
+
+    // ==========================================
+    // HumanFind Media
+    // ==========================================
+    match /humanfind/{type}/{fileName} {
+      allow read: if true;
+      allow write: if isAuth() && isImage() && isValidSize();
+    }
+
+    // ==========================================
+    // Article Images
+    // ==========================================
+    match /articles/{articleId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuth() && isImage() && isValidSize();
+    }
+  }
+}

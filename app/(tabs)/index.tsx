@@ -1,389 +1,151 @@
-import React from "react";
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  Pressable,
-  Platform,
-  Dimensions,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
-import Colors from "@/constants/colors";
-import { useI18n } from "@/lib/i18n";
-import { useCurrency } from "@/lib/currency";
-
-const { width } = Dimensions.get("window");
-
-interface ServiceCardProps {
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  gradient: string[];
-  onPress: () => void;
-}
-
-function ServiceCard({ icon, title, subtitle, gradient, onPress }: ServiceCardProps) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.serviceCard,
-        { transform: [{ scale: pressed ? 0.96 : 1 }] },
-      ]}
-    >
-      <LinearGradient
-        colors={gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.serviceGradient}
-      >
-        <View style={styles.serviceIconWrap}>{icon}</View>
-        <Text style={styles.serviceTitle}>{title}</Text>
-        <Text style={styles.serviceSubtitle}>{subtitle}</Text>
-      </LinearGradient>
-    </Pressable>
-  );
-}
-
-interface FeatureRowProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  onPress: () => void;
-}
-
-function FeatureRow({ icon, title, description, onPress }: FeatureRowProps) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.featureRow,
-        { opacity: pressed ? 0.8 : 1 },
-      ]}
-    >
-      <View style={styles.featureIcon}>{icon}</View>
-      <View style={styles.featureText}>
-        <Text style={styles.featureTitle}>{title}</Text>
-        <Text style={styles.featureDesc}>{description}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={Colors.light.tabIconDefault} />
-    </Pressable>
-  );
-}
+import React from 'react';
+import { ScrollView, View, StyleSheet, Image } from 'react-native';
+import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ThemedView, ThemedText, ServiceCard } from '../../src/components';
+import { useTranslate } from '../../src/hooks/useTranslate';
+import { useThemeStore } from '../../src/store/themeStore';
+import { useAuthStore } from '../../src/store/authStore';
 
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
-  const { t } = useI18n();
-  const { formatPrice } = useCurrency();
-  const webTopInset = Platform.OS === "web" ? 67 : 0;
-  const webBottomInset = Platform.OS === "web" ? 34 : 0;
+  const router = useRouter();
+  const { t, flexDirection } = useTranslate();
+  const { colors } = useThemeStore();
+  const { user, isAuthenticated } = useAuthStore();
+
+  const services = [
+    {
+      title: t('home_protocol'),
+      icon: 'shield-checkmark' as const,
+      route: '/protocol' as const,
+      color: '#1B5E20',
+    },
+    {
+      title: t('home_village'),
+      icon: 'videocam' as const,
+      route: '/village' as const,
+      color: '#0D47A1',
+    },
+    {
+      title: t('home_customs'),
+      icon: 'document-text' as const,
+      route: '/customs' as const,
+      color: '#E65100',
+    },
+    {
+      title: t('home_shop'),
+      icon: 'cart' as const,
+      route: '/(tabs)/shop' as const,
+      color: '#4A148C',
+    },
+    {
+      title: t('home_humanfind'),
+      icon: 'people' as const,
+      route: '/humanfind' as const,
+      color: '#BF360C',
+    },
+    {
+      title: t('home_property'),
+      icon: 'business' as const,
+      route: '/property' as const,
+      color: '#00695C',
+    },
+    {
+      title: t('home_history'),
+      icon: 'book' as const,
+      route: '/history' as const,
+      color: '#4E342E',
+    },
+  ];
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingTop: insets.top + webTopInset + 16,
-          paddingBottom: insets.bottom + webBottomInset + 100,
-        }}
-        contentInsetAdjustmentBehavior="automatic"
-      >
-        <LinearGradient
-          colors={[Colors.light.primaryDark, Colors.light.primary, "#0E8C5E"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.hero}
-        >
-          <View style={styles.heroContent}>
-            <View style={styles.heroTopRow}>
-              <View>
-                <Text style={styles.heroWelcome}>{t.home.welcome}</Text>
-                <Text style={styles.heroTitle}>{t.home.appName}</Text>
-              </View>
-              <Pressable
-                onPress={() => router.push("/(tabs)/profile")}
-                style={styles.avatarBtn}
-              >
-                <Ionicons name="person-circle" size={40} color="rgba(255,255,255,0.9)" />
-              </Pressable>
-            </View>
-            <Text style={styles.heroSubtitle}>
-              {t.home.subtitle}
-            </Text>
-          </View>
-          <View style={styles.heroWave} />
-        </LinearGradient>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t.home.popularServices}</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.servicesRow}
-          >
-            <ServiceCard
-              icon={<MaterialCommunityIcons name="shield-star" size={28} color="#fff" />}
-              title={t.home.protocol}
-              subtitle={t.home.protocolDesc}
-              gradient={["#0A6847", "#14A76C"]}
-              onPress={() => router.push("/(tabs)/services")}
-            />
-            <ServiceCard
-              icon={<Ionicons name="videocam" size={28} color="#fff" />}
-              title={t.home.videoService}
-              subtitle={`${formatPrice(100)} / 1 ${t.services.perHour}`}
-              gradient={["#D4A843", "#E8C96A"]}
-              onPress={() => router.push("/(tabs)/services")}
-            />
-            <ServiceCard
-              icon={<MaterialCommunityIcons name="passport" size={28} color="#fff" />}
-              title={t.home.customs}
-              subtitle={t.home.customsDesc}
-              gradient={["#2C3E50", "#4A6274"]}
-              onPress={() => router.push("/(tabs)/services")}
-            />
-          </ScrollView>
+    <ThemedView>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Header Banner */}
+        <View style={[styles.banner, { backgroundColor: colors.primary }]}>
+          <ThemedText variant="title" style={styles.bannerTitle}>
+            {t('home_title')}
+          </ThemedText>
+          <ThemedText variant="body" style={styles.bannerSubtitle}>
+            {t('home_subtitle')}
+          </ThemedText>
+          {user && (
+            <ThemedText variant="caption" style={styles.welcomeText}>
+              Welcome, {user.name}
+            </ThemedText>
+          )}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t.home.explore}</Text>
-          <FeatureRow
-            icon={<Ionicons name="bag-handle" size={22} color={Colors.light.primary} />}
-            title={t.home.shopCard}
-            description={t.home.shopCardDesc}
-            onPress={() => router.push("/(tabs)/shop")}
-          />
-          <FeatureRow
-            icon={<Ionicons name="people" size={22} color={Colors.light.accent} />}
-            title={t.home.humanFindCard}
-            description={t.home.humanFindCardDesc}
-            onPress={() => router.push("/(tabs)/rent")}
-          />
-          <FeatureRow
-            icon={<MaterialCommunityIcons name="home-city-outline" size={22} color="#8B5E3C" />}
-            title={t.home.propertyDetails}
-            description={t.home.propertyDetailsDesc}
-            onPress={() => router.push("/(tabs)/rent")}
-          />
-          <FeatureRow
-            icon={<MaterialCommunityIcons name="mosque" size={22} color={Colors.light.primaryDark} />}
-            title={t.home.history}
-            description={t.home.historyDesc}
-            onPress={() => router.push("/history")}
-          />
-          <FeatureRow
-            icon={<MaterialCommunityIcons name="star-crescent" size={22} color="#1B4332" />}
-            title={t.home.pakistanGuide}
-            description={t.home.pakistanGuideDesc}
-            onPress={() => router.push("/pakistan-guide")}
-          />
-          <FeatureRow
-            icon={<Feather name="edit-3" size={22} color={Colors.light.accent} />}
-            title={t.home.blog}
-            description={t.home.blogDesc}
-            onPress={() => router.push("/blog")}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t.home.modernPakistan}</Text>
-          <View style={styles.modernCard}>
-            <LinearGradient
-              colors={["#0A6847", "#053B2F"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.modernGradient}
-            >
-              <MaterialCommunityIcons name="city-variant" size={40} color={Colors.light.accent} />
-              <Text style={styles.modernTitle}>{t.home.modernPakistanTitle}</Text>
-              <Text style={styles.modernDesc}>
-                {t.home.modernPakistanDesc}
-              </Text>
-              <Pressable
-                onPress={() => router.push("/history")}
-                style={({ pressed }) => [
-                  styles.modernBtn,
-                  { opacity: pressed ? 0.8 : 1 },
-                ]}
-              >
-                <Text style={styles.modernBtnText}>{t.home.explore}</Text>
-                <Ionicons name="arrow-forward" size={16} color={Colors.light.primaryDark} />
-              </Pressable>
-            </LinearGradient>
+        {/* Services Grid */}
+        <View style={styles.servicesSection}>
+          <ThemedText variant="subtitle" style={styles.sectionTitle}>
+            Services
+          </ThemedText>
+          <View style={[styles.servicesGrid, { flexDirection: 'row' }]}>
+            {services.map((service, index) => (
+              <ServiceCard
+                key={index}
+                title={service.title}
+                icon={service.icon}
+                color={service.color}
+                onPress={() => {
+                  if (!isAuthenticated && service.route !== '/(tabs)/shop' && service.route !== '/history') {
+                    router.push('/auth');
+                  } else {
+                    router.push(service.route);
+                  }
+                }}
+              />
+            ))}
+            {/* Admin panel - only for admins */}
+            {user?.role === 'admin' && (
+              <ServiceCard
+                title={t('home_admin')}
+                icon="settings"
+                color="#D32F2F"
+                onPress={() => router.push('/admin')}
+              />
+            )}
           </View>
         </View>
       </ScrollView>
-    </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.light.background,
+  scrollContent: {
+    paddingBottom: 20,
   },
-  hero: {
-    marginHorizontal: 16,
-    borderRadius: 20,
-    overflow: "hidden",
-    minHeight: 180,
-  },
-  heroContent: {
+  banner: {
     padding: 24,
+    paddingTop: 16,
     paddingBottom: 32,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
-  heroTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+  bannerTitle: {
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
-  heroWelcome: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 14,
-    color: "rgba(255,255,255,0.8)",
+  bannerSubtitle: {
+    color: '#E8F5E9',
+    textAlign: 'center',
+    marginTop: 4,
   },
-  heroTitle: {
-    fontFamily: "Poppins_700Bold",
-    fontSize: 28,
-    color: "#fff",
-    marginTop: 2,
-  },
-  avatarBtn: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  heroSubtitle: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 13,
-    color: "rgba(255,255,255,0.85)",
-    marginTop: 12,
-    lineHeight: 20,
-  },
-  heroWave: {
-    height: 20,
-    backgroundColor: Colors.light.background,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    marginTop: -10,
-  },
-  section: {
-    paddingHorizontal: 16,
+  welcomeText: {
+    color: '#C8E6C9',
+    textAlign: 'center',
     marginTop: 8,
-    marginBottom: 16,
+  },
+  servicesSection: {
+    padding: 16,
   },
   sectionTitle: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 18,
-    color: Colors.light.text,
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  servicesRow: {
-    gap: 12,
-    paddingRight: 16,
-  },
-  serviceCard: {
-    width: (width - 56) / 2.2,
-    borderRadius: 16,
-    overflow: "hidden",
-  },
-  serviceGradient: {
-    padding: 16,
-    minHeight: 130,
-    justifyContent: "flex-end",
-  },
-  serviceIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  serviceTitle: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 15,
-    color: "#fff",
-  },
-  serviceSubtitle: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 12,
-    color: "rgba(255,255,255,0.8)",
-    marginTop: 2,
-  },
-  featureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.light.backgroundSecondary,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
-  },
-  featureIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: Colors.light.background,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  featureText: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  featureTitle: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 14,
-    color: Colors.light.text,
-  },
-  featureDesc: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-    marginTop: 2,
-  },
-  modernCard: {
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  modernGradient: {
-    padding: 24,
-    alignItems: "center",
-  },
-  modernTitle: {
-    fontFamily: "Poppins_700Bold",
-    fontSize: 20,
-    color: "#fff",
-    marginTop: 12,
-    textAlign: "center",
-  },
-  modernDesc: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 13,
-    color: "rgba(255,255,255,0.8)",
-    textAlign: "center",
-    marginTop: 8,
-    lineHeight: 20,
-  },
-  modernBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.light.accent,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginTop: 16,
-    gap: 6,
-  },
-  modernBtnText: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 14,
-    color: Colors.light.primaryDark,
+  servicesGrid: {
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
 });
