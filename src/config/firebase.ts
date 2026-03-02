@@ -4,14 +4,14 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
 
-// Firebase configuration - replace with your project's config
+// Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || 'YOUR_API_KEY',
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || 'YOUR_AUTH_DOMAIN',
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'YOUR_PROJECT_ID',
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || 'YOUR_STORAGE_BUCKET',
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || 'YOUR_MESSAGING_SENDER_ID',
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || 'YOUR_APP_ID',
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || 'AIzaSyA3ZTjriJpiSfHL0FQhUUkcdMVQnIS8u8g',
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || 'dapunjab-b6ee5.firebaseapp.com',
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'dapunjab-b6ee5',
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || 'dapunjab-b6ee5.firebasestorage.app',
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '619985279654',
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || '1:619985279654:web:99c8f39065bd437c3df267',
 };
 
 // Initialize Firebase
