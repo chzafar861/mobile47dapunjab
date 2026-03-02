@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: Check if user is authenticated
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Helper: Check if user owns the document
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+
+    // Helper: Check if user is admin
+    function isAdmin() {
+      return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ==========================================
+    // Users Collection
+    // ==========================================
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // Protocol Requests
+    // ==========================================
+    match /protocol_requests/{requestId} {
+      allow read: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // Village Video Requests
+    // ==========================================
+    match /village_video_requests/{requestId} {
+      allow read: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // Customs Assistance
+    // ==========================================
+    match /customs_assistance/{requestId} {
+      allow read: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // Products (Public read, Admin write)
+    // ==========================================
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // Orders
+    // ==========================================
+    match /orders/{orderId} {
+      allow read: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // HumanFind People (Public read, Auth write)
+    // ==========================================
+    match /humanfind_people/{personId} {
+      allow read: if true;
+      allow create: if isAuth();
+      allow update, delete: if isAdmin();
+    }
+
+    // ==========================================
+    // HumanFind Properties (Public read, Auth write)
+    // ==========================================
+    match /humanfind_properties/{propertyId} {
+      allow read: if true;
+      allow create: if isAuth();
+      allow update, delete: if isAdmin();
+    }
+
+    // ==========================================
+    // Property Submissions
+    // ==========================================
+    match /property_submissions/{submissionId} {
+      allow read: if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // History Articles (Public read, Admin write)
+    // ==========================================
+    match /history_articles/{articleId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ==========================================
+    // Translation Cache (Public read, Functions write)
+    // ==========================================
+    match /translations_cache/{cacheId} {
+      allow read: if true;
+      allow write: if false; // Only Cloud Functions can write
+    }
+
+    // ==========================================
+    // Notifications
+    // ==========================================
+    match /notifications/{notificationId} {
+      allow read: if isAuth() && resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow create, delete: if false; // Only Cloud Functions
+    }
+  }
+}
