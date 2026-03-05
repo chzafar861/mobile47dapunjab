@@ -250,6 +250,12 @@ function configureExpoAndLanding(app: express.Application) {
 
   log("Serving static Expo files with dynamic manifest routing");
 
+  if (process.env.NODE_ENV === "development") {
+    app.get("/status", (_req: Request, res: Response) => {
+      res.send("packager-status:running");
+    });
+  }
+
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith("/api")) {
       return next();
