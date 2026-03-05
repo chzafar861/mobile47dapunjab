@@ -4,6 +4,7 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, HumanFind (people & property search), history, and property detail submissions.
 
 ## Recent Changes
+- 2026-03-05: Added Metro bundler proxy in development mode (server/index.ts) - backend now proxies manifest, bundle, and asset requests to Metro (port 8081) when no static-build exists, with URL rewriting for Expo Go compatibility
 - 2026-02-17: Real-time dynamic content translation using google-translate-api-x backend endpoint (POST /api/translate)
 - 2026-02-17: useTranslate hook (lib/useTranslate.ts) with global cache for translating user-entered content
 - 2026-02-17: Shop products fully translated (names, descriptions, details) via static translation keys in all 4 languages

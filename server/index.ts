@@ -112,7 +112,78 @@ function getAppName(): string {
   }
 }
 
-function serveExpoManifest(platform: string, res: Response) {
+const METRO_PROXY_SKIP_HEADERS = new Set(["transfer-encoding", "content-length", "connection"]);
+
+function getPublicHost(req: Request): string {
+  return req.header("x-forwarded-host") || req.get("host") || "";
+}
+
+async function proxyManifestFromMetro(platform: string, req: Request, res: Response) {
+  const metroUrl = "http://localhost:8081";
+  try {
+    const response = await fetch(`${metroUrl}/manifest`, {
+      headers: { "expo-platform": platform },
+    });
+
+    if (!response.ok) {
+      return res
+        .status(response.status)
+        .json({ error: `Metro returned ${response.status} for ${platform} manifest` });
+    }
+
+    const host = getPublicHost(req);
+    const publicBaseUrl = `https://${host}`;
+
+    response.headers.forEach((value, key) => {
+      if (!METRO_PROXY_SKIP_HEADERS.has(key.toLowerCase())) {
+        res.setHeader(key, value);
+      }
+    });
+
+    let body = await response.text();
+    body = body.replace(/https?:\/\/[^"'\s]*?:8081/g, publicBaseUrl);
+    body = body.replace(/exp:\/\/[^"'\s]*?:8081/g, `exp://${host}`);
+    body = body.replace(/localhost:8081/g, host);
+
+    res.send(body);
+  } catch (error) {
+    log(`Metro proxy failed for ${platform} manifest:`, error);
+    return res
+      .status(502)
+      .json({ error: `Could not connect to Metro bundler at ${metroUrl}. Is the frontend running?` });
+  }
+}
+
+async function proxyToMetro(req: Request, res: Response) {
+  const metroUrl = `http://localhost:8081${req.originalUrl}`;
+  try {
+    const headers: Record<string, string> = {};
+    const forwardHeaders = ["expo-platform", "accept", "user-agent", "range"];
+    for (const h of forwardHeaders) {
+      const val = req.header(h);
+      if (val) headers[h] = val;
+    }
+
+    const response = await fetch(metroUrl, { headers });
+
+    if (!response.ok) {
+      return res.status(response.status).send(await response.text());
+    }
+
+    response.headers.forEach((value, key) => {
+      if (!METRO_PROXY_SKIP_HEADERS.has(key.toLowerCase())) {
+        res.setHeader(key, value);
+      }
+    });
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    res.send(buffer);
+  } catch {
+    res.status(502).json({ error: "Could not connect to Metro bundler" });
+  }
+}
+
+function serveExpoManifest(platform: string, req: Request, res: Response) {
   const manifestPath = path.resolve(
     process.cwd(),
     "static-build",
@@ -121,6 +192,9 @@ function serveExpoManifest(platform: string, res: Response) {
   );
 
   if (!fs.existsSync(manifestPath)) {
+    if (process.env.NODE_ENV === "development") {
+      return proxyManifestFromMetro(platform, req, res);
+    }
     return res
       .status(404)
       .json({ error: `Manifest not found for platform: ${platform}` });
@@ -187,7 +261,7 @@ function configureExpoAndLanding(app: express.Application) {
 
     const platform = req.header("expo-platform");
     if (platform && (platform === "ios" || platform === "android")) {
-      return serveExpoManifest(platform, res);
+      return serveExpoManifest(platform, req, res);
     }
 
     if (req.path === "/") {
@@ -204,6 +278,27 @@ function configureExpoAndLanding(app: express.Application) {
 
   app.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
   app.use(express.static(path.resolve(process.cwd(), "static-build")));
+
+  if (process.env.NODE_ENV === "development") {
+    const metroPaths = ["/node_modules/", "/_expo/", "/debugger-frontend/"];
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      if (req.path.startsWith("/api")) {
+        return next();
+      }
+
+      const shouldProxy =
+        req.path.endsWith(".bundle") ||
+        req.path.endsWith(".map") ||
+        metroPaths.some((p) => req.path.startsWith(p)) ||
+        req.path.startsWith("/assets/") && req.query.platform;
+
+      if (shouldProxy) {
+        return proxyToMetro(req, res);
+      }
+      next();
+    });
+    log("Dev mode: Metro proxy enabled for bundle/asset requests");
+  }
 
   log("Expo routing: Checking expo-platform header on / and /manifest");
 }
