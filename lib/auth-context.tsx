@@ -45,7 +45,13 @@ async function authFetch(path: string, options: RequestInit = {}) {
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
-    const data = await res.json();
+    const text = await res.text();
+    let data: any;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error("Server returned an invalid response. Please try again.");
+    }
     if (!res.ok) {
       throw new Error(data.error || "Request failed");
     }
