@@ -80,4 +80,4 @@ A mobile service platform for Punjab, Pakistan visitors. Features protocol servi
 Supports NativeTabs (iOS 26 liquid glass) and classic Tabs with blur
 
 ## User Preferences
-- Not specified yet
+- Main admin email: 47dapunjab@gmail.com
