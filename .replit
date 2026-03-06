@@ -13,9 +13,6 @@ run = ["npm", "run", "server:prod"]
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 8082
-
 [env]
 PORT = "5000"
 
@@ -37,11 +34,7 @@ args = "Start App"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Start Frontend"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Start Backend"
+args = "Start application"
 
 [[workflows.workflow]]
 name = "Start App"
@@ -57,23 +50,12 @@ task = "workflow.run"
 args = "Start Frontend"
 
 [[workflows.workflow]]
-name = "Start Frontend"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run expo:dev"
-
-[[workflows.workflow]]
-name = "Start Backend"
+name = "Start application"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run server:dev"
+args = "npm run dev"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
