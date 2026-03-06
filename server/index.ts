@@ -112,7 +112,7 @@ function getAppName(): string {
   }
 }
 
-const METRO_PROXY_SKIP_HEADERS = new Set(["transfer-encoding", "content-length", "connection"]);
+const METRO_PROXY_SKIP_HEADERS = new Set(["transfer-encoding", "content-length", "connection", "content-encoding"]);
 
 function getPublicHost(req: Request): string {
   return req.header("x-forwarded-host") || req.get("host") || "";
@@ -271,6 +271,9 @@ function configureExpoAndLanding(app: express.Application) {
     }
 
     if (req.path === "/") {
+      if (process.env.NODE_ENV === "development") {
+        return proxyToMetro(req, res);
+      }
       return serveLandingPage({
         req,
         res,
@@ -286,24 +289,13 @@ function configureExpoAndLanding(app: express.Application) {
   app.use(express.static(path.resolve(process.cwd(), "static-build")));
 
   if (process.env.NODE_ENV === "development") {
-    const metroPaths = ["/node_modules/", "/_expo/", "/debugger-frontend/"];
     app.use((req: Request, res: Response, next: NextFunction) => {
       if (req.path.startsWith("/api")) {
         return next();
       }
-
-      const shouldProxy =
-        req.path.endsWith(".bundle") ||
-        req.path.endsWith(".map") ||
-        metroPaths.some((p) => req.path.startsWith(p)) ||
-        req.path.startsWith("/assets/") && req.query.platform;
-
-      if (shouldProxy) {
-        return proxyToMetro(req, res);
-      }
-      next();
+      return proxyToMetro(req, res);
     });
-    log("Dev mode: Metro proxy enabled for bundle/asset requests");
+    log("Dev mode: Full Metro proxy enabled for web and bundle requests");
   }
 
   log("Expo routing: Checking expo-platform header on / and /manifest");
