@@ -8,6 +8,7 @@ import {
   Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SEOHead } from "@/components/SEOHead";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -29,6 +30,7 @@ export default function PrivacyPolicyScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="Privacy Policy" description="Privacy policy for 47daPunjab. Learn how we collect, use, and protect your personal information." path="/privacy-policy" />
       <LinearGradient
         colors={[Colors.light.primaryDark, Colors.light.primary]}
         style={[styles.header, { paddingTop: insets.top + webTopInset + 12 }]}

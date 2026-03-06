@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
+import { SEOHead } from "@/components/SEOHead";
 import { useI18n } from "@/lib/i18n";
 import { useCurrency } from "@/lib/currency";
 
@@ -511,6 +512,7 @@ export default function PakistanGuideScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="Pakistan Guide" description="Complete travel guide for visiting Pakistan and Punjab. Tips, customs, cultural information, and essential services for travelers." path="/pakistan-guide" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

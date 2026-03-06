@@ -18,6 +18,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/query-client";
 import { useAuth } from "@/lib/auth-context";
+import { SEOHead } from "@/components/SEOHead";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
@@ -201,6 +202,7 @@ export default function MigrationDetailScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="Person Details" description="View detailed information about a person in the 47daPunjab migration portal." path="/migration-detail" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

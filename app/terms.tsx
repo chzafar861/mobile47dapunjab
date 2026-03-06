@@ -8,6 +8,7 @@ import {
   Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SEOHead } from "@/components/SEOHead";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -29,6 +30,7 @@ export default function TermsScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="Terms of Service" description="Terms of service for 47daPunjab. Read our terms, conditions, and usage policies." path="/terms" />
       <LinearGradient
         colors={[Colors.light.primaryDark, Colors.light.primary]}
         style={[styles.header, { paddingTop: insets.top + webTopInset + 12 }]}

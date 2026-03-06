@@ -13,6 +13,7 @@ import {
   Image,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
+import { SEOHead } from "@/components/SEOHead";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -231,6 +232,7 @@ export default function HumanFindScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="HumanFind - People & Property Search" description="Search for people, families, and properties in Punjab, Pakistan. Migration portal and family search tool for connecting overseas Pakistanis with their roots." path="/rent" />
       <LinearGradient
         colors={[Colors.light.primaryDark, Colors.light.primary, Colors.light.primaryDark]}
         start={{ x: 0, y: 0 }}

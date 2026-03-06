@@ -12,6 +12,7 @@ import { showAlert } from "@/lib/platform-alert";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SEOHead } from "@/components/SEOHead";
 import { firebaseApi } from "@/lib/firebase";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
@@ -142,6 +143,7 @@ export default function ServicesScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="Services" description="Book protocol services, video recording, and customs assistance for Punjab, Pakistan. Professional services for overseas Pakistanis visiting Punjab." path="/services" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

@@ -23,6 +23,7 @@ import { useCurrency } from "@/lib/currency";
 import { getApiUrl, apiRequest, queryClient } from "@/lib/query-client";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
+import { SEOHead } from "@/components/SEOHead";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { showAlert } from "@/lib/platform-alert";
@@ -532,6 +533,7 @@ export default function ShopScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="Shop" description="Browse and shop authentic Punjab products, traditional items, and Pakistani merchandise. Fast delivery for overseas Pakistanis." path="/shop" />
       <View style={{ paddingTop: insets.top + webTopInset + 16, paddingHorizontal: 16 }}>
         <View style={styles.topRow}>
           <View>

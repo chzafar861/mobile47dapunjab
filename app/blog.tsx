@@ -23,6 +23,7 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { showAlert } from "@/lib/platform-alert";
 import Colors from "@/constants/colors";
+import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import { useTranslate, useTranslateOne } from "@/lib/useTranslate";
@@ -411,6 +412,7 @@ export default function BlogScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="Blog" description="Read stories, travel guides, and cultural insights about Punjab, Pakistan. Community blog for overseas Pakistanis." path="/blog" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

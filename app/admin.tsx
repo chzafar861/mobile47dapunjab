@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getApiUrl } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
+import { SEOHead } from "@/components/SEOHead";
 import { useI18n } from "@/lib/i18n";
 
 interface AuthUser {
@@ -208,6 +209,7 @@ export default function AdminScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="Admin Dashboard" description="47daPunjab admin dashboard for managing bookings, orders, submissions, and users." path="/admin" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

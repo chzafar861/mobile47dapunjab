@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { firebaseApi } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
+import { SEOHead } from "@/components/SEOHead";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useI18n } from "@/lib/i18n";
@@ -245,6 +246,7 @@ export default function ProtocolRequestScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={90}
     >
+      <SEOHead title="Protocol Service Request" description="Request VIP protocol services for your visit to Punjab, Pakistan. Airport reception, transportation, and hospitality." path="/protocol-request" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

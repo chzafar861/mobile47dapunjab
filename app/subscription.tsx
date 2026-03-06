@@ -13,6 +13,7 @@ import {
 import { showAlert } from "@/lib/platform-alert";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { SEOHead } from "@/components/SEOHead";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -78,6 +79,7 @@ export default function SubscriptionScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={90}
     >
+      <SEOHead title="Subscription" description="Subscribe to 47daPunjab premium services. Get exclusive access to all features and services." path="/subscription" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
 import Colors from "@/constants/colors";
+import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import { getApiUrl } from "@/lib/query-client";
@@ -505,6 +506,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="Login" description="Sign in or create an account on 47daPunjab to access services, shop, and connect with Punjab, Pakistan." path="/login" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

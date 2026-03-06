@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { firebaseApi } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
+import { SEOHead } from "@/components/SEOHead";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useI18n } from "@/lib/i18n";
@@ -201,6 +202,7 @@ export default function CustomsRequestScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={90}
     >
+      <SEOHead title="Customs Assistance Request" description="Request customs clearance assistance for traveling to Punjab, Pakistan. Professional help with immigration and customs procedures." path="/customs-request" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
+import { SEOHead } from "@/components/SEOHead";
 import { useI18n } from "@/lib/i18n";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -326,6 +327,7 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="History of Punjab" description="Explore the rich history of Punjab, Pakistan. Heritage sites, historical landmarks, and cultural treasures of the Punjab region." path="/history" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

@@ -291,6 +291,33 @@ function configureExpoAndLanding(app: express.Application) {
     next();
   });
 
+  app.get("/robots.txt", (_req: Request, res: Response) => {
+    res.type("text/plain").send(
+      `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin\nDisallow: /my-orders\nDisallow: /my-submissions\nDisallow: /profile\n\nSitemap: https://47dapunjab.com/sitemap.xml`
+    );
+  });
+
+  app.get("/sitemap.xml", (_req: Request, res: Response) => {
+    const pages = [
+      { loc: "/", priority: "1.0", changefreq: "weekly" },
+      { loc: "/services", priority: "0.9", changefreq: "weekly" },
+      { loc: "/shop", priority: "0.9", changefreq: "weekly" },
+      { loc: "/rent", priority: "0.8", changefreq: "weekly" },
+      { loc: "/blog", priority: "0.8", changefreq: "daily" },
+      { loc: "/history", priority: "0.7", changefreq: "monthly" },
+      { loc: "/pakistan-guide", priority: "0.7", changefreq: "monthly" },
+      { loc: "/login", priority: "0.5", changefreq: "monthly" },
+      { loc: "/subscription", priority: "0.6", changefreq: "monthly" },
+      { loc: "/submit-details", priority: "0.6", changefreq: "monthly" },
+      { loc: "/privacy-policy", priority: "0.3", changefreq: "yearly" },
+      { loc: "/terms", priority: "0.3", changefreq: "yearly" },
+    ];
+    const urls = pages.map(p => `  <url>\n    <loc>https://47dapunjab.com${p.loc}</loc>\n    <changefreq>${p.changefreq}</changefreq>\n    <priority>${p.priority}</priority>\n  </url>`).join("\n");
+    res.type("application/xml").send(
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`
+    );
+  });
+
   app.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
   app.use(express.static(path.resolve(process.cwd(), "static-build")));
 

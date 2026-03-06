@@ -13,6 +13,7 @@ import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Colors from "@/constants/colors";
+import { SEOHead } from "@/components/SEOHead";
 import { useI18n } from "@/lib/i18n";
 import { useCurrency } from "@/lib/currency";
 
@@ -84,6 +85,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="Home" description="47daPunjab - Your complete service platform for Punjab, Pakistan. Protocol services, customs assistance, marketplace, family search, and community." path="/" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

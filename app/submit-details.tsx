@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { showAlert } from "@/lib/platform-alert";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { SEOHead } from "@/components/SEOHead";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { firebaseApi } from "@/lib/firebase";
@@ -245,6 +246,7 @@ export default function SubmitDetailsScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="Submit Details" description="Submit your property, person, or business details to the 47daPunjab directory for Punjab, Pakistan." path="/submit-details" />
       <View style={[styles.headerBar, { paddingTop: insets.top + webTopInset }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.light.text} />

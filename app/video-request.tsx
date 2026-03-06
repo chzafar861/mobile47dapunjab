@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { firebaseApi } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
+import { SEOHead } from "@/components/SEOHead";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useI18n } from "@/lib/i18n";
@@ -208,6 +209,7 @@ export default function VideoRequestScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={90}
     >
+      <SEOHead title="Video Recording Request" description="Request professional village video recording services in Punjab, Pakistan. Capture memories of your ancestral village." path="/video-request" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

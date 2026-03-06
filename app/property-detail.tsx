@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/query-client";
 import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
+import { SEOHead } from "@/components/SEOHead";
 import { useI18n } from "@/lib/i18n";
 import { useTranslate } from "@/lib/useTranslate";
 
@@ -115,6 +116,7 @@ export default function PropertyDetailScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="Property Details" description="View detailed property information on the 47daPunjab directory for Punjab, Pakistan." path="/property-detail" />
       <View style={[styles.headerBar, { paddingTop: insets.top + webTopInset }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.light.text} />

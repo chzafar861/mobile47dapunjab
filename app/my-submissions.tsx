@@ -16,6 +16,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
+import { SEOHead } from "@/components/SEOHead";
 import { useI18n } from "@/lib/i18n";
 import { useTranslate } from "@/lib/useTranslate";
 import { getApiUrl } from "@/lib/query-client";
@@ -270,6 +271,7 @@ export default function MySubmissionsScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="My Submissions" description="View and manage your property and person submissions on 47daPunjab." path="/my-submissions" />
       <View style={[styles.headerBar, { paddingTop: insets.top + webTopInset }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.light.text} />

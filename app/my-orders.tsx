@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import { useCurrency } from "@/lib/currency";
 import { getApiUrl } from "@/lib/query-client";
+import { SEOHead } from "@/components/SEOHead";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 
@@ -168,6 +169,7 @@ export default function MyOrdersScreen() {
 
   return (
     <View style={styles.container}>
+      <SEOHead title="My Orders" description="View and track your 47daPunjab orders, bookings, and service requests." path="/my-orders" />
       <LinearGradient
         colors={[Colors.light.primaryDark, Colors.light.primary]}
         style={[styles.header, { paddingTop: (insets.top || webTopInset) + 8 }]}
