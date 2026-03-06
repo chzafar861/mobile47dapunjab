@@ -44,7 +44,9 @@
       "shortName": "47daPunjab",
       "description": "Your complete service platform for Punjab, Pakistan - protocol services, customs assistance, marketplace, and more.",
       "themeColor": "#0D7C3D",
-      "backgroundColor": "#FFFFFF"
+      "backgroundColor": "#FFFFFF",
+      "output": "single",
+      "bundler": "metro"
     },
     "plugins": [
       [

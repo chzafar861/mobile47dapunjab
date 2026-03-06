@@ -274,6 +274,12 @@ function configureExpoAndLanding(app: express.Application) {
       if (process.env.NODE_ENV === "development") {
         return proxyToMetro(req, res);
       }
+
+      const webBuildIndex = path.resolve(process.cwd(), "web-build", "index.html");
+      if (fs.existsSync(webBuildIndex)) {
+        return res.sendFile(webBuildIndex);
+      }
+
       return serveLandingPage({
         req,
         res,
@@ -288,6 +294,13 @@ function configureExpoAndLanding(app: express.Application) {
   app.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
   app.use(express.static(path.resolve(process.cwd(), "static-build")));
 
+  if (process.env.NODE_ENV !== "development") {
+    const webBuildDir = path.resolve(process.cwd(), "web-build");
+    if (fs.existsSync(webBuildDir)) {
+      app.use(express.static(webBuildDir));
+    }
+  }
+
   if (process.env.NODE_ENV === "development") {
     app.use((req: Request, res: Response, next: NextFunction) => {
       if (req.path.startsWith("/api")) {
@@ -296,6 +309,21 @@ function configureExpoAndLanding(app: express.Application) {
       return proxyToMetro(req, res);
     });
     log("Dev mode: Full Metro proxy enabled for web and bundle requests");
+  } else {
+    const webBuildIndex = path.resolve(process.cwd(), "web-build", "index.html");
+    if (fs.existsSync(webBuildIndex)) {
+      app.use((req: Request, res: Response, next: NextFunction) => {
+        if (req.path.startsWith("/api") || req.path.startsWith("/assets") || req.method !== "GET") {
+          return next();
+        }
+        const ext = path.extname(req.path);
+        if (ext && ext !== ".html") {
+          return next();
+        }
+        res.sendFile(webBuildIndex);
+      });
+      log("Production: Serving Expo web build with SPA fallback");
+    }
   }
 
   log("Expo routing: Checking expo-platform header on / and /manifest");

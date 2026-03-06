@@ -4,6 +4,7 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, HumanFind (people & property search), history, and property detail submissions.
 
 ## Recent Changes
+- 2026-03-06: Production now serves actual Expo web app instead of QR code landing page. Build pipeline runs `npx expo export --platform web --output-dir web-build` before mobile builds. Server serves web-build with SPA fallback in production; mobile clients (expo-platform header) still get manifests.
 - 2026-03-05: Added Metro bundler proxy in development mode (server/index.ts) - backend now proxies manifest, bundle, and asset requests to Metro (port 8081) when no static-build exists, with URL rewriting for Expo Go compatibility
 - 2026-02-17: Real-time dynamic content translation using google-translate-api-x backend endpoint (POST /api/translate)
 - 2026-02-17: useTranslate hook (lib/useTranslate.ts) with global cache for translating user-entered content

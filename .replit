@@ -5,8 +5,8 @@ modules = ["nodejs-20", "web", "postgresql-16"]
 channel = "stable-25_05"
 
 [deployment]
-deploymentTarget = "cloudrun"
-build = ["sh", "-c", "npm run expo:static:build && npm run server:build"]
+deploymentTarget = "autoscale"
+build = ["sh", "-c", "npx expo export --platform web --output-dir web-build && npm run expo:static:build && npm run server:build"]
 run = ["npm", "run", "server:prod"]
 
 [[ports]]
