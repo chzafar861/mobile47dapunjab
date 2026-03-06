@@ -48,7 +48,6 @@ export default function LoginScreen() {
   const [resetStep, setResetStep] = useState<ResetStep>("email");
   const [resetEmail, setResetEmail] = useState("");
   const [resetCode, setResetCode] = useState("");
-  const [resetCodeDisplay, setResetCodeDisplay] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
@@ -180,9 +179,6 @@ export default function LoginScreen() {
       if (!res.ok) {
         setResetError(data.error || "Something went wrong");
         return;
-      }
-      if (data.code) {
-        setResetCodeDisplay(data.code);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setResetStep("code");
@@ -350,14 +346,12 @@ export default function LoginScreen() {
               {t.login.codeSent}
             </Text>
 
-            {resetCodeDisplay ? (
-              <View style={resetStyles.codeDisplayBanner}>
-                <Ionicons name="key-outline" size={18} color={Colors.light.primary} />
-                <Text style={resetStyles.codeDisplayText}>
-                  Your code: <Text style={resetStyles.codeDisplayCode}>{resetCodeDisplay}</Text>
-                </Text>
-              </View>
-            ) : null}
+            <View style={resetStyles.codeDisplayBanner}>
+              <Ionicons name="mail-outline" size={18} color={Colors.light.primary} />
+              <Text style={resetStyles.codeDisplayText}>
+                Contact 47dapunjab@gmail.com to receive your reset code
+              </Text>
+            </View>
 
             {resetError ? (
               <View style={styles.errorBanner}>

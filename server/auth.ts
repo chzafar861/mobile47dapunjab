@@ -6,7 +6,7 @@ import crypto from "crypto";
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const router = Router();
 
-const ADMIN_EMAILS = ["47dapunjab@gmail.com", "47dapunjab@gamil.com"];
+const ADMIN_EMAILS = ["47dapunjab@gmail.com"];
 
 function getBaseUrl(req: Request): string {
   const forwardedProto = req.header("x-forwarded-proto") || req.protocol || "https";
@@ -407,8 +407,7 @@ router.post("/api/auth/forgot-password", async (req: Request, res: Response) => 
       "UPDATE auth_users SET reset_code = $2, reset_code_expires = $3 WHERE id = $1",
       [user.id, code, expires]
     );
-    console.log(`[Password Reset] Code for ${email}: ${code}`);
-    res.json({ success: true, message: "A 6-digit reset code has been generated. Check the app for your code.", code });
+    res.json({ success: true, message: "If an account exists with this email, a reset code has been sent. For now, please contact support at 47dapunjab@gmail.com for your reset code." });
   } catch (e: any) {
     console.error("Forgot password error:", e);
     res.status(500).json({ error: "Failed to process reset request. Please try again." });

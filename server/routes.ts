@@ -29,11 +29,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/bookings/:id", async (req: Request, res: Response) => {
     try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
       await deleteDocument("bookings", req.params.id as string);
       res.json({ success: true });
     } catch (e: any) {
-      console.error("Error deleting booking:", e);
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: "Failed to delete booking" });
     }
   });
 
@@ -57,10 +58,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/cart/:id", async (req: Request, res: Response) => {
     try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
       await deleteDocument("cart", req.params.id as string);
       res.json({ success: true });
     } catch (e: any) {
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: "Failed to delete cart item" });
     }
   });
 
@@ -145,10 +148,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/profile", async (req: Request, res: Response) => {
     try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
       await setDocument("users", "defaultUser", req.body);
       res.json(req.body);
     } catch (e: any) {
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: "Failed to update profile" });
     }
   });
 
@@ -761,8 +766,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/clear-all", async (_req: Request, res: Response) => {
+  app.post("/api/clear-all", async (req: Request, res: Response) => {
     try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userCheck = await pool.query(`SELECT role FROM auth_users WHERE id = $1`, [userId]);
+      if (!userCheck.rows.length || userCheck.rows[0].role !== "admin") {
+        return res.status(403).json({ error: "Admin access required" });
+      }
       await setDocument("users", "defaultUser", { name: "", phone: "", email: "", city: "", country: "", purpose: "" });
       const bookings = await getDocuments("bookings");
       for (const b of bookings) {
@@ -778,7 +789,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ success: true });
     } catch (e: any) {
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: "Operation failed" });
     }
   });
 
