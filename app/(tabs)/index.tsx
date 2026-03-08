@@ -85,7 +85,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="Home" description="47daPunjab - Your complete service platform for Punjab, Pakistan. Protocol services, customs assistance, marketplace, family search, and community." path="/" />
+      <SEOHead title="Home" description="47daPunjab - Your complete service platform for Punjab, Pakistan. Protocol services, customs assistance, marketplace, family search, and community." path="/" keywords="Punjab Pakistan, 47daPunjab, overseas Pakistanis, protocol services, customs assistance, marketplace, family search, migration portal" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

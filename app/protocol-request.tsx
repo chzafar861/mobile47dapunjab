@@ -246,7 +246,7 @@ export default function ProtocolRequestScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={90}
     >
-      <SEOHead title="Protocol Service Request" description="Request VIP protocol services for your visit to Punjab, Pakistan. Airport reception, transportation, and hospitality." path="/protocol-request" />
+      <SEOHead title="Protocol Service Request" description="Request VIP protocol services for your visit to Punjab, Pakistan. Airport reception, transportation, and hospitality." path="/protocol-request" keywords="VIP protocol Punjab, airport reception Pakistan, transportation services, hospitality Punjab" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

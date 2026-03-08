@@ -209,7 +209,7 @@ export default function AdminScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="Admin Dashboard" description="47daPunjab admin dashboard for managing bookings, orders, submissions, and users." path="/admin" />
+      <SEOHead title="Admin Dashboard" description="47daPunjab admin dashboard for managing bookings, orders, submissions, and users." path="/admin" keywords="47daPunjab admin, dashboard, manage bookings" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

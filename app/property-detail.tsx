@@ -116,7 +116,7 @@ export default function PropertyDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="Property Details" description="View detailed property information on the 47daPunjab directory for Punjab, Pakistan." path="/property-detail" />
+      <SEOHead title="Property Details" description="View detailed property information on the 47daPunjab directory for Punjab, Pakistan." path="/property-detail" keywords="property details Punjab, land information Pakistan, 47daPunjab directory" />
       <View style={[styles.headerBar, { paddingTop: insets.top + webTopInset }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.light.text} />

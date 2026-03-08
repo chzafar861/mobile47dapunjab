@@ -533,7 +533,7 @@ export default function ShopScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="Shop" description="Browse and shop authentic Punjab products, traditional items, and Pakistani merchandise. Fast delivery for overseas Pakistanis." path="/shop" />
+      <SEOHead title="Shop" description="Browse and shop authentic Punjab products, traditional items, and Pakistani merchandise. Fast delivery for overseas Pakistanis." path="/shop" keywords="Punjab products, Pakistani merchandise, traditional items, Punjab marketplace, buy Pakistani goods" />
       <View style={{ paddingTop: insets.top + webTopInset + 16, paddingHorizontal: 16 }}>
         <View style={styles.topRow}>
           <View>

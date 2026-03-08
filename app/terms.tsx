@@ -30,7 +30,7 @@ export default function TermsScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="Terms of Service" description="Terms of service for 47daPunjab. Read our terms, conditions, and usage policies." path="/terms" />
+      <SEOHead title="Terms of Service" description="Terms of service for 47daPunjab. Read our terms, conditions, and usage policies." path="/terms" keywords="47daPunjab terms of service, usage policies, terms and conditions" />
       <LinearGradient
         colors={[Colors.light.primaryDark, Colors.light.primary]}
         style={[styles.header, { paddingTop: insets.top + webTopInset + 12 }]}

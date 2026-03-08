@@ -412,7 +412,7 @@ export default function BlogScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="Blog" description="Read stories, travel guides, and cultural insights about Punjab, Pakistan. Community blog for overseas Pakistanis." path="/blog" />
+      <SEOHead title="Blog" description="Read stories, travel guides, and cultural insights about Punjab, Pakistan. Community blog for overseas Pakistanis." path="/blog" keywords="Punjab blog, Pakistan stories, travel guides, cultural insights, overseas Pakistani community" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

@@ -271,7 +271,7 @@ export default function MySubmissionsScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="My Submissions" description="View and manage your property and person submissions on 47daPunjab." path="/my-submissions" />
+      <SEOHead title="My Submissions" description="View and manage your property and person submissions on 47daPunjab." path="/my-submissions" keywords="47daPunjab submissions, property listings, person submissions" />
       <View style={[styles.headerBar, { paddingTop: insets.top + webTopInset }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.light.text} />

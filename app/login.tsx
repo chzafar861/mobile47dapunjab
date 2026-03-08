@@ -506,7 +506,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="Login" description="Sign in or create an account on 47daPunjab to access services, shop, and connect with Punjab, Pakistan." path="/login" />
+      <SEOHead title="Login" description="Sign in or create an account on 47daPunjab to access services, shop, and connect with Punjab, Pakistan." path="/login" keywords="47daPunjab login, sign up, create account, Punjab Pakistan services" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

@@ -209,7 +209,7 @@ export default function VideoRequestScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={90}
     >
-      <SEOHead title="Video Recording Request" description="Request professional village video recording services in Punjab, Pakistan. Capture memories of your ancestral village." path="/video-request" />
+      <SEOHead title="Video Recording Request" description="Request professional village video recording services in Punjab, Pakistan. Capture memories of your ancestral village." path="/video-request" keywords="village video recording Punjab, ancestral village Pakistan, video services, capture memories Pakistan" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

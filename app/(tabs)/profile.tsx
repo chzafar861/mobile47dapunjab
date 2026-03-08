@@ -181,7 +181,7 @@ export default function ProfileScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={90}
     >
-      <SEOHead title="Profile" description="Manage your 47daPunjab account, orders, submissions, and settings." path="/profile" />
+      <SEOHead title="Profile" description="Manage your 47daPunjab account, orders, submissions, and settings." path="/profile" keywords="47daPunjab account, user profile, manage orders, settings" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

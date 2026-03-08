@@ -246,7 +246,7 @@ export default function SubmitDetailsScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="Submit Details" description="Submit your property, person, or business details to the 47daPunjab directory for Punjab, Pakistan." path="/submit-details" />
+      <SEOHead title="Submit Details" description="Submit your property, person, or business details to the 47daPunjab directory for Punjab, Pakistan." path="/submit-details" keywords="submit property Punjab, add person directory, business listing Pakistan, 47daPunjab directory" />
       <View style={[styles.headerBar, { paddingTop: insets.top + webTopInset }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.light.text} />

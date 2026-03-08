@@ -79,7 +79,7 @@ export default function SubscriptionScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={90}
     >
-      <SEOHead title="Subscription" description="Subscribe to 47daPunjab premium services. Get exclusive access to all features and services." path="/subscription" />
+      <SEOHead title="Subscription" description="Subscribe to 47daPunjab premium services. Get exclusive access to all features and services." path="/subscription" keywords="47daPunjab subscription, premium services, exclusive access" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

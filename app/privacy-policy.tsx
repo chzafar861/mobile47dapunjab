@@ -30,7 +30,7 @@ export default function PrivacyPolicyScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="Privacy Policy" description="Privacy policy for 47daPunjab. Learn how we collect, use, and protect your personal information." path="/privacy-policy" />
+      <SEOHead title="Privacy Policy" description="Privacy policy for 47daPunjab. Learn how we collect, use, and protect your personal information." path="/privacy-policy" keywords="47daPunjab privacy policy, data protection, personal information" />
       <LinearGradient
         colors={[Colors.light.primaryDark, Colors.light.primary]}
         style={[styles.header, { paddingTop: insets.top + webTopInset + 12 }]}

@@ -169,7 +169,7 @@ export default function MyOrdersScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="My Orders" description="View and track your 47daPunjab orders, bookings, and service requests." path="/my-orders" />
+      <SEOHead title="My Orders" description="View and track your 47daPunjab orders, bookings, and service requests." path="/my-orders" keywords="47daPunjab orders, order tracking, bookings, service requests" />
       <LinearGradient
         colors={[Colors.light.primaryDark, Colors.light.primary]}
         style={[styles.header, { paddingTop: (insets.top || webTopInset) + 8 }]}

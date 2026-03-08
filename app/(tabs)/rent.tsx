@@ -232,7 +232,7 @@ export default function HumanFindScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="HumanFind - People & Property Search" description="Search for people, families, and properties in Punjab, Pakistan. Migration portal and family search tool for connecting overseas Pakistanis with their roots." path="/rent" />
+      <SEOHead title="HumanFind - People & Property Search" description="Search for people, families, and properties in Punjab, Pakistan. Migration portal and family search tool for connecting overseas Pakistanis with their roots." path="/rent" keywords="find people Punjab, family search Pakistan, property search, migration portal, ancestral village, overseas Pakistani roots" />
       <LinearGradient
         colors={[Colors.light.primaryDark, Colors.light.primary, Colors.light.primaryDark]}
         start={{ x: 0, y: 0 }}

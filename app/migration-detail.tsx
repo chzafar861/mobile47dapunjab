@@ -202,7 +202,7 @@ export default function MigrationDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="Person Details" description="View detailed information about a person in the 47daPunjab migration portal." path="/migration-detail" />
+      <SEOHead title="Person Details" description="View detailed information about a person in the 47daPunjab migration portal." path="/migration-detail" keywords="migration portal Punjab, family search, person details, 47daPunjab" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

@@ -143,7 +143,7 @@ export default function ServicesScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="Services" description="Book protocol services, video recording, and customs assistance for Punjab, Pakistan. Professional services for overseas Pakistanis visiting Punjab." path="/services" />
+      <SEOHead title="Services" description="Book protocol services, video recording, and customs assistance for Punjab, Pakistan. Professional services for overseas Pakistanis visiting Punjab." path="/services" keywords="protocol services Punjab, video recording Pakistan, customs assistance, VIP services, overseas Pakistani services" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

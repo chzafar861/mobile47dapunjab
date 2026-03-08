@@ -512,7 +512,7 @@ export default function PakistanGuideScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="Pakistan Guide" description="Complete travel guide for visiting Pakistan and Punjab. Tips, customs, cultural information, and essential services for travelers." path="/pakistan-guide" />
+      <SEOHead title="Pakistan Guide" description="Complete travel guide for visiting Pakistan and Punjab. Tips, customs, cultural information, and essential services for travelers." path="/pakistan-guide" keywords="Pakistan travel guide, visit Punjab, Pakistan tourism, travel tips, cultural guide, overseas Pakistani travel" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

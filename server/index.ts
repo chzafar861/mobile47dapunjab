@@ -2,6 +2,7 @@ import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import compression from "compression";
 import { registerRoutes } from "./routes";
 import authRouter from "./auth";
 import * as fs from "fs";
@@ -14,6 +15,10 @@ declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
   }
+}
+
+function setupCompression(app: express.Application) {
+  app.use(compression());
 }
 
 function setupCors(app: express.Application) {
@@ -318,13 +323,31 @@ function configureExpoAndLanding(app: express.Application) {
     );
   });
 
-  app.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
-  app.use(express.static(path.resolve(process.cwd(), "static-build")));
+  app.get("/site.webmanifest", (_req: Request, res: Response) => {
+    res.type("application/manifest+json").json({
+      name: "47daPunjab",
+      short_name: "47daPunjab",
+      description: "Your complete service platform for Punjab, Pakistan",
+      start_url: "/",
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: "#0D7C3D",
+      icons: [
+        { src: "/assets/images/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+        { src: "/assets/images/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
+        { src: "/assets/images/android-chrome-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" }
+      ]
+    });
+  });
+
+  const staticCacheOptions = { maxAge: "7d", etag: true };
+  app.use("/assets", express.static(path.resolve(process.cwd(), "assets"), staticCacheOptions));
+  app.use(express.static(path.resolve(process.cwd(), "static-build"), staticCacheOptions));
 
   if (process.env.NODE_ENV !== "development") {
     const webBuildDir = path.resolve(process.cwd(), "web-build");
     if (fs.existsSync(webBuildDir)) {
-      app.use(express.static(webBuildDir));
+      app.use(express.static(webBuildDir, staticCacheOptions));
     }
   }
 
@@ -378,6 +401,7 @@ function setupErrorHandler(app: express.Application) {
 }
 
 (async () => {
+  setupCompression(app);
   setupCors(app);
   setupBodyParsing(app);
 
@@ -392,6 +416,7 @@ function setupErrorHandler(app: express.Application) {
       secret: process.env.SESSION_SECRET || "47dapunjab-secret-key",
       resave: false,
       saveUninitialized: false,
+      rolling: true,
       cookie: {
         maxAge: 30 * 24 * 60 * 60 * 1000,
         httpOnly: true,

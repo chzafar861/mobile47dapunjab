@@ -327,7 +327,7 @@ export default function HistoryScreen() {
 
   return (
     <View style={styles.container}>
-      <SEOHead title="History of Punjab" description="Explore the rich history of Punjab, Pakistan. Heritage sites, historical landmarks, and cultural treasures of the Punjab region." path="/history" />
+      <SEOHead title="History of Punjab" description="Explore the rich history of Punjab, Pakistan. Heritage sites, historical landmarks, and cultural treasures of the Punjab region." path="/history" keywords="Punjab history, Pakistan heritage, historical landmarks, Lahore Fort, Badshahi Mosque, Punjab culture" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

@@ -202,7 +202,7 @@ export default function CustomsRequestScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={90}
     >
-      <SEOHead title="Customs Assistance Request" description="Request customs clearance assistance for traveling to Punjab, Pakistan. Professional help with immigration and customs procedures." path="/customs-request" />
+      <SEOHead title="Customs Assistance Request" description="Request customs clearance assistance for traveling to Punjab, Pakistan. Professional help with immigration and customs procedures." path="/customs-request" keywords="customs assistance Pakistan, immigration help Punjab, customs clearance, travel Pakistan" />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
