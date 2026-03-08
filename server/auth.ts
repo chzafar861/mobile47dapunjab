@@ -49,9 +49,20 @@ const oauthCallbackHtml = (success: boolean, message: string) => `
     <div class="icon">${success ? "&#10003;" : "&#10007;"}</div>
     <h1>${success ? "Welcome to 47daPunjab!" : "Login Failed"}</h1>
     <p>${message}</p>
-    <p style="font-size:12px;opacity:0.7;">You can close this window and return to the app.</p>
+    <p style="font-size:12px;opacity:0.7;">${success ? "Redirecting you back..." : "You can close this window and try again."}</p>
     <script>
-      ${success ? "setTimeout(function(){ window.close(); }, 2000);" : ""}
+      ${success ? `
+      try {
+        if (window.opener) {
+          window.opener.postMessage({ type: '47da-oauth-success' }, '*');
+          setTimeout(function(){ window.close(); }, 1500);
+        } else {
+          window.location.href = '/';
+        }
+      } catch(e) {
+        window.location.href = '/';
+      }
+      ` : ""}
     </script>
   </div>
 </body>

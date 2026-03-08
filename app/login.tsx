@@ -125,14 +125,46 @@ export default function LoginScreen() {
     try {
       const baseUrl = getApiUrl();
       const authUrl = new URL(`/api/auth/${provider}`, baseUrl).toString();
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, undefined);
-      if (result.type === "success" || result.type === "cancel" || result.type === "dismiss") {
-        await refreshUser();
+      if (Platform.OS === "web") {
+        const popup = window.open(authUrl, "_blank", "width=500,height=600,menubar=no,toolbar=no");
+        if (!popup) {
+          setErrorMsg("Popup was blocked by your browser. Please allow popups for this site and try again.");
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setSocialLoading(null);
+          return;
+        }
+        let handled = false;
+        const onMessage = async (event: MessageEvent) => {
+          if (event.data?.type === "47da-oauth-success" && !handled) {
+            handled = true;
+            window.removeEventListener("message", onMessage);
+            clearInterval(checkClosed);
+            await refreshUser();
+            setSocialLoading(null);
+          }
+        };
+        window.addEventListener("message", onMessage);
+        const checkClosed = setInterval(async () => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            window.removeEventListener("message", onMessage);
+            if (!handled) {
+              handled = true;
+              await refreshUser();
+              setSocialLoading(null);
+            }
+          }
+        }, 500);
+      } else {
+        const result = await WebBrowser.openAuthSessionAsync(authUrl, undefined);
+        if (result.type === "success" || result.type === "cancel" || result.type === "dismiss") {
+          await refreshUser();
+        }
+        setSocialLoading(null);
       }
     } catch (e: any) {
       setErrorMsg(`${provider === "google" ? "Google" : "Facebook"} login failed. Please try again.`);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    } finally {
       setSocialLoading(null);
     }
   };
