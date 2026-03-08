@@ -1,0 +1,100 @@
+You are a senior full-stack developer and technical SEO expert.
+
+I have a project built with React Native using Expo. The app runs on mobile and also has a web version. The project is called “Santrali da Punjab” and the domain is https://47dapunjab.com.
+
+Your task is to improve the entire project with the following requirements.
+
+1. Complete SEO Optimization (Google Search Engine)
+
+* Audit every page of the website.
+* Add SEO optimization to every page including:
+
+  * unique title tag
+  * meta description
+  * meta keywords
+  * canonical URL
+* Ensure each page has proper HTML structure:
+
+  * H1, H2, H3 headings
+  * semantic HTML
+* Ensure all pages are indexable by Google.
+* Make sure search engines can crawl all pages.
+* Avoid empty HTML shells that only render with JavaScript.
+* If necessary, implement prerendering or static generation so search engines can see the content.
+
+2. Sitemap and Robots
+
+* Automatically generate:
+  /sitemap.xml
+  /robots.txt
+* Ensure all routes/pages are included in the sitemap.
+
+3. Social Media SEO
+   Add Open Graph metadata:
+
+* og:title
+* og:description
+* og:image
+* og:url
+
+Add Twitter card metadata.
+
+4. URL Optimization
+   Convert routes into SEO-friendly URLs such as:
+
+* /stories
+* /migration-history
+* /family-search
+  Avoid hash routes (#).
+
+5. Performance SEO
+   Improve performance for Google ranking:
+
+* lazy loading images
+* compression
+* caching
+* code splitting
+* optimize images
+
+Ensure good Core Web Vitals.
+
+6. Favicon and App Icons
+   Create a complete favicon system for both web and mobile.
+
+Generate:
+
+* favicon.ico
+* favicon-16x16.png
+* favicon-32x32.png
+* apple-touch-icon.png
+* android-chrome-192x192.png
+* android-chrome-512x512.png
+* web manifest icons
+
+The favicon should represent the “Santrali da Punjab” identity and look good on browsers, Google search results, and mobile home screens.
+
+7. Persistent Login System
+   Fix the login system so users stay logged in.
+
+Requirements:
+
+* When a user logs in, their login session should persist for 30 days.
+* If the user refreshes the page, closes the browser, or reopens the mobile app, they should still be logged in.
+* Use secure token storage:
+
+  * Web: localStorage or cookies
+  * Mobile: SecureStore or AsyncStorage
+* Implement token expiration after 30 days.
+* After 30 days of inactivity, require login again.
+
+8. Security
+
+* Use secure authentication tokens.
+* Protect user sessions from unauthorized access.
+
+9. Final Task
+   After implementing all improvements:
+
+* provide a report listing all SEO improvements
+* confirm that all pages are crawlable and optimized for Google
+* confirm favicon and login persistence work correctly.
