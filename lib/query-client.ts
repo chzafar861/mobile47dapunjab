@@ -7,6 +7,14 @@ const isNative = Platform.OS !== "web";
 const TOKEN_KEY = "47da_auth_token";
 
 export function getApiUrl(): string {
+  if (isNative) {
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+    if (apiUrl) {
+      return apiUrl.endsWith("/") ? apiUrl : apiUrl + "/";
+    }
+    return "https://47dapunjab.com/";
+  }
+
   if (typeof window !== "undefined" && window.location?.origin) {
     return window.location.origin + "/";
   }

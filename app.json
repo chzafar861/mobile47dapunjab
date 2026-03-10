@@ -52,7 +52,7 @@
       [
         "expo-router",
         {
-          "origin": "https://replit.com/"
+          "origin": "https://47dapunjab.com"
         }
       ],
       "expo-font",
@@ -64,7 +64,7 @@
     },
     "extra": {
       "router": {
-        "origin": "https://replit.com/"
+        "origin": "https://47dapunjab.com"
       },
       "eas": {
         "projectId": "5300eb6e-e922-493e-b4ea-cbc3a0a173e7"

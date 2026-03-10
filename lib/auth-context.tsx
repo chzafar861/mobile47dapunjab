@@ -94,10 +94,11 @@ async function authFetch(path: string, options: RequestInit = {}) {
     try {
       data = JSON.parse(text);
     } catch {
-      throw new Error("Server returned an invalid response. Please try again.");
+      const preview = text.substring(0, 100);
+      throw new Error(`Connection error: ${res.status} - ${preview || "empty response"}`);
     }
     if (!res.ok) {
-      throw new Error(data.error || "Request failed");
+      throw new Error(data.error || `${res.status}: Request failed`);
     }
     return data;
   } catch (e: any) {

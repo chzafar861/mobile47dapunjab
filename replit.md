@@ -4,6 +4,14 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, HumanFind (people & property search), history, and property detail submissions.
 
 ## Recent Changes
+- 2026-03-10: Android adaptive icon fix:
+  - Background: solid brand green (#0D7C3D) at 1024x1024 (was template/guideline image at 512x512)
+  - Monochrome: proper crescent+wheat silhouette at 1024x1024 (was generic chevron at 432x432)
+  - All three layers (foreground, background, monochrome) now consistent 1024x1024
+- 2026-03-10: Mobile APK login fix:
+  - getApiUrl() now checks isNative FIRST, always uses EXPO_PUBLIC_API_URL on native (never window.location.origin)
+  - This prevents expo-router from injecting wrong internal URLs on native platform
+  - Better error messages: shows HTTP status + response preview instead of generic "invalid response"
 - 2026-03-10: Mobile APK backend connectivity fix:
   - Added token-based authentication (auth_tokens table) alongside session cookies
   - Native mobile (Android APK) now uses Bearer tokens stored in AsyncStorage
