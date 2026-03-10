@@ -4,6 +4,19 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, HumanFind (people & property search), history, and property detail submissions.
 
 ## Recent Changes
+- 2026-03-10: Mobile APK backend connectivity fix:
+  - Added token-based authentication (auth_tokens table) alongside session cookies
+  - Native mobile (Android APK) now uses Bearer tokens stored in AsyncStorage
+  - Web continues to use session cookies (no change to web behavior)
+  - CORS updated to allow mobile app requests (no Origin header)
+  - API URL resolution: EXPO_PUBLIC_API_URL env var in eas.json, fallback to 47dapunjab.com
+  - Created lib/api-fetch.ts shared utility for native-aware fetch with auth headers
+  - Updated all API-calling files: query-client, auth-context, firebase, admin, my-submissions, my-orders, shop
+  - Token middleware (tokenAuthMiddleware) injects token user into session for all existing endpoints
+- 2026-03-10: Session persistence fix for deployed web app:
+  - Added app.set("trust proxy", 1) for secure cookies behind Replit reverse proxy
+  - Improved OAuth callback HTML with postMessage to parent window
+  - Web OAuth login uses window.open popup with proper communication
 - 2026-03-08: Comprehensive SEO, performance, and auth improvements:
   - Google & Facebook OAuth login now active (credentials configured)
   - SEOHead enhanced: og:image, twitter:image, meta keywords on all 21 pages

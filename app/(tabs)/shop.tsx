@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import { useCurrency } from "@/lib/currency";
 import { getApiUrl, apiRequest, queryClient } from "@/lib/query-client";
+import { nativeFetch } from "@/lib/api-fetch";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { SEOHead } from "@/components/SEOHead";
@@ -185,13 +186,7 @@ const defaultProducts: ShopItem[] = [
 const categories = ["All", "Clothing", "Kitchen", "Art", "Home"];
 
 async function shopFetch(path: string, options: RequestInit = {}) {
-  const baseUrl = getApiUrl();
-  const url = new URL(path, baseUrl);
-  const res = await globalThis.fetch(url.toString(), {
-    ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    credentials: "include",
-  });
+  const res = await nativeFetch(path, options);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Request failed");
   return data;

@@ -16,6 +16,7 @@ import { firebaseApi } from "@/lib/firebase";
 import { showAlert, showConfirm } from "@/lib/platform-alert";
 import { useAuth } from "@/lib/auth-context";
 import { getApiUrl } from "@/lib/query-client";
+import { nativeFetch } from "@/lib/api-fetch";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { SEOHead } from "@/components/SEOHead";
@@ -33,13 +34,7 @@ interface AuthUser {
 }
 
 async function adminFetch(path: string, options: RequestInit = {}) {
-  const baseUrl = getApiUrl();
-  const url = new URL(path, baseUrl);
-  const res = await globalThis.fetch(url.toString(), {
-    ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    credentials: "include",
-  });
+  const res = await nativeFetch(path, options);
   return res.json();
 }
 

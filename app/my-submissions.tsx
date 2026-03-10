@@ -20,6 +20,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { useI18n } from "@/lib/i18n";
 import { useTranslate } from "@/lib/useTranslate";
 import { getApiUrl } from "@/lib/query-client";
+import { nativeFetch } from "@/lib/api-fetch";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { showAlert, showConfirm } from "@/lib/platform-alert";
@@ -60,13 +61,7 @@ interface PersonSubmission {
 }
 
 async function authFetch(path: string, options: RequestInit = {}) {
-  const baseUrl = getApiUrl();
-  const url = new URL(path, baseUrl);
-  const res = await globalThis.fetch(url.toString(), {
-    ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    credentials: "include",
-  });
+  const res = await nativeFetch(path, options);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Request failed");
   return data;

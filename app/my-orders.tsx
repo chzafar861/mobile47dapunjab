@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import { useCurrency } from "@/lib/currency";
 import { getApiUrl } from "@/lib/query-client";
+import { nativeFetch } from "@/lib/api-fetch";
 import { SEOHead } from "@/components/SEOHead";
 import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
@@ -65,12 +66,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 async function orderFetch(path: string) {
-  const baseUrl = getApiUrl();
-  const url = new URL(path, baseUrl);
-  const res = await globalThis.fetch(url.toString(), {
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-  });
+  const res = await nativeFetch(path);
   if (!res.ok) throw new Error("Failed to fetch");
   return res.json();
 }

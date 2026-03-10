@@ -1,24 +1,39 @@
 import { fetch } from "expo/fetch";
+import { Platform } from "react-native";
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-/**
- * Gets the base URL for the Express API server (e.g., "http://localhost:3000")
- * @returns {string} The API base URL
- */
+const isNative = Platform.OS !== "web";
+const TOKEN_KEY = "47da_auth_token";
+
 export function getApiUrl(): string {
   if (typeof window !== "undefined" && window.location?.origin) {
     return window.location.origin + "/";
   }
 
-  let host = process.env.EXPO_PUBLIC_DOMAIN;
-
-  if (!host) {
-    throw new Error("EXPO_PUBLIC_DOMAIN is not set");
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (apiUrl) {
+    return apiUrl.endsWith("/") ? apiUrl : apiUrl + "/";
   }
 
-  let url = new URL(`https://${host}`);
+  let host = process.env.EXPO_PUBLIC_DOMAIN;
+  if (host) {
+    let url = new URL(`https://${host}`);
+    return url.href;
+  }
 
-  return url.href;
+  return "https://47dapunjab.com/";
+}
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  if (!isNative) return {};
+  try {
+    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
+    }
+  } catch {}
+  return {};
 }
 
 async function throwIfResNotOk(res: Response) {
@@ -36,11 +51,17 @@ export async function apiRequest(
   const baseUrl = getApiUrl();
   const url = new URL(route, baseUrl);
 
+  const authHeaders = await getAuthHeaders();
+  const headers: Record<string, string> = {
+    ...authHeaders,
+    ...(data ? { "Content-Type": "application/json" } : {}),
+  };
+
   const res = await fetch(url.toString(), {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    credentials: isNative ? "omit" : "include",
   });
 
   await throwIfResNotOk(res);
@@ -56,8 +77,11 @@ export const getQueryFn: <T>(options: {
     const baseUrl = getApiUrl();
     const url = new URL(queryKey.join("/") as string, baseUrl);
 
+    const authHeaders = await getAuthHeaders();
+
     const res = await fetch(url.toString(), {
-      credentials: "include",
+      headers: authHeaders,
+      credentials: isNative ? "omit" : "include",
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

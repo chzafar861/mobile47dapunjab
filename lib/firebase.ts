@@ -1,14 +1,34 @@
 import { getApiUrl } from "./query-client";
 import { fetch } from "expo/fetch";
+import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const isNative = Platform.OS !== "web";
+const TOKEN_KEY = "47da_auth_token";
 
 async function apiCall(method: string, path: string, data?: any) {
   const baseUrl = getApiUrl();
   const url = new URL(path, baseUrl);
+
+  const headers: Record<string, string> = {};
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  if (isNative) {
+    try {
+      const token = await AsyncStorage.getItem(TOKEN_KEY);
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+    } catch {}
+  }
+
   const res = await fetch(url.toString(), {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include" as any,
+    credentials: isNative ? "omit" : ("include" as any),
   });
   if (!res.ok) {
     const text = await res.text();

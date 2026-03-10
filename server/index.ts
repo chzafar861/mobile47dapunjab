@@ -4,7 +4,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import compression from "compression";
 import { registerRoutes } from "./routes";
-import authRouter from "./auth";
+import authRouter, { tokenAuthMiddleware, ensureAuthTokensTable } from "./auth";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -25,6 +25,9 @@ function setupCors(app: express.Application) {
   app.use((req, res, next) => {
     const origins = new Set<string>();
 
+    origins.add("https://47dapunjab.com");
+    origins.add("https://www.47dapunjab.com");
+
     if (process.env.REPLIT_DEV_DOMAIN) {
       origins.add(`https://${process.env.REPLIT_DEV_DOMAIN}`);
     }
@@ -37,22 +40,35 @@ function setupCors(app: express.Application) {
 
     const origin = req.header("origin");
 
-    // Allow localhost origins for Expo web development (any port)
     const isLocalhost =
       origin?.startsWith("http://localhost:") ||
       origin?.startsWith("http://127.0.0.1:");
 
-    if (origin && (origins.has(origin) || isLocalhost)) {
+    const isMobileApp = !origin && req.header("Authorization")?.startsWith("Bearer ");
+
+    if (isMobileApp) {
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, OPTIONS",
+      );
+      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.header("Access-Control-Allow-Credentials", "true");
+    } else if (origin && (origins.has(origin) || isLocalhost)) {
       res.header("Access-Control-Allow-Origin", origin);
       res.header(
         "Access-Control-Allow-Methods",
         "GET, POST, PUT, DELETE, OPTIONS",
       );
-      res.header("Access-Control-Allow-Headers", "Content-Type");
+      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
       res.header("Access-Control-Allow-Credentials", "true");
     }
 
     if (req.method === "OPTIONS") {
+      res.header("Access-Control-Allow-Origin", origin || "*");
+      res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.header("Access-Control-Allow-Credentials", "true");
       return res.sendStatus(200);
     }
 
@@ -92,7 +108,10 @@ function setupRequestLogging(app: express.Application) {
 
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        const safeResponse = { ...capturedJsonResponse };
+        delete safeResponse.token;
+        delete safeResponse.password_hash;
+        logLine += ` :: ${JSON.stringify(safeResponse)}`;
       }
 
       if (logLine.length > 80) {
@@ -427,9 +446,11 @@ function setupErrorHandler(app: express.Application) {
     })
   );
 
+  app.use(tokenAuthMiddleware());
   setupRequestLogging(app);
   configureExpoAndLanding(app);
 
+  await ensureAuthTokensTable();
   app.use(authRouter);
   const server = await registerRoutes(app);
 

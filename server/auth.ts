@@ -8,6 +8,51 @@ const router = Router();
 
 const ADMIN_EMAILS = ["47dapunjab@gmail.com"];
 
+function generateAuthToken(): string {
+  return crypto.randomBytes(48).toString("hex");
+}
+
+async function createAuthToken(userId: number): Promise<string> {
+  const token = generateAuthToken();
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  await pool.query(
+    `INSERT INTO auth_tokens (token, user_id, expires_at) VALUES ($1, $2, $3)
+     ON CONFLICT (token) DO UPDATE SET user_id = $2, expires_at = $3`,
+    [token, userId, expiresAt]
+  );
+  return token;
+}
+
+async function getUserFromToken(token: string): Promise<any | null> {
+  const result = await pool.query(
+    `SELECT u.id, u.email, u.name, u.phone, u.city, u.country, u.purpose, u.role, u.avatar_url, u.provider
+     FROM auth_tokens t JOIN auth_users u ON t.user_id = u.id
+     WHERE t.token = $1 AND t.expires_at > NOW()`,
+    [token]
+  );
+  return result.rows.length > 0 ? result.rows[0] : null;
+}
+
+function getBearerToken(req: Request): string | null {
+  const auth = req.header("Authorization");
+  if (auth?.startsWith("Bearer ")) {
+    return auth.slice(7);
+  }
+  return null;
+}
+
+async function getUserId(req: Request): Promise<number | null> {
+  const sessionUserId = (req.session as any)?.userId;
+  if (sessionUserId) return sessionUserId;
+
+  const token = getBearerToken(req);
+  if (token) {
+    const user = await getUserFromToken(token);
+    if (user) return user.id;
+  }
+  return null;
+}
+
 function getBaseUrl(req: Request): string {
   const forwardedProto = req.header("x-forwarded-proto") || req.protocol || "https";
   const forwardedHost = req.header("x-forwarded-host") || req.get("host");
@@ -98,7 +143,8 @@ router.post("/api/auth/register", async (req: Request, res: Response) => {
     );
     const user = result.rows[0];
     (req.session as any).userId = user.id;
-    res.json({ user, message: "Account created successfully! Welcome to 47daPunjab." });
+    const token = await createAuthToken(user.id);
+    res.json({ user, token, message: "Account created successfully! Welcome to 47daPunjab." });
   } catch (e: any) {
     console.error("Register error:", e);
     res.status(500).json({ error: "Registration failed. Please try again." });
@@ -128,7 +174,8 @@ router.post("/api/auth/login", async (req: Request, res: Response) => {
     }
     (req.session as any).userId = user.id;
     const { password_hash, ...safeUser } = user;
-    res.json({ user: safeUser, message: "Welcome back!" });
+    const token = await createAuthToken(user.id);
+    res.json({ user: safeUser, token, message: "Welcome back!" });
   } catch (e: any) {
     console.error("Login error:", e);
     res.status(500).json({ error: "Login failed. Please try again." });
@@ -159,7 +206,8 @@ router.post("/api/auth/smart-login", async (req: Request, res: Response) => {
       }
       (req.session as any).userId = user.id;
       const { password_hash, ...safeUser } = user;
-      return res.json({ user: safeUser, message: "Welcome back!", isNewUser: false });
+      const smartToken = await createAuthToken(user.id);
+      return res.json({ user: safeUser, token: smartToken, message: "Welcome back!", isNewUser: false });
     }
     if (!name) {
       return res.status(404).json({ error: "No account found. Please provide your name to create one.", needsSignup: true });
@@ -173,7 +221,8 @@ router.post("/api/auth/smart-login", async (req: Request, res: Response) => {
     );
     const newUser = result.rows[0];
     (req.session as any).userId = newUser.id;
-    res.json({ user: newUser, message: "Account created! Welcome to 47daPunjab.", isNewUser: true });
+    const newToken = await createAuthToken(newUser.id);
+    res.json({ user: newUser, token: newToken, message: "Account created! Welcome to 47daPunjab.", isNewUser: true });
   } catch (e: any) {
     console.error("Smart login error:", e);
     res.status(500).json({ error: "Authentication failed. Please try again." });
@@ -209,7 +258,8 @@ router.post("/api/auth/social", async (req: Request, res: Response) => {
       user = result.rows[0];
     }
     (req.session as any).userId = user.id;
-    res.json({ user });
+    const socialToken = await createAuthToken(user.id);
+    res.json({ user, token: socialToken });
   } catch (e: any) {
     console.error("Social login error:", e);
     res.status(500).json({ error: "Social login failed" });
@@ -469,7 +519,7 @@ router.get("/api/auth/oauth/status", (_req: Request, res: Response) => {
 
 router.get("/api/auth/me", async (req: Request, res: Response) => {
   try {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserId(req);
     if (!userId) {
       return res.status(401).json({ error: "Not authenticated" });
     }
@@ -486,7 +536,11 @@ router.get("/api/auth/me", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/api/auth/logout", (req: Request, res: Response) => {
+router.post("/api/auth/logout", async (req: Request, res: Response) => {
+  const token = getBearerToken(req);
+  if (token) {
+    await pool.query("DELETE FROM auth_tokens WHERE token = $1", [token]).catch(() => {});
+  }
   req.session.destroy((err) => {
     if (err) {
       return res.status(500).json({ error: "Logout failed" });
@@ -498,7 +552,7 @@ router.post("/api/auth/logout", (req: Request, res: Response) => {
 
 router.put("/api/auth/profile", async (req: Request, res: Response) => {
   try {
-    const userId = (req.session as any)?.userId;
+    const userId = await getUserId(req);
     if (!userId) {
       return res.status(401).json({ error: "Not authenticated" });
     }
@@ -569,5 +623,37 @@ router.delete("/api/auth/users/:id", async (req: Request, res: Response) => {
     res.status(500).json({ error: "User deletion failed" });
   }
 });
+
+export function tokenAuthMiddleware() {
+  return async (req: Request, _res: Response, next: Function) => {
+    if ((req.session as any)?.userId) {
+      return next();
+    }
+    const token = getBearerToken(req);
+    if (token) {
+      try {
+        const user = await getUserFromToken(token);
+        if (user) {
+          (req.session as any).userId = user.id;
+        }
+      } catch {}
+    }
+    next();
+  };
+}
+
+export async function ensureAuthTokensTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS auth_tokens (
+      id SERIAL PRIMARY KEY,
+      token TEXT UNIQUE NOT NULL,
+      user_id INTEGER NOT NULL REFERENCES auth_users(id) ON DELETE CASCADE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_auth_tokens_token ON auth_tokens(token)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON auth_tokens(user_id)`);
+}
 
 export default router;

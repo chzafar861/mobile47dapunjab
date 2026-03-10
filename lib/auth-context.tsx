@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import { Platform } from "react-native";
 import { getApiUrl } from "./query-client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface User {
   id: number;
@@ -29,19 +30,62 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const isNative = Platform.OS !== "web";
+const TOKEN_KEY = "47da_auth_token";
+
+let memoryToken: string | null = null;
+
+async function getStoredToken(): Promise<string | null> {
+  if (!isNative) return null;
+  if (memoryToken) return memoryToken;
+  try {
+    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    memoryToken = token;
+    return token;
+  } catch {
+    return null;
+  }
+}
+
+async function storeToken(token: string): Promise<void> {
+  if (!isNative) return;
+  memoryToken = token;
+  try {
+    await AsyncStorage.setItem(TOKEN_KEY, token);
+  } catch {}
+}
+
+async function clearToken(): Promise<void> {
+  if (!isNative) return;
+  memoryToken = null;
+  try {
+    await AsyncStorage.removeItem(TOKEN_KEY);
+  } catch {}
+}
+
 async function authFetch(path: string, options: RequestInit = {}) {
   const baseUrl = getApiUrl();
   const url = new URL(path, baseUrl);
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string> || {}),
+  };
+
+  if (isNative) {
+    const token = await getStoredToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+
   try {
     const res = await globalThis.fetch(url.toString(), {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {}),
-      },
-      credentials: "include",
+      headers,
+      credentials: isNative ? "omit" : "include",
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
@@ -87,6 +131,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
+    if (data.token) {
+      await storeToken(data.token);
+    }
     setUser(data.user);
   };
 
@@ -95,6 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       body: JSON.stringify({ email, password, name, phone }),
     });
+    if (data.token) {
+      await storeToken(data.token);
+    }
     setUser(data.user);
   };
 
@@ -103,6 +153,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       body: JSON.stringify(socialData),
     });
+    if (data.token) {
+      await storeToken(data.token);
+    }
     setUser(data.user);
   };
 
@@ -110,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await authFetch("/api/auth/logout", { method: "POST" });
     } catch {}
+    await clearToken();
     setUser(null);
   };
 
