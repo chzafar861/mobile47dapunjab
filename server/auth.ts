@@ -3,9 +3,27 @@ import bcrypt from "bcryptjs";
 import pg from "pg";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import dns from "dns";
+import { promisify } from "util";
+
+const resolveMx = promisify(dns.resolveMx);
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const router = Router();
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(key: string, maxRequests: number, windowMs: number): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= maxRequests) return false;
+  entry.count++;
+  return true;
+}
 
 function createMailTransport() {
   const user = process.env.GMAIL_USER || "47dapunjab@gmail.com";
@@ -15,6 +33,51 @@ function createMailTransport() {
     service: "gmail",
     auth: { user, pass },
   });
+}
+
+async function validateEmailDomain(email: string): Promise<boolean> {
+  const domain = email.split("@")[1];
+  if (!domain) return false;
+  try {
+    const records = await resolveMx(domain);
+    return records && records.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+async function sendVerificationEmail(toEmail: string, code: string): Promise<boolean> {
+  const transport = createMailTransport();
+  if (!transport) {
+    console.warn("GMAIL_APP_PASSWORD not set — cannot send verification email");
+    return false;
+  }
+  try {
+    await transport.sendMail({
+      from: '"47daPunjab" <47dapunjab@gmail.com>',
+      to: toEmail,
+      subject: "Verify Your 47daPunjab Account",
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#f9f9f9;border-radius:12px;overflow:hidden;">
+          <div style="background:#0D7C3D;padding:24px 32px;">
+            <h2 style="color:#fff;margin:0;font-size:22px;">47daPunjab</h2>
+            <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:13px;">Email Verification</p>
+          </div>
+          <div style="padding:32px;">
+            <p style="color:#333;font-size:15px;margin:0 0 16px;">Welcome! Please verify your email using the code below. It expires in <strong>15 minutes</strong>.</p>
+            <div style="background:#fff;border:2px solid #0D7C3D;border-radius:10px;padding:20px;text-align:center;margin:0 0 24px;">
+              <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#0D7C3D;">${code}</span>
+            </div>
+            <p style="color:#666;font-size:13px;margin:0;">If you didn't create this account, ignore this email.</p>
+          </div>
+        </div>
+      `,
+    });
+    return true;
+  } catch (e) {
+    console.error("Failed to send verification email:", e);
+    return false;
+  }
 }
 
 async function sendResetCodeEmail(toEmail: string, code: string): Promise<boolean> {
@@ -173,28 +236,116 @@ router.post("/api/auth/register", async (req: Request, res: Response) => {
     if (!emailRegex.test(email)) {
       return res.status(400).json({ error: "Please enter a valid email address" });
     }
-    const existing = await pool.query("SELECT id, provider FROM auth_users WHERE email = $1", [email.toLowerCase()]);
+    if (!checkRateLimit(`register:${email.toLowerCase()}`, 3, 10 * 60 * 1000)) {
+      return res.status(429).json({ error: "Too many registration attempts. Please try again in 10 minutes." });
+    }
+    const validDomain = await validateEmailDomain(email);
+    if (!validDomain) {
+      return res.status(400).json({ error: "This email domain does not appear to be valid. Please use a real email address." });
+    }
+    const existing = await pool.query("SELECT id, provider, email_verified FROM auth_users WHERE email = $1", [email.toLowerCase()]);
     if (existing.rows.length > 0) {
-      const existingProvider = existing.rows[0].provider;
-      if (existingProvider !== "email") {
-        return res.status(409).json({ error: `An account with this email already exists via ${existingProvider}. Please use ${existingProvider} login.` });
+      const ex = existing.rows[0];
+      if (ex.provider !== "email") {
+        return res.status(409).json({ error: `An account with this email already exists via ${ex.provider}. Please use ${ex.provider} login.` });
+      }
+      if (!ex.email_verified) {
+        const vCode = crypto.randomInt(100000, 999999).toString();
+        const vExpires = new Date(Date.now() + 15 * 60 * 1000);
+        await pool.query("UPDATE auth_users SET verification_code = $2, verification_code_expires = $3 WHERE id = $1", [ex.id, vCode, vExpires]);
+        await sendVerificationEmail(email.toLowerCase(), vCode);
+        return res.status(409).json({ error: "An account with this email exists but is not verified. A new verification code has been sent.", needsVerification: true, email: email.toLowerCase() });
       }
       return res.status(409).json({ error: "An account with this email already exists. Please sign in instead." });
     }
     const passwordHash = await bcrypt.hash(password, 10);
     const assignedRole = ADMIN_EMAILS.includes(email.toLowerCase()) ? "admin" : "user";
-    const result = await pool.query(
-      `INSERT INTO auth_users (email, password_hash, name, phone, role, provider) 
-       VALUES ($1, $2, $3, $4, $5, 'email') RETURNING id, email, name, phone, role, avatar_url, provider, created_at`,
-      [email.toLowerCase(), passwordHash, name, phone || "", assignedRole]
+    const verificationCode = crypto.randomInt(100000, 999999).toString();
+    const verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+    await pool.query(
+      `INSERT INTO auth_users (email, password_hash, name, phone, role, provider, email_verified, verification_code, verification_code_expires) 
+       VALUES ($1, $2, $3, $4, $5, 'email', false, $6, $7)`,
+      [email.toLowerCase(), passwordHash, name, phone || "", assignedRole, verificationCode, verificationExpires]
     );
-    const user = result.rows[0];
-    (req.session as any).userId = user.id;
-    const token = await createAuthToken(user.id);
-    res.json({ user, token, message: "Account created successfully! Welcome to 47daPunjab." });
+    const sent = await sendVerificationEmail(email.toLowerCase(), verificationCode);
+    if (!sent) {
+      console.error("Email service unavailable during registration for:", email);
+      return res.status(503).json({ error: "Email service is temporarily unavailable. Please try again later or contact 47dapunjab@gmail.com." });
+    }
+    res.json({ success: true, needsVerification: true, email: email.toLowerCase(), message: "Account created! Please check your email for a 6-digit verification code." });
   } catch (e: any) {
     console.error("Register error:", e);
     res.status(500).json({ error: "Registration failed. Please try again." });
+  }
+});
+
+router.post("/api/auth/verify-email", async (req: Request, res: Response) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ error: "Email and verification code are required" });
+    }
+    if (!checkRateLimit(`verify:${email.toLowerCase()}`, 5, 5 * 60 * 1000)) {
+      return res.status(429).json({ error: "Too many verification attempts. Please wait 5 minutes and try again." });
+    }
+    const result = await pool.query(
+      "SELECT id, email, name, phone, city, country, purpose, role, avatar_url, provider, email_verified, verification_code, verification_code_expires FROM auth_users WHERE email = $1",
+      [email.toLowerCase()]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "No account found with this email" });
+    }
+    const user = result.rows[0];
+    if (user.email_verified) {
+      return res.json({ success: true, message: "Email is already verified. You can sign in." });
+    }
+    if (!user.verification_code || user.verification_code !== code) {
+      return res.status(400).json({ error: "Invalid verification code. Please check and try again." });
+    }
+    if (new Date() > new Date(user.verification_code_expires)) {
+      return res.status(400).json({ error: "Verification code has expired. Please request a new one." });
+    }
+    await pool.query(
+      "UPDATE auth_users SET email_verified = true, verification_code = NULL, verification_code_expires = NULL, updated_at = NOW() WHERE id = $1",
+      [user.id]
+    );
+    (req.session as any).userId = user.id;
+    const token = await createAuthToken(user.id);
+    const { verification_code, verification_code_expires, email_verified, password_hash, ...safeUser } = user;
+    res.json({ success: true, user: { ...safeUser, email_verified: true }, token, message: "Email verified successfully! Welcome to 47daPunjab." });
+  } catch (e: any) {
+    console.error("Verify email error:", e);
+    res.status(500).json({ error: "Verification failed. Please try again." });
+  }
+});
+
+router.post("/api/auth/resend-verification", async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+    if (!checkRateLimit(`resend:${email.toLowerCase()}`, 3, 5 * 60 * 1000)) {
+      return res.status(429).json({ error: "Too many requests. Please wait 5 minutes before trying again." });
+    }
+    const result = await pool.query("SELECT id, email_verified FROM auth_users WHERE email = $1", [email.toLowerCase()]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "No account found with this email" });
+    }
+    if (result.rows[0].email_verified) {
+      return res.json({ success: true, message: "Email is already verified. You can sign in." });
+    }
+    const code = crypto.randomInt(100000, 999999).toString();
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
+    await pool.query("UPDATE auth_users SET verification_code = $2, verification_code_expires = $3 WHERE id = $1", [result.rows[0].id, code, expires]);
+    const sent = await sendVerificationEmail(email.toLowerCase(), code);
+    if (!sent) {
+      return res.status(503).json({ error: "Email service is not available. Please contact 47dapunjab@gmail.com." });
+    }
+    res.json({ success: true, message: "Verification code sent! Check your email." });
+  } catch (e: any) {
+    console.error("Resend verification error:", e);
+    res.status(500).json({ error: "Failed to resend verification code." });
   }
 });
 
@@ -204,8 +355,11 @@ router.post("/api/auth/login", async (req: Request, res: Response) => {
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }
+    if (!checkRateLimit(`login:${email.toLowerCase()}`, 5, 5 * 60 * 1000)) {
+      return res.status(429).json({ error: "Too many login attempts. Please try again in 5 minutes." });
+    }
     const result = await pool.query(
-      "SELECT id, email, password_hash, name, phone, city, country, purpose, role, avatar_url, provider FROM auth_users WHERE email = $1",
+      "SELECT id, email, password_hash, name, phone, city, country, purpose, role, avatar_url, provider, email_verified FROM auth_users WHERE email = $1",
       [email.toLowerCase()]
     );
     if (result.rows.length === 0) {
@@ -219,8 +373,15 @@ router.post("/api/auth/login", async (req: Request, res: Response) => {
     if (!valid) {
       return res.status(401).json({ error: "Incorrect password. Please try again." });
     }
+    if (user.email_verified === false) {
+      const vCode = crypto.randomInt(100000, 999999).toString();
+      const vExpires = new Date(Date.now() + 15 * 60 * 1000);
+      await pool.query("UPDATE auth_users SET verification_code = $2, verification_code_expires = $3 WHERE id = $1", [user.id, vCode, vExpires]);
+      await sendVerificationEmail(email.toLowerCase(), vCode);
+      return res.status(403).json({ error: "Please verify your email before logging in. A new verification code has been sent.", needsVerification: true, email: email.toLowerCase() });
+    }
     (req.session as any).userId = user.id;
-    const { password_hash, ...safeUser } = user;
+    const { password_hash, email_verified, ...safeUser } = user;
     const token = await createAuthToken(user.id);
     res.json({ user: safeUser, token, message: "Welcome back!" });
   } catch (e: any) {
@@ -238,8 +399,11 @@ router.post("/api/auth/smart-login", async (req: Request, res: Response) => {
     if (password.length < 6) {
       return res.status(400).json({ error: "Password must be at least 6 characters" });
     }
+    if (!checkRateLimit(`smartlogin:${email.toLowerCase()}`, 5, 5 * 60 * 1000)) {
+      return res.status(429).json({ error: "Too many login attempts. Please try again in 5 minutes." });
+    }
     const existing = await pool.query(
-      "SELECT id, email, password_hash, name, phone, city, country, purpose, role, avatar_url, provider FROM auth_users WHERE email = $1",
+      "SELECT id, email, password_hash, name, phone, city, country, purpose, role, avatar_url, provider, email_verified FROM auth_users WHERE email = $1",
       [email.toLowerCase()]
     );
     if (existing.rows.length > 0) {
@@ -251,25 +415,40 @@ router.post("/api/auth/smart-login", async (req: Request, res: Response) => {
       if (!valid) {
         return res.status(401).json({ error: "Incorrect password. Please try again." });
       }
+      if (user.email_verified === false) {
+        const vCode = crypto.randomInt(100000, 999999).toString();
+        const vExpires = new Date(Date.now() + 15 * 60 * 1000);
+        await pool.query("UPDATE auth_users SET verification_code = $2, verification_code_expires = $3 WHERE id = $1", [user.id, vCode, vExpires]);
+        await sendVerificationEmail(email.toLowerCase(), vCode);
+        return res.status(403).json({ error: "Please verify your email before logging in. A new verification code has been sent.", needsVerification: true, email: email.toLowerCase() });
+      }
       (req.session as any).userId = user.id;
-      const { password_hash, ...safeUser } = user;
+      const { password_hash, email_verified, ...safeUser } = user;
       const smartToken = await createAuthToken(user.id);
       return res.json({ user: safeUser, token: smartToken, message: "Welcome back!", isNewUser: false });
     }
     if (!name) {
       return res.status(404).json({ error: "No account found. Please provide your name to create one.", needsSignup: true });
     }
+    const validDomain = await validateEmailDomain(email);
+    if (!validDomain) {
+      return res.status(400).json({ error: "This email domain does not appear to be valid. Please use a real email address." });
+    }
     const passwordHash = await bcrypt.hash(password, 10);
     const loginRole = ADMIN_EMAILS.includes(email.toLowerCase()) ? "admin" : "user";
-    const result = await pool.query(
-      `INSERT INTO auth_users (email, password_hash, name, phone, role, provider) 
-       VALUES ($1, $2, $3, $4, $5, 'email') RETURNING id, email, name, phone, role, avatar_url, provider, created_at`,
-      [email.toLowerCase(), passwordHash, name, phone || "", loginRole]
+    const verificationCode = crypto.randomInt(100000, 999999).toString();
+    const verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+    await pool.query(
+      `INSERT INTO auth_users (email, password_hash, name, phone, role, provider, email_verified, verification_code, verification_code_expires) 
+       VALUES ($1, $2, $3, $4, $5, 'email', false, $6, $7)`,
+      [email.toLowerCase(), passwordHash, name, phone || "", loginRole, verificationCode, verificationExpires]
     );
-    const newUser = result.rows[0];
-    (req.session as any).userId = newUser.id;
-    const newToken = await createAuthToken(newUser.id);
-    res.json({ user: newUser, token: newToken, message: "Account created! Welcome to 47daPunjab.", isNewUser: true });
+    const sent = await sendVerificationEmail(email.toLowerCase(), verificationCode);
+    if (!sent) {
+      console.error("Email service unavailable during smart-login registration for:", email);
+      return res.status(503).json({ error: "Email service is temporarily unavailable. Please try again later or contact 47dapunjab@gmail.com." });
+    }
+    res.json({ success: true, needsVerification: true, email: email.toLowerCase(), message: "Account created! Please check your email for a 6-digit verification code.", isNewUser: true });
   } catch (e: any) {
     console.error("Smart login error:", e);
     res.status(500).json({ error: "Authentication failed. Please try again." });
@@ -290,7 +469,7 @@ router.post("/api/auth/social", async (req: Request, res: Response) => {
     if (existing.rows.length > 0) {
       user = existing.rows[0];
       await pool.query(
-        "UPDATE auth_users SET provider = $2, provider_id = $3, avatar_url = COALESCE($4, avatar_url), updated_at = NOW() WHERE id = $1",
+        "UPDATE auth_users SET provider = $2, provider_id = $3, avatar_url = COALESCE($4, avatar_url), email_verified = true, updated_at = NOW() WHERE id = $1",
         [user.id, provider, providerId || null, avatarUrl || null]
       );
       user.provider = provider;
@@ -298,8 +477,8 @@ router.post("/api/auth/social", async (req: Request, res: Response) => {
     } else {
       const assignedRole = ADMIN_EMAILS.includes(email.toLowerCase()) ? "admin" : "user";
       const result = await pool.query(
-        `INSERT INTO auth_users (email, name, provider, provider_id, avatar_url, role)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
+        `INSERT INTO auth_users (email, name, provider, provider_id, avatar_url, role, email_verified)
+         VALUES ($1, $2, $3, $4, $5, $6, true) RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
         [email.toLowerCase(), name || "", provider, providerId || null, avatarUrl || null, assignedRole]
       );
       user = result.rows[0];
@@ -406,18 +585,20 @@ router.get("/api/auth/google/callback", async (req: Request, res: Response) => {
     if (existing.rows.length > 0) {
       user = existing.rows[0];
       await pool.query(
-        "UPDATE auth_users SET provider = 'google', provider_id = $2, avatar_url = COALESCE($3, avatar_url), name = COALESCE(NULLIF(name, ''), $4), updated_at = NOW() WHERE id = $1",
+        "UPDATE auth_users SET provider = 'google', provider_id = $2, avatar_url = COALESCE($3, avatar_url), name = COALESCE(NULLIF(name, ''), $4), email_verified = true, verification_code = NULL, verification_code_expires = NULL, updated_at = NOW() WHERE id = $1",
         [user.id, googleUser.id, googleUser.picture, googleUser.name]
       );
       user.avatar_url = googleUser.picture || user.avatar_url;
+      console.log("Google OAuth: linked existing account for", googleUser.email);
     } else {
       const gRole = ADMIN_EMAILS.includes(googleUser.email.toLowerCase()) ? "admin" : "user";
       const result = await pool.query(
-        `INSERT INTO auth_users (email, name, provider, provider_id, avatar_url, role)
-         VALUES ($1, $2, 'google', $3, $4, $5) RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
+        `INSERT INTO auth_users (email, name, provider, provider_id, avatar_url, role, email_verified)
+         VALUES ($1, $2, 'google', $3, $4, $5, true) RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
         [googleUser.email.toLowerCase(), googleUser.name || "", googleUser.id, googleUser.picture || null, gRole]
       );
       user = result.rows[0];
+      console.log("Google OAuth: created new account for", googleUser.email);
     }
     (req.session as any).userId = user.id;
     delete (req.session as any).oauthState;
@@ -499,15 +680,15 @@ router.get("/api/auth/facebook/callback", async (req: Request, res: Response) =>
     if (existing.rows.length > 0) {
       user = existing.rows[0];
       await pool.query(
-        "UPDATE auth_users SET provider = 'facebook', provider_id = $2, avatar_url = COALESCE($3, avatar_url), name = COALESCE(NULLIF(name, ''), $4), updated_at = NOW() WHERE id = $1",
+        "UPDATE auth_users SET provider = 'facebook', provider_id = $2, avatar_url = COALESCE($3, avatar_url), name = COALESCE(NULLIF(name, ''), $4), email_verified = true, updated_at = NOW() WHERE id = $1",
         [user.id, fbUser.id, avatarUrl, fbUser.name]
       );
       user.avatar_url = avatarUrl || user.avatar_url;
     } else {
       const fbRole = ADMIN_EMAILS.includes(fbUser.email.toLowerCase()) ? "admin" : "user";
       const result = await pool.query(
-        `INSERT INTO auth_users (email, name, provider, provider_id, avatar_url, role)
-         VALUES ($1, $2, 'facebook', $3, $4, $5) RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
+        `INSERT INTO auth_users (email, name, provider, provider_id, avatar_url, role, email_verified)
+         VALUES ($1, $2, 'facebook', $3, $4, $5, true) RETURNING id, email, name, phone, city, country, purpose, role, avatar_url, provider`,
         [fbUser.email.toLowerCase(), fbUser.name || "", fbUser.id, avatarUrl, fbRole]
       );
       user = result.rows[0];
@@ -538,7 +719,7 @@ router.post("/api/auth/forgot-password", async (req: Request, res: Response) => 
     if (user.provider !== "email") {
       return res.status(400).json({ error: `This account uses ${user.provider} login. Password reset is not available for social accounts.` });
     }
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = crypto.randomInt(100000, 999999).toString();
     const expires = new Date(Date.now() + 15 * 60 * 1000);
     await pool.query(
       "UPDATE auth_users SET reset_code = $2, reset_code_expires = $3 WHERE id = $1",
@@ -736,6 +917,9 @@ export async function ensureAuthTokensTable() {
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON auth_tokens(user_id)`);
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS reset_code VARCHAR(6)`);
   await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS reset_code_expires TIMESTAMPTZ`);
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT true`);
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS verification_code VARCHAR(6)`);
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS verification_code_expires TIMESTAMPTZ`);
 }
 
 export default router;

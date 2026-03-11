@@ -4,6 +4,17 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, HumanFind (people & property search), history, and property detail submissions.
 
 ## Recent Changes
+- 2026-03-11: Email verification system for signup:
+  - New users must verify email with 6-digit code before logging in
+  - DNS MX validation rejects fake/nonexistent email domains
+  - Cryptographic code generation (crypto.randomInt)
+  - Rate limiting on register, login, verify, and resend endpoints
+  - Google/Facebook OAuth users auto-verified (email already confirmed by provider)
+  - Social login links existing accounts and sets email_verified=true
+  - Verification modal in login screen with code input and resend option
+  - New DB columns: email_verified, verification_code, verification_code_expires
+  - New API routes: POST /api/auth/verify-email, POST /api/auth/resend-verification
+  - Existing users grandfathered as verified (DEFAULT true on column)
 - 2026-03-10: Android adaptive icon fix:
   - Background: solid brand green (#0D7C3D) at 1024x1024 (was template/guideline image at 512x512)
   - Monochrome: proper crescent+wheat silhouette at 1024x1024 (was generic chevron at 432x432)

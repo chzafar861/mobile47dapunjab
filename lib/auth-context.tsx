@@ -113,7 +113,12 @@ async function authFetch(path: string, options: RequestInit = {}) {
       throw new Error(`Connection error: ${res.status} - ${preview || "empty response"}`);
     }
     if (!res.ok) {
-      throw new Error(data.error || `${res.status}: Request failed`);
+      const err: any = new Error(data.error || `${res.status}: Request failed`);
+      if (data.needsVerification) {
+        err.needsVerification = true;
+        err.email = data.email;
+      }
+      throw err;
     }
     return data;
   } catch (e: any) {
@@ -158,6 +163,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       body: JSON.stringify({ email, password, name, phone }),
     });
+    if (data.needsVerification) {
+      const err: any = new Error(data.message || "Please verify your email");
+      err.needsVerification = true;
+      err.email = data.email;
+      throw err;
+    }
     if (data.token) {
       await storeToken(data.token);
     }

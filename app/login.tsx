@@ -59,6 +59,13 @@ export default function LoginScreen() {
   const codeInputRefs = useRef<(TextInput | null)[]>([]);
   const [codeDigits, setCodeDigits] = useState<string[]>(["", "", "", "", "", ""]);
 
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState("");
+  const [verifyDigits, setVerifyDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyError, setVerifyError] = useState("");
+  const verifyInputRefs = useRef<(TextInput | null)[]>([]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -107,11 +114,105 @@ export default function LoginScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSuccessMsg(mode === "login" ? "Welcome back!" : "Account created successfully!");
     } catch (e: any) {
-      const msg = e.message || "Something went wrong. Please try again.";
-      setErrorMsg(msg);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      if (e.needsVerification) {
+        setVerifyEmail(e.email || email.trim().toLowerCase());
+        setVerifyDigits(["", "", "", "", "", ""]);
+        setVerifyError("");
+        setShowVerifyModal(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      } else {
+        const msg = e.message || "Something went wrong. Please try again.";
+        setErrorMsg(msg);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyDigitChange = (index: number, value: string) => {
+    if (value.length > 1) {
+      const digits = value.replace(/[^0-9]/g, "").split("").slice(0, 6);
+      const newDigits = [...verifyDigits];
+      digits.forEach((d, i) => { if (index + i < 6) newDigits[index + i] = d; });
+      setVerifyDigits(newDigits);
+      const nextFocus = Math.min(index + digits.length, 5);
+      verifyInputRefs.current[nextFocus]?.focus();
+      return;
+    }
+    const cleanVal = value.replace(/[^0-9]/g, "");
+    const newDigits = [...verifyDigits];
+    newDigits[index] = cleanVal;
+    setVerifyDigits(newDigits);
+    if (cleanVal && index < 5) verifyInputRefs.current[index + 1]?.focus();
+  };
+
+  const handleVerifyKeyPress = (index: number, key: string) => {
+    if (key === "Backspace" && !verifyDigits[index] && index > 0) {
+      verifyInputRefs.current[index - 1]?.focus();
+      const newDigits = [...verifyDigits];
+      newDigits[index - 1] = "";
+      setVerifyDigits(newDigits);
+    }
+  };
+
+  const handleVerifySubmit = async () => {
+    const code = verifyDigits.join("");
+    if (code.length !== 6) {
+      setVerifyError("Please enter the complete 6-digit code");
+      return;
+    }
+    setVerifyLoading(true);
+    setVerifyError("");
+    try {
+      const baseUrl = getApiUrl();
+      const res = await globalThis.fetch(new URL("/api/auth/verify-email", baseUrl).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: verifyEmail, code }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setVerifyError(data.error || "Verification failed");
+        return;
+      }
+      if (data.token) {
+        await storeToken(data.token);
+      }
+      await refreshUser();
+      setShowVerifyModal(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setSuccessMsg("Email verified! Welcome to 47daPunjab.");
+    } catch (e: any) {
+      setVerifyError("Network error. Please try again.");
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setVerifyError("");
+    setVerifyLoading(true);
+    try {
+      const baseUrl = getApiUrl();
+      const res = await globalThis.fetch(new URL("/api/auth/resend-verification", baseUrl).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: verifyEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setVerifyError(data.error || "Failed to resend code");
+      } else {
+        setVerifyError("");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch {
+      setVerifyError("Network error. Please try again.");
+    } finally {
+      setVerifyLoading(false);
     }
   };
 
@@ -783,6 +884,86 @@ export default function LoginScreen() {
               </View>
 
               {renderResetContent()}
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showVerifyModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowVerifyModal(false)}
+      >
+        <View style={resetStyles.overlay}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={resetStyles.keyboardAvoid}
+          >
+            <View style={resetStyles.sheet}>
+              <View style={resetStyles.handle} />
+              <Pressable onPress={() => setShowVerifyModal(false)} style={resetStyles.closeBtn}>
+                <Ionicons name="close" size={22} color={Colors.light.tabIconDefault} />
+              </Pressable>
+
+              <View style={resetStyles.iconCircle}>
+                <Ionicons name="mail-open-outline" size={32} color={Colors.light.primary} />
+              </View>
+              <Text style={resetStyles.title}>Verify Your Email</Text>
+              <Text style={resetStyles.subtitle}>
+                A 6-digit code was sent to {verifyEmail}. Enter it below to verify your account.
+              </Text>
+
+              {verifyError ? (
+                <View style={styles.errorBanner}>
+                  <Ionicons name="alert-circle" size={16} color="#D32F2F" />
+                  <Text style={styles.errorText}>{verifyError}</Text>
+                </View>
+              ) : null}
+
+              <View style={resetStyles.codeRow}>
+                {verifyDigits.map((digit, i) => (
+                  <TextInput
+                    key={i}
+                    ref={(ref) => { verifyInputRefs.current[i] = ref; }}
+                    style={[resetStyles.codeInput, digit ? resetStyles.codeInputFilled : null]}
+                    value={digit}
+                    onChangeText={(v) => handleVerifyDigitChange(i, v)}
+                    onKeyPress={({ nativeEvent }) => handleVerifyKeyPress(i, nativeEvent.key)}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    selectTextOnFocus
+                  />
+                ))}
+              </View>
+
+              <Pressable
+                onPress={handleVerifySubmit}
+                disabled={verifyLoading}
+                style={({ pressed }) => [styles.submitBtn, { opacity: pressed ? 0.9 : 1, marginTop: 4 }]}
+              >
+                <LinearGradient
+                  colors={[Colors.light.primary, Colors.light.primaryDark]}
+                  style={styles.submitGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  {verifyLoading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
+                      <Text style={styles.submitText}>Verify Email</Text>
+                    </>
+                  )}
+                </LinearGradient>
+              </Pressable>
+
+              <Pressable onPress={handleResendVerification} disabled={verifyLoading} style={{ marginTop: 16, alignItems: "center" }}>
+                <Text style={{ color: Colors.light.primary, fontSize: 14, fontWeight: "600" }}>
+                  Resend Code
+                </Text>
+              </Pressable>
             </View>
           </KeyboardAvoidingView>
         </View>

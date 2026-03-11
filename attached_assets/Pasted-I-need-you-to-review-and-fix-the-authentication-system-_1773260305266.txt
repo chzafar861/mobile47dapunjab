@@ -1,0 +1,50 @@
+I need you to review and fix the authentication system for my production app and website (47Da Punjab). Currently Google Login works in development but fails in production, and email verification is missing. Please implement the following improvements carefully.
+
+1. Google OAuth Production Fix
+
+* Ensure Google OAuth works correctly in production.
+* Confirm the redirect URI used by the server is:
+  https://47dapunjab.com/api/auth/google/callback
+* Verify this exact URI is used in the OAuth configuration and environment variables.
+* Ensure it matches the Authorized Redirect URIs configured in Google Cloud Console.
+* Handle redirect_uri_mismatch errors properly with clear logging.
+* Make sure both development and production environments use correct callback URLs.
+
+2. Environment Configuration
+
+* Development redirect: http://localhost:5000/api/auth/google/callback
+* Production redirect: https://47dapunjab.com/api/auth/google/callback
+* Ensure environment variables are properly set and used for each environment.
+
+3. Email Verification System
+   Implement a full email verification flow:
+
+* When a user signs up using email/password, send a verification email.
+* Generate a secure verification token.
+* Send a verification link to the user’s email.
+* Prevent login until the email is verified.
+* Show a message like: "Please verify your email before logging in."
+
+4. Security Improvements
+
+* Prevent fake or non-existent emails from creating accounts.
+* Validate email format and domain before registration.
+* Rate-limit verification requests.
+* Store verification tokens securely and expire them after a limited time.
+
+5. Google Login Handling
+
+* If a user signs in with Google, automatically verify the email because Google already verifies it.
+* If the email already exists in the database, link the Google account to the existing user.
+
+6. Error Handling and Logs
+
+* Add clear server logs for OAuth errors.
+* Show friendly error messages to users when login fails.
+
+7. Testing
+
+* Test authentication flows in both development and production.
+* Ensure login, signup, email verification, and Google login all work correctly.
+
+Make sure the final system is secure, production-ready, and follows best authentication practices.
