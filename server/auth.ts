@@ -734,6 +734,8 @@ export async function ensureAuthTokensTable() {
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_auth_tokens_token ON auth_tokens(token)`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON auth_tokens(user_id)`);
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS reset_code VARCHAR(6)`);
+  await pool.query(`ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS reset_code_expires TIMESTAMPTZ`);
 }
 
 export default router;
