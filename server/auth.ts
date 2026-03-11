@@ -273,8 +273,11 @@ router.get("/api/auth/google", (req: Request, res: Response) => {
   }
   const baseUrl = getBaseUrl(req);
   const redirectUri = `${baseUrl}/api/auth/google/callback`;
-  const state = crypto.randomBytes(16).toString("hex");
-  (req.session as any).oauthState = state;
+  const nonce = crypto.randomBytes(16).toString("hex");
+  const platform = req.query.platform === "native" ? "native" : "web";
+  const state = `${nonce}:${platform}`;
+  (req.session as any).oauthState = nonce;
+  (req.session as any).save?.();
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -290,19 +293,35 @@ router.get("/api/auth/google", (req: Request, res: Response) => {
 router.get("/api/auth/google/callback", async (req: Request, res: Response) => {
   try {
     const { code, state, error } = req.query;
+
+    const stateStr = (state as string) || "";
+    const colonIdx = stateStr.lastIndexOf(":");
+    const nonce = colonIdx > -1 ? stateStr.slice(0, colonIdx) : stateStr;
+    const platform = colonIdx > -1 ? stateStr.slice(colonIdx + 1) : "web";
+    const isNative = platform === "native";
+
+    const nativeError = (msg: string) => {
+      const params = new URLSearchParams({ error: msg });
+      return res.redirect(`47dapunjab://auth?${params.toString()}`);
+    };
+
     if (error) {
+      if (isNative) return nativeError(`Google login was cancelled: ${error}`);
       return res.send(oauthCallbackHtml(false, `Google login was cancelled or failed: ${error}`));
     }
     if (!code) {
+      if (isNative) return nativeError("No authorization code received.");
       return res.send(oauthCallbackHtml(false, "No authorization code received from Google."));
     }
-    const savedState = (req.session as any)?.oauthState;
-    if (state && savedState && state !== savedState) {
+    const savedNonce = (req.session as any)?.oauthState;
+    if (nonce && savedNonce && nonce !== savedNonce) {
+      if (isNative) return nativeError("Security check failed. Please try again.");
       return res.send(oauthCallbackHtml(false, "Security check failed. Please try again."));
     }
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
+      if (isNative) return nativeError("Google OAuth is not configured.");
       return res.send(oauthCallbackHtml(false, "Google OAuth is not fully configured."));
     }
     const baseUrl = getBaseUrl(req);
@@ -321,6 +340,7 @@ router.get("/api/auth/google/callback", async (req: Request, res: Response) => {
     const tokenData = await tokenRes.json() as any;
     if (!tokenRes.ok || !tokenData.access_token) {
       console.error("Google token error:", tokenData);
+      if (isNative) return nativeError("Failed to get access token from Google.");
       return res.send(oauthCallbackHtml(false, "Failed to get access token from Google."));
     }
     const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
@@ -328,6 +348,7 @@ router.get("/api/auth/google/callback", async (req: Request, res: Response) => {
     });
     const googleUser = await userInfoRes.json() as any;
     if (!googleUser.email) {
+      if (isNative) return nativeError("Could not get your email from Google.");
       return res.send(oauthCallbackHtml(false, "Could not get your email from Google."));
     }
     const existing = await pool.query(
@@ -353,6 +374,13 @@ router.get("/api/auth/google/callback", async (req: Request, res: Response) => {
     }
     (req.session as any).userId = user.id;
     delete (req.session as any).oauthState;
+
+    if (isNative) {
+      const token = await createAuthToken(user.id);
+      const params = new URLSearchParams({ token, userId: String(user.id) });
+      return res.redirect(`47dapunjab://auth?${params.toString()}`);
+    }
+
     res.send(oauthCallbackHtml(true, `Signed in as ${user.name || user.email}. You can return to the app now.`));
   } catch (e: any) {
     console.error("Google callback error:", e);
@@ -513,7 +541,7 @@ router.post("/api/auth/reset-password", async (req: Request, res: Response) => {
 router.get("/api/auth/oauth/status", (_req: Request, res: Response) => {
   res.json({
     google: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
-    facebook: !!process.env.FACEBOOK_APP_ID && !!process.env.FACEBOOK_APP_SECRET,
+    facebook: false,
   });
 });
 

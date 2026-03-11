@@ -47,7 +47,7 @@ async function getStoredToken(): Promise<string | null> {
   }
 }
 
-async function storeToken(token: string): Promise<void> {
+export async function storeToken(token: string): Promise<void> {
   if (!isNative) return;
   memoryToken = token;
   try {

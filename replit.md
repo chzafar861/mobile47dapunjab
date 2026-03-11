@@ -8,6 +8,16 @@ A mobile service platform for Punjab, Pakistan visitors. Features protocol servi
   - Background: solid brand green (#0D7C3D) at 1024x1024 (was template/guideline image at 512x512)
   - Monochrome: proper crescent+wheat silhouette at 1024x1024 (was generic chevron at 432x432)
   - All three layers (foreground, background, monochrome) now consistent 1024x1024
+- 2026-03-11: Google OAuth deep-link fix for mobile:
+  - Backend: /api/auth/google now encodes platform (native/web) in OAuth state parameter
+  - Backend: callback detects native platform and redirects to 47dapunjab://auth?token=XXX instead of HTML postMessage
+  - Backend: /api/auth/oauth/status always returns facebook: false (removed from app)
+  - Frontend: handleGoogleLogin passes platform=native to OAuth URL on native
+  - Frontend: uses WebBrowser.openAuthSessionAsync with "47dapunjab://auth" as redirect scheme
+  - Frontend: extracts token from deep-link URL and stores in AsyncStorage
+  - Frontend: Facebook button removed from login UI entirely
+  - lib/auth-context.tsx: storeToken exported for use in login.tsx
+  - app/login.tsx: missing resetCodeDisplay state declaration added (pre-existing bug fixed)
 - 2026-03-10: Mobile APK login fix:
   - getApiUrl() now checks isNative FIRST, always uses EXPO_PUBLIC_API_URL on native (never window.location.origin)
   - This prevents expo-router from injecting wrong internal URLs on native platform

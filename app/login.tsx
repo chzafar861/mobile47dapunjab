@@ -20,7 +20,7 @@ import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
 import Colors from "@/constants/colors";
 import { SEOHead } from "@/components/SEOHead";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth, storeToken } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import { getApiUrl } from "@/lib/query-client";
 
@@ -49,6 +49,7 @@ export default function LoginScreen() {
   const [resetStep, setResetStep] = useState<ResetStep>("email");
   const [resetEmail, setResetEmail] = useState("");
   const [resetCode, setResetCode] = useState("");
+  const [resetCodeDisplay, setResetCodeDisplay] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
@@ -114,18 +115,17 @@ export default function LoginScreen() {
     }
   };
 
-  const handleOAuthLogin = async (provider: "google" | "facebook") => {
+  const handleGoogleLogin = async () => {
     clearMessages();
-    const isConfigured = provider === "google" ? oauthStatus.google : oauthStatus.facebook;
-    if (!isConfigured) {
-      setErrorMsg(`${provider === "google" ? "Google" : "Facebook"} login is not configured yet. Please use email login.`);
+    if (!oauthStatus.google) {
+      setErrorMsg("Google login is not configured yet. Please use email login.");
       return;
     }
-    setSocialLoading(provider);
+    setSocialLoading("google");
     try {
       const baseUrl = getApiUrl();
-      const authUrl = new URL(`/api/auth/${provider}`, baseUrl).toString();
       if (Platform.OS === "web") {
+        const authUrl = new URL("/api/auth/google", baseUrl).toString();
         const popup = window.open(authUrl, "_blank", "width=500,height=600,menubar=no,toolbar=no");
         if (!popup) {
           setErrorMsg("Popup was blocked by your browser. Please allow popups for this site and try again.");
@@ -156,14 +156,27 @@ export default function LoginScreen() {
           }
         }, 500);
       } else {
-        const result = await WebBrowser.openAuthSessionAsync(authUrl, undefined);
-        if (result.type === "success" || result.type === "cancel" || result.type === "dismiss") {
-          await refreshUser();
+        const authUrl = new URL("/api/auth/google?platform=native", baseUrl).toString();
+        const redirectScheme = "47dapunjab://auth";
+        const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectScheme);
+        if (result.type === "success" && result.url) {
+          const parsed = new URL(result.url);
+          const token = parsed.searchParams.get("token");
+          const errorMsg = parsed.searchParams.get("error");
+          if (token) {
+            await storeToken(token);
+            await refreshUser();
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          } else if (errorMsg) {
+            setErrorMsg(errorMsg);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          }
+        } else if (result.type === "cancel" || result.type === "dismiss") {
         }
         setSocialLoading(null);
       }
     } catch (e: any) {
-      setErrorMsg(`${provider === "google" ? "Google" : "Facebook"} login failed. Please try again.`);
+      setErrorMsg("Google login failed. Please try again.");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setSocialLoading(null);
     }
@@ -705,11 +718,12 @@ export default function LoginScreen() {
 
             <View style={styles.socialRow}>
               <Pressable
-                onPress={() => handleOAuthLogin("google")}
+                onPress={handleGoogleLogin}
                 disabled={!!socialLoading}
                 style={({ pressed }) => [
                   styles.socialBtn,
                   styles.googleBtn,
+                  styles.socialBtnFull,
                   { opacity: pressed ? 0.9 : 1 },
                   !oauthStatus.google && styles.socialBtnDisabled,
                 ]}
@@ -724,36 +738,11 @@ export default function LoginScreen() {
                   </>
                 )}
               </Pressable>
-
-              <Pressable
-                onPress={() => handleOAuthLogin("facebook")}
-                disabled={!!socialLoading}
-                style={({ pressed }) => [
-                  styles.socialBtn,
-                  styles.facebookBtn,
-                  { opacity: pressed ? 0.9 : 1 },
-                  !oauthStatus.facebook && styles.socialBtnDisabled,
-                ]}
-                testID="facebook-login-btn"
-              >
-                {socialLoading === "facebook" ? (
-                  <ActivityIndicator color="#1877F2" size="small" />
-                ) : (
-                  <>
-                    <MaterialCommunityIcons name="facebook" size={22} color={oauthStatus.facebook ? "#1877F2" : "#999"} />
-                    <Text style={[styles.socialBtnText, !oauthStatus.facebook && styles.socialBtnTextDisabled]}>{t.login.facebook}</Text>
-                  </>
-                )}
-              </Pressable>
             </View>
 
-            {(!oauthStatus.google || !oauthStatus.facebook) && (
+            {!oauthStatus.google && (
               <Text style={styles.oauthNote}>
-                {!oauthStatus.google && !oauthStatus.facebook
-                  ? "Google & Facebook login will be available once OAuth credentials are configured."
-                  : !oauthStatus.google
-                  ? "Google login will be available once configured."
-                  : "Facebook login will be available once configured."}
+                Google login will be available once OAuth credentials are configured.
               </Text>
             )}
           </View>
@@ -1119,7 +1108,11 @@ const styles = StyleSheet.create({
     borderColor: "#E0E0E0",
   },
   googleBtn: {},
-  facebookBtn: {},
+  socialBtnFull: {
+    flex: 0,
+    width: "100%",
+    paddingHorizontal: 24,
+  },
   socialBtnText: {
     fontFamily: "Poppins_500Medium",
     fontSize: 14,
