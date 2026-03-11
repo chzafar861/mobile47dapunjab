@@ -36,31 +36,48 @@ const TOKEN_KEY = "47da_auth_token";
 let memoryToken: string | null = null;
 
 async function getStoredToken(): Promise<string | null> {
-  if (!isNative) return null;
   if (memoryToken) return memoryToken;
-  try {
-    const token = await AsyncStorage.getItem(TOKEN_KEY);
+  if (isNative) {
+    try {
+      const token = await AsyncStorage.getItem(TOKEN_KEY);
+      memoryToken = token;
+      return token;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof window !== "undefined") {
+    const token = window.sessionStorage?.getItem(TOKEN_KEY) || null;
     memoryToken = token;
     return token;
-  } catch {
-    return null;
   }
+  return null;
 }
 
 export async function storeToken(token: string): Promise<void> {
-  if (!isNative) return;
   memoryToken = token;
-  try {
-    await AsyncStorage.setItem(TOKEN_KEY, token);
-  } catch {}
+  if (isNative) {
+    try {
+      await AsyncStorage.setItem(TOKEN_KEY, token);
+    } catch {}
+  } else if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage?.setItem(TOKEN_KEY, token);
+    } catch {}
+  }
 }
 
 async function clearToken(): Promise<void> {
-  if (!isNative) return;
   memoryToken = null;
-  try {
-    await AsyncStorage.removeItem(TOKEN_KEY);
-  } catch {}
+  if (isNative) {
+    try {
+      await AsyncStorage.removeItem(TOKEN_KEY);
+    } catch {}
+  } else if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage?.removeItem(TOKEN_KEY);
+    } catch {}
+  }
 }
 
 async function authFetch(path: string, options: RequestInit = {}) {
@@ -74,11 +91,9 @@ async function authFetch(path: string, options: RequestInit = {}) {
     ...(options.headers as Record<string, string> || {}),
   };
 
-  if (isNative) {
-    const token = await getStoredToken();
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+  const token = await getStoredToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   try {

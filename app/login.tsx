@@ -125,7 +125,8 @@ export default function LoginScreen() {
     try {
       const baseUrl = getApiUrl();
       if (Platform.OS === "web") {
-        const authUrl = new URL("/api/auth/google", baseUrl).toString();
+        const oauthBase = "https://47dapunjab.com";
+        const authUrl = new URL("/api/auth/google", oauthBase).toString();
         const popup = window.open(authUrl, "_blank", "width=500,height=600,menubar=no,toolbar=no");
         if (!popup) {
           setErrorMsg("Popup was blocked by your browser. Please allow popups for this site and try again.");
@@ -139,6 +140,9 @@ export default function LoginScreen() {
             handled = true;
             window.removeEventListener("message", onMessage);
             clearInterval(checkClosed);
+            if (event.data?.token) {
+              await storeToken(event.data.token);
+            }
             await refreshUser();
             setSocialLoading(null);
           }

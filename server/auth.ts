@@ -59,7 +59,7 @@ function getBaseUrl(req: Request): string {
   return `${forwardedProto}://${forwardedHost}`;
 }
 
-const oauthCallbackHtml = (success: boolean, message: string) => `
+const oauthCallbackHtml = (success: boolean, message: string, token?: string) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -98,8 +98,10 @@ const oauthCallbackHtml = (success: boolean, message: string) => `
     <script>
       ${success ? `
       try {
+        var origins = ['*'];
+        var payload = { type: '47da-oauth-success'${token ? `, token: '${token}'` : ''} };
         if (window.opener) {
-          window.opener.postMessage({ type: '47da-oauth-success' }, '*');
+          window.opener.postMessage(payload, '*');
           setTimeout(function(){ window.close(); }, 1500);
         } else {
           window.location.href = '/';
@@ -381,7 +383,8 @@ router.get("/api/auth/google/callback", async (req: Request, res: Response) => {
       return res.redirect(`47dapunjab://auth?${params.toString()}`);
     }
 
-    res.send(oauthCallbackHtml(true, `Signed in as ${user.name || user.email}. You can return to the app now.`));
+    const webToken = await createAuthToken(user.id);
+    res.send(oauthCallbackHtml(true, `Signed in as ${user.name || user.email}. You can return to the app now.`, webToken));
   } catch (e: any) {
     console.error("Google callback error:", e);
     res.send(oauthCallbackHtml(false, "An error occurred during Google login. Please try again."));
