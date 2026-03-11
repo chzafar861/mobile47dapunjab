@@ -2,9 +2,54 @@ import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import pg from "pg";
 import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const router = Router();
+
+function createMailTransport() {
+  const user = process.env.GMAIL_USER || "47dapunjab@gmail.com";
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!pass) return null;
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
+}
+
+async function sendResetCodeEmail(toEmail: string, code: string): Promise<boolean> {
+  const transport = createMailTransport();
+  if (!transport) {
+    console.warn("GMAIL_APP_PASSWORD not set — cannot send reset email");
+    return false;
+  }
+  try {
+    await transport.sendMail({
+      from: '"47daPunjab" <47dapunjab@gmail.com>',
+      to: toEmail,
+      subject: "Your 47daPunjab Password Reset Code",
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#f9f9f9;border-radius:12px;overflow:hidden;">
+          <div style="background:#0D7C3D;padding:24px 32px;">
+            <h2 style="color:#fff;margin:0;font-size:22px;">47daPunjab</h2>
+            <p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:13px;">Password Reset Request</p>
+          </div>
+          <div style="padding:32px;">
+            <p style="color:#333;font-size:15px;margin:0 0 16px;">You requested a password reset. Use the code below to set a new password. It expires in <strong>15 minutes</strong>.</p>
+            <div style="background:#fff;border:2px solid #0D7C3D;border-radius:10px;padding:20px;text-align:center;margin:0 0 24px;">
+              <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#0D7C3D;">${code}</span>
+            </div>
+            <p style="color:#666;font-size:13px;margin:0;">If you didn't request this, ignore this email — your password won't change.</p>
+          </div>
+        </div>
+      `,
+    });
+    return true;
+  } catch (e) {
+    console.error("Failed to send reset email:", e);
+    return false;
+  }
+}
 
 const ADMIN_EMAILS = ["47dapunjab@gmail.com"];
 
@@ -499,7 +544,11 @@ router.post("/api/auth/forgot-password", async (req: Request, res: Response) => 
       "UPDATE auth_users SET reset_code = $2, reset_code_expires = $3 WHERE id = $1",
       [user.id, code, expires]
     );
-    res.json({ success: true, message: "If an account exists with this email, a reset code has been sent. For now, please contact support at 47dapunjab@gmail.com for your reset code." });
+    const sent = await sendResetCodeEmail(email.toLowerCase(), code);
+    if (!sent) {
+      return res.status(503).json({ error: "Email service is not configured yet. Please contact 47dapunjab@gmail.com for your reset code." });
+    }
+    res.json({ success: true, message: "A 6-digit reset code has been sent to your email. It expires in 15 minutes." });
   } catch (e: any) {
     console.error("Forgot password error:", e);
     res.status(500).json({ error: "Failed to process reset request. Please try again." });
