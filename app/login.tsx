@@ -821,34 +821,29 @@ export default function LoginScreen() {
               <View style={styles.dividerLine} />
             </View>
 
-            <View style={styles.socialRow}>
+            {oauthStatus.google && (
               <Pressable
                 onPress={handleGoogleLogin}
                 disabled={!!socialLoading}
                 style={({ pressed }) => [
-                  styles.socialBtn,
-                  styles.googleBtn,
-                  styles.socialBtnFull,
-                  { opacity: pressed ? 0.9 : 1 },
-                  !oauthStatus.google && styles.socialBtnDisabled,
+                  styles.googleSignInBtn,
+                  { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.985 : 1 }] },
                 ]}
                 testID="google-login-btn"
               >
                 {socialLoading === "google" ? (
-                  <ActivityIndicator color="#DB4437" size="small" />
+                  <ActivityIndicator color="#4285F4" size="small" />
                 ) : (
                   <>
-                    <MaterialCommunityIcons name="google" size={22} color={oauthStatus.google ? "#DB4437" : "#999"} />
-                    <Text style={[styles.socialBtnText, !oauthStatus.google && styles.socialBtnTextDisabled]}>{t.login.google}</Text>
+                    <View style={styles.googleIconWrap}>
+                      <MaterialCommunityIcons name="google" size={20} color="#4285F4" />
+                    </View>
+                    <Text style={styles.googleSignInText}>
+                      {mode === "login" ? `${t.login.signIn} with Google` : `${t.login.signUp} with Google`}
+                    </Text>
                   </>
                 )}
               </Pressable>
-            </View>
-
-            {!oauthStatus.google && (
-              <Text style={styles.oauthNote}>
-                Google login will be available once OAuth credentials are configured.
-              </Text>
             )}
           </View>
         </ScrollView>
@@ -1272,47 +1267,36 @@ const styles = StyleSheet.create({
     color: Colors.light.tabIconDefault,
     marginHorizontal: 14,
   },
-  socialRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  socialBtn: {
-    flex: 1,
+  googleSignInBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    backgroundColor: "#fff",
-  },
-  socialBtnDisabled: {
-    backgroundColor: "#F5F5F5",
-    borderColor: "#E0E0E0",
-  },
-  googleBtn: {},
-  socialBtnFull: {
-    flex: 0,
     width: "100%",
+    paddingVertical: 15,
     paddingHorizontal: 24,
+    borderRadius: 14,
+    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "#E0E0E0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    gap: 12,
   },
-  socialBtnText: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 14,
-    color: Colors.light.text,
+  googleIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F8F9FA",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  socialBtnTextDisabled: {
-    color: "#999",
-  },
-  oauthNote: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 11,
-    color: Colors.light.tabIconDefault,
-    textAlign: "center",
-    marginTop: 12,
-    paddingHorizontal: 20,
-    lineHeight: 16,
+  googleSignInText: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 15,
+    color: "#3C4043",
+    letterSpacing: 0.2,
   },
 });
