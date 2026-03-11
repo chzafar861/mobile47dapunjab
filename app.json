@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fordapunjab.app",
+      "bundleIdentifier": "com.punjabtour.fordapunjab",
       "infoPlist": {
         "NSCameraUsageDescription": "47daPunjab needs camera access to take photos for property submissions and profile pictures.",
         "NSPhotoLibraryUsageDescription": "47daPunjab needs photo library access to upload images for property submissions, blog posts, and products.",
@@ -23,7 +23,8 @@
       }
     },
     "android": {
-      "package": "com.fordapunjab.app",
+      "package": "com.punjabtour.fordapunjab",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0D7C3D",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -35,7 +36,8 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "INTERNET"
       ]
     },
     "web": {
@@ -67,8 +69,9 @@
         "origin": "https://47dapunjab.com"
       },
       "eas": {
-        "projectId": "5300eb6e-e922-493e-b4ea-cbc3a0a173e7"
+        "projectId": "e47938ec-7074-40cd-a4c8-2def6ac8004c"
       }
-    }
+    },
+    "owner": "47dapunjab"
   }
 }
