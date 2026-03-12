@@ -263,9 +263,40 @@ export default function LoginScreen() {
         }, 500);
       } else {
         const productionBase = "https://47dapunjab.com";
-        const authUrl = `${productionBase}/api/auth/google?platform=native`;
+        const nativeSessionId = crypto.randomUUID();
+        const authUrl = `${productionBase}/api/auth/google?platform=native&nativeSessionId=${nativeSessionId}`;
         const redirectUrl = Linking.createURL("auth");
+
+        let tokenFound = false;
+        let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+        const checkToken = async (): Promise<boolean> => {
+          try {
+            const checkRes = await globalThis.fetch(
+              `${productionBase}/api/auth/google/token-check?sessionId=${nativeSessionId}`
+            );
+            const checkData = await checkRes.json();
+            if (checkData.ready && checkData.token) {
+              await storeToken(checkData.token);
+              await refreshUser();
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              return true;
+            }
+          } catch {}
+          return false;
+        };
+
+        pollTimer = setInterval(async () => {
+          const found = await checkToken();
+          if (found) {
+            tokenFound = true;
+            if (pollTimer) clearInterval(pollTimer);
+            setSocialLoading(null);
+          }
+        }, 2500);
+
         const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+
         if (result.type === "success" && result.url) {
           let token: string | null = null;
           let errorMsg: string | null = null;
@@ -282,17 +313,29 @@ export default function LoginScreen() {
               errorMsg = params.get("error");
             }
           }
-          if (token) {
+          if (token && !tokenFound) {
+            if (pollTimer) clearInterval(pollTimer);
+            tokenFound = true;
             await storeToken(token);
             await refreshUser();
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           } else if (errorMsg) {
+            if (pollTimer) clearInterval(pollTimer);
             setErrorMsg(errorMsg);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           }
-        } else if (result.type === "cancel" || result.type === "dismiss") {
         }
-        setSocialLoading(null);
+
+        if (!tokenFound) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          const finalCheck = await checkToken();
+          if (finalCheck) tokenFound = true;
+        }
+
+        if (pollTimer) clearInterval(pollTimer);
+        if (!tokenFound) {
+          setSocialLoading(null);
+        }
       }
     } catch (e: any) {
       setErrorMsg("Google login failed. Please try again.");

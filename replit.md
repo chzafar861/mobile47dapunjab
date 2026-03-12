@@ -9,11 +9,14 @@ A mobile service platform for Punjab, Pakistan visitors. Features protocol servi
   - Backend: New getOAuthRedirectBase() uses fixed production URL for OAuth redirect_uri consistency
   - Backend: Google OAuth initiation and callback both use fixed redirect_uri (prevents mismatch in Replit proxy)
   - Backend: Native OAuth callback skips session-based nonce validation (unreliable in Chrome Custom Tabs)
-  - Backend: App scheme for native redirects configurable via APP_SCHEME env var
+  - Backend: Token polling system for native OAuth: server stores token by nativeSessionId, client polls /api/auth/google/token-check
+  - Backend: Native OAuth callback shows styled success/error HTML page instead of attempting custom scheme redirect (Chrome Custom Tabs can't redirect to custom schemes through Replit proxy)
+  - Backend: pendingNativeTokens map with auto-cleanup (5 min expiry, 60s sweep)
   - Backend: Password reset for social accounts now returns helpful message with socialProvider field
-  - Frontend: Native Google login uses Linking.createURL("auth") for proper deep link URL
-  - Frontend: Native Google login always targets production URL directly
-  - Frontend: Robust URL parsing for OAuth return (fallback for custom scheme URLs)
+  - Frontend: Native Google login generates unique nativeSessionId, passes it to OAuth URL
+  - Frontend: Polls /api/auth/google/token-check every 2.5s while browser is open
+  - Frontend: When browser closes (user returns), does final token check
+  - Frontend: Still attempts deep link interception as primary method, polling as reliable fallback
   - Frontend: Password reset auto-closes modal after 4s when social provider detected
 - 2026-03-11: Email verification system for signup:
   - New users must verify email with 6-digit code before logging in

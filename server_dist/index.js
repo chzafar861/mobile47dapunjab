@@ -1113,6 +1113,13 @@ async function sendResetCodeEmail(toEmail, code) {
   }
 }
 var ADMIN_EMAILS = ["47dapunjab@gmail.com"];
+var pendingNativeTokens = /* @__PURE__ */ new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of pendingNativeTokens) {
+    if (now > val.expiresAt) pendingNativeTokens.delete(key);
+  }
+}, 60 * 1e3);
 function generateAuthToken() {
   return crypto.randomBytes(48).toString("hex");
 }
@@ -1493,7 +1500,8 @@ router.get("/api/auth/google", (req, res) => {
   const redirectUri = `${oauthBase}/api/auth/google/callback`;
   const nonce = crypto.randomBytes(16).toString("hex");
   const platform = req.query.platform === "native" ? "native" : "web";
-  const state = `${nonce}:${platform}`;
+  const nativeSessionId = req.query.nativeSessionId || "";
+  const state = nativeSessionId ? `${nonce}:${platform}:${nativeSessionId}` : `${nonce}:${platform}`;
   req.session.oauthState = nonce;
   req.session.save?.();
   const params = new URLSearchParams({
@@ -1512,50 +1520,28 @@ router.get("/api/auth/google/callback", async (req, res) => {
   try {
     const { code, state, error } = req.query;
     const stateStr = state || "";
-    const colonIdx = stateStr.lastIndexOf(":");
-    const nonce = colonIdx > -1 ? stateStr.slice(0, colonIdx) : stateStr;
-    const platform = colonIdx > -1 ? stateStr.slice(colonIdx + 1) : "web";
+    const stateParts = stateStr.split(":");
+    const nonce = stateParts[0] || stateStr;
+    const platform = stateParts[1] || "web";
+    const nativeSessionId = stateParts.length >= 3 ? stateParts.slice(2).join(":") : "";
     const isNative = platform === "native";
-    const appScheme = process.env.APP_SCHEME || "47dapunjab";
-    const nativeRedirectBase = `${appScheme}://auth`;
-    const nativeRedirect = (queryParams) => {
-      const params = new URLSearchParams(queryParams);
-      const deepLink = `${nativeRedirectBase}?${params.toString()}`;
-      const androidPackage = process.env.ANDROID_PACKAGE || "com.punjabtour.fordapunjab";
-      const intentUrl = `intent://auth?${params.toString()}#Intent;scheme=${appScheme};package=${androidPackage};end`;
-      console.log(`Google OAuth native: deep link redirect to ${deepLink}`);
-      return res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Redirecting...</title></head><body>
-<script>
-function tryRedirect() {
-  var ua = navigator.userAgent || '';
-  if (/android/i.test(ua)) {
-    window.location.href = ${JSON.stringify(intentUrl)};
-  } else {
-    window.location.href = ${JSON.stringify(deepLink)};
-  }
-  setTimeout(function() {
-    document.getElementById('manual').style.display = 'block';
-  }, 2000);
-}
-tryRedirect();
-</script>
-<p>Redirecting to app...</p>
-<div id="manual" style="display:none;text-align:center;margin-top:20px;">
-  <p>If you were not redirected automatically:</p>
-  <a href="${intentUrl}" style="display:inline-block;padding:12px 24px;background:#0D7C3D;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">Open in App</a>
-</div>
-</body></html>`);
+    const nativeSuccessPage = (message) => {
+      return res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login Successful</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#053B2F 0%,#0A6847 100%);color:#fff;text-align:center;padding:20px}.card{background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);border-radius:20px;padding:40px 30px;max-width:380px;width:100%;border:1px solid rgba(255,255,255,0.15)}.icon{font-size:56px;margin-bottom:16px}h1{font-size:22px;font-weight:700;margin-bottom:8px}p{font-size:14px;opacity:0.85;line-height:1.5;margin-bottom:20px}</style></head>
+<body><div class="card"><div class="icon">&#10003;</div><h1>Login Successful!</h1><p>${message}</p><p style="font-size:16px;font-weight:600;opacity:1;">Please close this window and return to the app.</p></div></body></html>`);
     };
-    const nativeError = (msg) => {
-      return nativeRedirect({ error: msg });
+    const nativeErrorPage = (message) => {
+      return res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login Failed</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#053B2F 0%,#0A6847 100%);color:#fff;text-align:center;padding:20px}.card{background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);border-radius:20px;padding:40px 30px;max-width:380px;width:100%;border:1px solid rgba(255,255,255,0.15)}.icon{font-size:56px;margin-bottom:16px}h1{font-size:22px;font-weight:700;margin-bottom:8px}p{font-size:14px;opacity:0.85;line-height:1.5;margin-bottom:20px}</style></head>
+<body><div class="card"><div class="icon">&#10007;</div><h1>Login Failed</h1><p>${message}</p><p>Please close this window and try again.</p></div></body></html>`);
     };
     if (error) {
       console.error(`Google OAuth error: ${error}, platform: ${platform}`);
-      if (isNative) return nativeError(`Google login was cancelled: ${error}`);
+      if (isNative) return nativeErrorPage(`Google login was cancelled: ${error}`);
       return res.send(oauthCallbackHtml(false, `Google login was cancelled or failed: ${error}`));
     }
     if (!code) {
-      if (isNative) return nativeError("No authorization code received.");
+      if (isNative) return nativeErrorPage("No authorization code received.");
       return res.send(oauthCallbackHtml(false, "No authorization code received from Google."));
     }
     if (!isNative) {
@@ -1567,7 +1553,7 @@ tryRedirect();
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
-      if (isNative) return nativeError("Google OAuth is not configured.");
+      if (isNative) return nativeErrorPage("Google OAuth is not configured.");
       return res.send(oauthCallbackHtml(false, "Google OAuth is not fully configured."));
     }
     const oauthBase = getOAuthRedirectBase();
@@ -1586,7 +1572,7 @@ tryRedirect();
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.access_token) {
       console.error("Google token error:", tokenData);
-      if (isNative) return nativeError("Failed to get access token from Google.");
+      if (isNative) return nativeErrorPage("Failed to get access token from Google.");
       return res.send(oauthCallbackHtml(false, "Failed to get access token from Google."));
     }
     const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
@@ -1594,7 +1580,7 @@ tryRedirect();
     });
     const googleUser = await userInfoRes.json();
     if (!googleUser.email) {
-      if (isNative) return nativeError("Could not get your email from Google.");
+      if (isNative) return nativeErrorPage("Could not get your email from Google.");
       return res.send(oauthCallbackHtml(false, "Could not get your email from Google."));
     }
     const existing = await pool2.query(
@@ -1624,7 +1610,15 @@ tryRedirect();
     delete req.session.oauthState;
     if (isNative) {
       const token = await createAuthToken(user.id);
-      return nativeRedirect({ token, userId: String(user.id) });
+      if (nativeSessionId) {
+        pendingNativeTokens.set(nativeSessionId, {
+          token,
+          userId: user.id,
+          expiresAt: Date.now() + 5 * 60 * 1e3
+        });
+        console.log(`Google OAuth native: stored token for session ${nativeSessionId}, user ${user.email}`);
+      }
+      return nativeSuccessPage(`Signed in as ${user.name || user.email}.`);
     }
     const webToken = await createAuthToken(user.id);
     res.send(oauthCallbackHtml(true, `Signed in as ${user.name || user.email}. You can return to the app now.`, webToken));
@@ -1788,6 +1782,22 @@ router.get("/api/auth/oauth/status", (_req, res) => {
     google: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
     facebook: false
   });
+});
+router.get("/api/auth/google/token-check", (req, res) => {
+  const sessionId = req.query.sessionId;
+  if (!sessionId) {
+    return res.status(400).json({ error: "sessionId is required" });
+  }
+  const entry = pendingNativeTokens.get(sessionId);
+  if (!entry) {
+    return res.json({ ready: false });
+  }
+  if (Date.now() > entry.expiresAt) {
+    pendingNativeTokens.delete(sessionId);
+    return res.json({ ready: false, expired: true });
+  }
+  pendingNativeTokens.delete(sessionId);
+  res.json({ ready: true, token: entry.token, userId: entry.userId });
 });
 router.get("/api/auth/me", async (req, res) => {
   try {
