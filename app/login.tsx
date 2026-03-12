@@ -17,8 +17,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import * as WebBrowser from "expo-web-browser";
-import * as Linking from "expo-linking";
 import Colors from "@/constants/colors";
 import { SEOHead } from "@/components/SEOHead";
 import { useAuth, storeToken } from "@/lib/auth-context";
@@ -39,12 +37,10 @@ export default function LoginScreen() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
-  const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-  const [oauthStatus, setOauthStatus] = useState<{ google: boolean; facebook: boolean }>({ google: false, facebook: false });
 
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetStep, setResetStep] = useState<ResetStep>("email");
@@ -66,19 +62,6 @@ export default function LoginScreen() {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [verifyError, setVerifyError] = useState("");
   const verifyInputRefs = useRef<(TextInput | null)[]>([]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const baseUrl = getApiUrl();
-        const res = await globalThis.fetch(new URL("/api/auth/oauth/status", baseUrl).toString());
-        if (res.ok) {
-          const data = await res.json();
-          setOauthStatus(data);
-        }
-      } catch {}
-    })();
-  }, []);
 
   const clearMessages = () => {
     setErrorMsg("");
@@ -214,133 +197,6 @@ export default function LoginScreen() {
       setVerifyError("Network error. Please try again.");
     } finally {
       setVerifyLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    clearMessages();
-    if (!oauthStatus.google) {
-      setErrorMsg("Google login is not configured yet. Please use email login.");
-      return;
-    }
-    setSocialLoading("google");
-    try {
-      const baseUrl = getApiUrl();
-      if (Platform.OS === "web") {
-        const oauthBase = "https://47dapunjab.com";
-        const authUrl = new URL("/api/auth/google", oauthBase).toString();
-        const popup = window.open(authUrl, "_blank", "width=500,height=600,menubar=no,toolbar=no");
-        if (!popup) {
-          setErrorMsg("Popup was blocked by your browser. Please allow popups for this site and try again.");
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          setSocialLoading(null);
-          return;
-        }
-        let handled = false;
-        const onMessage = async (event: MessageEvent) => {
-          if (event.data?.type === "47da-oauth-success" && !handled) {
-            handled = true;
-            window.removeEventListener("message", onMessage);
-            clearInterval(checkClosed);
-            if (event.data?.token) {
-              await storeToken(event.data.token);
-            }
-            await refreshUser();
-            setSocialLoading(null);
-          }
-        };
-        window.addEventListener("message", onMessage);
-        const checkClosed = setInterval(async () => {
-          if (popup.closed) {
-            clearInterval(checkClosed);
-            window.removeEventListener("message", onMessage);
-            if (!handled) {
-              handled = true;
-              await refreshUser();
-              setSocialLoading(null);
-            }
-          }
-        }, 500);
-      } else {
-        const productionBase = "https://47dapunjab.com";
-        const nativeSessionId = crypto.randomUUID();
-        const authUrl = `${productionBase}/api/auth/google?platform=native&nativeSessionId=${nativeSessionId}`;
-        const redirectUrl = Linking.createURL("auth");
-
-        let tokenFound = false;
-        let pollTimer: ReturnType<typeof setInterval> | null = null;
-
-        const checkToken = async (): Promise<boolean> => {
-          try {
-            const checkRes = await globalThis.fetch(
-              `${productionBase}/api/auth/google/token-check?sessionId=${nativeSessionId}`
-            );
-            const checkData = await checkRes.json();
-            if (checkData.ready && checkData.token) {
-              await storeToken(checkData.token);
-              await refreshUser();
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              return true;
-            }
-          } catch {}
-          return false;
-        };
-
-        pollTimer = setInterval(async () => {
-          const found = await checkToken();
-          if (found) {
-            tokenFound = true;
-            if (pollTimer) clearInterval(pollTimer);
-            setSocialLoading(null);
-          }
-        }, 2500);
-
-        const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
-
-        if (result.type === "success" && result.url) {
-          let token: string | null = null;
-          let errorMsg: string | null = null;
-          try {
-            const parsed = new URL(result.url);
-            token = parsed.searchParams.get("token");
-            errorMsg = parsed.searchParams.get("error");
-          } catch {
-            const urlStr = result.url;
-            const qIdx = urlStr.indexOf("?");
-            if (qIdx !== -1) {
-              const params = new URLSearchParams(urlStr.slice(qIdx + 1));
-              token = params.get("token");
-              errorMsg = params.get("error");
-            }
-          }
-          if (token && !tokenFound) {
-            if (pollTimer) clearInterval(pollTimer);
-            tokenFound = true;
-            await storeToken(token);
-            await refreshUser();
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          } else if (errorMsg) {
-            if (pollTimer) clearInterval(pollTimer);
-            setErrorMsg(errorMsg);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          }
-        }
-
-        if (!tokenFound) {
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          const finalCheck = await checkToken();
-          if (finalCheck) tokenFound = true;
-        }
-
-        if (pollTimer) clearInterval(pollTimer);
-        if (!tokenFound) {
-          setSocialLoading(null);
-        }
-      }
-    } catch (e: any) {
-      setErrorMsg("Google login failed. Please try again.");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setSocialLoading(null);
     }
   };
 
@@ -880,36 +736,6 @@ export default function LoginScreen() {
               </LinearGradient>
             </Pressable>
 
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{t.login.orContinueWith}</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {oauthStatus.google && (
-              <Pressable
-                onPress={handleGoogleLogin}
-                disabled={!!socialLoading}
-                style={({ pressed }) => [
-                  styles.googleSignInBtn,
-                  { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.985 : 1 }] },
-                ]}
-                testID="google-login-btn"
-              >
-                {socialLoading === "google" ? (
-                  <ActivityIndicator color="#4285F4" size="small" />
-                ) : (
-                  <>
-                    <View style={styles.googleIconWrap}>
-                      <MaterialCommunityIcons name="google" size={20} color="#4285F4" />
-                    </View>
-                    <Text style={styles.googleSignInText}>
-                      {mode === "login" ? `${t.login.signIn} with Google` : `${t.login.signUp} with Google`}
-                    </Text>
-                  </>
-                )}
-              </Pressable>
-            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -1315,53 +1141,5 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_600SemiBold",
     fontSize: 16,
     color: "#fff",
-  },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.light.border,
-  },
-  dividerText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 13,
-    color: Colors.light.tabIconDefault,
-    marginHorizontal: 14,
-  },
-  googleSignInBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    paddingVertical: 15,
-    paddingHorizontal: 24,
-    borderRadius: 14,
-    backgroundColor: "#fff",
-    borderWidth: 1.5,
-    borderColor: "#E0E0E0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-    gap: 12,
-  },
-  googleIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#F8F9FA",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  googleSignInText: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 15,
-    color: "#3C4043",
-    letterSpacing: 0.2,
   },
 });
