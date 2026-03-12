@@ -162,9 +162,19 @@ async function getUserId(req: Request): Promise<number | null> {
 }
 
 function getBaseUrl(req: Request): string {
-  const forwardedProto = req.header("x-forwarded-proto") || req.protocol || "https";
-  const forwardedHost = req.header("x-forwarded-host") || req.get("host");
+  const forwardedProto = (req.header("x-forwarded-proto") || req.protocol || "https").split(",")[0].trim();
+  const forwardedHost = (req.header("x-forwarded-host") || req.get("host") || "").split(",")[0].trim();
   return `${forwardedProto}://${forwardedHost}`;
+}
+
+function getOAuthRedirectBase(): string {
+  if (process.env.OAUTH_BASE_URL) {
+    return process.env.OAUTH_BASE_URL.replace(/\/+$/, "");
+  }
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL.replace(/\/+$/, "");
+  }
+  return "https://47dapunjab.com";
 }
 
 const oauthCallbackHtml = (success: boolean, message: string, token?: string) => `
@@ -497,8 +507,8 @@ router.get("/api/auth/google", (req: Request, res: Response) => {
   if (!clientId) {
     return res.status(503).json({ error: "Google login is not configured yet. Please use email login." });
   }
-  const baseUrl = getBaseUrl(req);
-  const redirectUri = `${baseUrl}/api/auth/google/callback`;
+  const oauthBase = getOAuthRedirectBase();
+  const redirectUri = `${oauthBase}/api/auth/google/callback`;
   const nonce = crypto.randomBytes(16).toString("hex");
   const platform = req.query.platform === "native" ? "native" : "web";
   const state = `${nonce}:${platform}`;
@@ -513,6 +523,7 @@ router.get("/api/auth/google", (req: Request, res: Response) => {
     state,
     prompt: "select_account",
   });
+  console.log(`Google OAuth: redirect_uri=${redirectUri}, platform=${platform}`);
   res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
 });
 
@@ -526,12 +537,16 @@ router.get("/api/auth/google/callback", async (req: Request, res: Response) => {
     const platform = colonIdx > -1 ? stateStr.slice(colonIdx + 1) : "web";
     const isNative = platform === "native";
 
+    const appScheme = process.env.APP_SCHEME || "47dapunjab";
+    const nativeRedirectBase = `${appScheme}://auth`;
+
     const nativeError = (msg: string) => {
       const params = new URLSearchParams({ error: msg });
-      return res.redirect(`47dapunjab://auth?${params.toString()}`);
+      return res.redirect(`${nativeRedirectBase}?${params.toString()}`);
     };
 
     if (error) {
+      console.error(`Google OAuth error: ${error}, platform: ${platform}`);
       if (isNative) return nativeError(`Google login was cancelled: ${error}`);
       return res.send(oauthCallbackHtml(false, `Google login was cancelled or failed: ${error}`));
     }
@@ -539,10 +554,11 @@ router.get("/api/auth/google/callback", async (req: Request, res: Response) => {
       if (isNative) return nativeError("No authorization code received.");
       return res.send(oauthCallbackHtml(false, "No authorization code received from Google."));
     }
-    const savedNonce = (req.session as any)?.oauthState;
-    if (nonce && savedNonce && nonce !== savedNonce) {
-      if (isNative) return nativeError("Security check failed. Please try again.");
-      return res.send(oauthCallbackHtml(false, "Security check failed. Please try again."));
+    if (!isNative) {
+      const savedNonce = (req.session as any)?.oauthState;
+      if (nonce && savedNonce && nonce !== savedNonce) {
+        return res.send(oauthCallbackHtml(false, "Security check failed. Please try again."));
+      }
     }
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -550,8 +566,8 @@ router.get("/api/auth/google/callback", async (req: Request, res: Response) => {
       if (isNative) return nativeError("Google OAuth is not configured.");
       return res.send(oauthCallbackHtml(false, "Google OAuth is not fully configured."));
     }
-    const baseUrl = getBaseUrl(req);
-    const redirectUri = `${baseUrl}/api/auth/google/callback`;
+    const oauthBase = getOAuthRedirectBase();
+    const redirectUri = `${oauthBase}/api/auth/google/callback`;
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -606,7 +622,8 @@ router.get("/api/auth/google/callback", async (req: Request, res: Response) => {
     if (isNative) {
       const token = await createAuthToken(user.id);
       const params = new URLSearchParams({ token, userId: String(user.id) });
-      return res.redirect(`47dapunjab://auth?${params.toString()}`);
+      console.log(`Google OAuth native: redirecting to ${nativeRedirectBase} for user ${user.email}`);
+      return res.redirect(`${nativeRedirectBase}?${params.toString()}`);
     }
 
     const webToken = await createAuthToken(user.id);
@@ -717,7 +734,7 @@ router.post("/api/auth/forgot-password", async (req: Request, res: Response) => 
     }
     const user = result.rows[0];
     if (user.provider !== "email") {
-      return res.status(400).json({ error: `This account uses ${user.provider} login. Password reset is not available for social accounts.` });
+      return res.status(400).json({ error: `You signed up using ${user.provider === "google" ? "Google" : user.provider}. Please go back and log in using the "${user.provider === "google" ? "Sign in with Google" : user.provider}" button instead of resetting your password.`, socialProvider: user.provider });
     }
     const code = crypto.randomInt(100000, 999999).toString();
     const expires = new Date(Date.now() + 15 * 60 * 1000);

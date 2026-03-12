@@ -18,6 +18,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import Colors from "@/constants/colors";
 import { SEOHead } from "@/components/SEOHead";
 import { useAuth, storeToken } from "@/lib/auth-context";
@@ -261,13 +262,26 @@ export default function LoginScreen() {
           }
         }, 500);
       } else {
-        const authUrl = new URL("/api/auth/google?platform=native", baseUrl).toString();
-        const redirectScheme = "47dapunjab://auth";
-        const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectScheme);
+        const productionBase = "https://47dapunjab.com";
+        const authUrl = `${productionBase}/api/auth/google?platform=native`;
+        const redirectUrl = Linking.createURL("auth");
+        const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
         if (result.type === "success" && result.url) {
-          const parsed = new URL(result.url);
-          const token = parsed.searchParams.get("token");
-          const errorMsg = parsed.searchParams.get("error");
+          let token: string | null = null;
+          let errorMsg: string | null = null;
+          try {
+            const parsed = new URL(result.url);
+            token = parsed.searchParams.get("token");
+            errorMsg = parsed.searchParams.get("error");
+          } catch {
+            const urlStr = result.url;
+            const qIdx = urlStr.indexOf("?");
+            if (qIdx !== -1) {
+              const params = new URLSearchParams(urlStr.slice(qIdx + 1));
+              token = params.get("token");
+              errorMsg = params.get("error");
+            }
+          }
           if (token) {
             await storeToken(token);
             await refreshUser();
@@ -328,7 +342,15 @@ export default function LoginScreen() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setResetError(data.error || "Something went wrong");
+        if (data.socialProvider) {
+          setResetError(data.error || "This account uses social login.");
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          setTimeout(() => {
+            closeResetModal();
+          }, 4000);
+        } else {
+          setResetError(data.error || "Something went wrong");
+        }
         return;
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

@@ -4,6 +4,17 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, HumanFind (people & property search), history, and property detail submissions.
 
 ## Recent Changes
+- 2026-03-12: Google OAuth Android fix & password reset UX:
+  - Backend: getBaseUrl() now safely handles comma-separated x-forwarded-proto/host headers
+  - Backend: New getOAuthRedirectBase() uses fixed production URL for OAuth redirect_uri consistency
+  - Backend: Google OAuth initiation and callback both use fixed redirect_uri (prevents mismatch in Replit proxy)
+  - Backend: Native OAuth callback skips session-based nonce validation (unreliable in Chrome Custom Tabs)
+  - Backend: App scheme for native redirects configurable via APP_SCHEME env var
+  - Backend: Password reset for social accounts now returns helpful message with socialProvider field
+  - Frontend: Native Google login uses Linking.createURL("auth") for proper deep link URL
+  - Frontend: Native Google login always targets production URL directly
+  - Frontend: Robust URL parsing for OAuth return (fallback for custom scheme URLs)
+  - Frontend: Password reset auto-closes modal after 4s when social provider detected
 - 2026-03-11: Email verification system for signup:
   - New users must verify email with 6-digit code before logging in
   - DNS MX validation rejects fake/nonexistent email domains
