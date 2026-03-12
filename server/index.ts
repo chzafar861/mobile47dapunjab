@@ -393,7 +393,10 @@ function configureExpoAndLanding(app: express.Application) {
         if (ext && ext !== ".html") {
           return next();
         }
-        res.sendFile(webBuildIndex);
+        let html = fs.readFileSync(webBuildIndex, "utf-8");
+        const faviconTags = `<link rel="icon" type="image/x-icon" href="/favicon.ico" /><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" /><link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" /><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" /><link rel="manifest" href="/site.webmanifest" />`;
+        html = html.replace(/<link rel="icon" href="\/favicon\.ico" \/>/, faviconTags);
+        res.type("html").send(html);
       });
       log("Production: Serving Expo web build with SPA fallback");
     }
