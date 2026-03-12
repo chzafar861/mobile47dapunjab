@@ -1521,8 +1521,30 @@ router.get("/api/auth/google/callback", async (req, res) => {
     const nativeRedirect = (queryParams) => {
       const params = new URLSearchParams(queryParams);
       const deepLink = `${nativeRedirectBase}?${params.toString()}`;
+      const androidPackage = process.env.ANDROID_PACKAGE || "com.punjabtour.fordapunjab";
+      const intentUrl = `intent://auth?${params.toString()}#Intent;scheme=${appScheme};package=${androidPackage};end`;
       console.log(`Google OAuth native: deep link redirect to ${deepLink}`);
-      return res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Redirecting...</title></head><body><script>window.location.href=${JSON.stringify(deepLink)};</script><p>Redirecting to app...</p><a href="${deepLink}">Tap here if not redirected</a></body></html>`);
+      return res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Redirecting...</title></head><body>
+<script>
+function tryRedirect() {
+  var ua = navigator.userAgent || '';
+  if (/android/i.test(ua)) {
+    window.location.href = ${JSON.stringify(intentUrl)};
+  } else {
+    window.location.href = ${JSON.stringify(deepLink)};
+  }
+  setTimeout(function() {
+    document.getElementById('manual').style.display = 'block';
+  }, 2000);
+}
+tryRedirect();
+</script>
+<p>Redirecting to app...</p>
+<div id="manual" style="display:none;text-align:center;margin-top:20px;">
+  <p>If you were not redirected automatically:</p>
+  <a href="${intentUrl}" style="display:inline-block;padding:12px 24px;background:#0D7C3D;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">Open in App</a>
+</div>
+</body></html>`);
     };
     const nativeError = (msg) => {
       return nativeRedirect({ error: msg });
