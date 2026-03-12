@@ -1518,9 +1518,14 @@ router.get("/api/auth/google/callback", async (req, res) => {
     const isNative = platform === "native";
     const appScheme = process.env.APP_SCHEME || "47dapunjab";
     const nativeRedirectBase = `${appScheme}://auth`;
+    const nativeRedirect = (queryParams) => {
+      const params = new URLSearchParams(queryParams);
+      const deepLink = `${nativeRedirectBase}?${params.toString()}`;
+      console.log(`Google OAuth native: deep link redirect to ${deepLink}`);
+      return res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Redirecting...</title></head><body><script>window.location.href=${JSON.stringify(deepLink)};</script><p>Redirecting to app...</p><a href="${deepLink}">Tap here if not redirected</a></body></html>`);
+    };
     const nativeError = (msg) => {
-      const params = new URLSearchParams({ error: msg });
-      return res.redirect(`${nativeRedirectBase}?${params.toString()}`);
+      return nativeRedirect({ error: msg });
     };
     if (error) {
       console.error(`Google OAuth error: ${error}, platform: ${platform}`);
@@ -1597,9 +1602,7 @@ router.get("/api/auth/google/callback", async (req, res) => {
     delete req.session.oauthState;
     if (isNative) {
       const token = await createAuthToken(user.id);
-      const params = new URLSearchParams({ token, userId: String(user.id) });
-      console.log(`Google OAuth native: redirecting to ${nativeRedirectBase} for user ${user.email}`);
-      return res.redirect(`${nativeRedirectBase}?${params.toString()}`);
+      return nativeRedirect({ token, userId: String(user.id) });
     }
     const webToken = await createAuthToken(user.id);
     res.send(oauthCallbackHtml(true, `Signed in as ${user.name || user.email}. You can return to the app now.`, webToken));
