@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Modal,
   RefreshControl,
+  Image,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,6 +23,7 @@ import { useTranslate } from "@/lib/useTranslate";
 import { getApiUrl } from "@/lib/query-client";
 import { nativeFetch } from "@/lib/api-fetch";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { showAlert, showConfirm } from "@/lib/platform-alert";
 import Colors from "@/constants/colors";
@@ -113,6 +115,9 @@ export default function MySubmissionsScreen() {
     notes: "",
   });
 
+  const [editPropertyImages, setEditPropertyImages] = useState<string[]>([]);
+  const [editPersonImage, setEditPersonImage] = useState<string | null>(null);
+
   const loadSubmissions = useCallback(async () => {
     try {
       const data = await authFetch("/api/my-submissions");
@@ -134,7 +139,7 @@ export default function MySubmissionsScreen() {
     loadSubmissions();
   };
 
-  const openEditProperty = (item: PropertySubmission) => {
+  const openEditProperty = async (item: PropertySubmission) => {
     setEditingProperty(item);
     setPropForm({
       ownerName: item.data.ownerName || "",
@@ -144,6 +149,12 @@ export default function MySubmissionsScreen() {
       area: item.data.area || "",
       description: item.data.description || "",
     });
+    try {
+      const full = await authFetch(`/api/property-details/${item.id}`);
+      setEditPropertyImages(full.data?.images || []);
+    } catch {
+      setEditPropertyImages([]);
+    }
     setEditPropertyModal(true);
   };
 
@@ -159,7 +170,50 @@ export default function MySubmissionsScreen() {
       contact_info: item.contact_info || "",
       notes: item.notes || "",
     });
+    setEditPersonImage(item.image_url || null);
     setEditPersonModal(true);
+  };
+
+  const pickEditPropertyImages = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      showAlert("Permission Required", "Please allow access to your photo library.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      quality: 0.7,
+      base64: true,
+      selectionLimit: 5,
+    });
+    if (!result.canceled && result.assets) {
+      const newImages = result.assets.filter((a) => a.base64).map((a) => `data:image/jpeg;base64,${a.base64}`);
+      setEditPropertyImages((prev) => [...prev, ...newImages].slice(0, 5));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const removeEditPropertyImage = (index: number) => {
+    setEditPropertyImages((prev) => prev.filter((_, i) => i !== index));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const pickEditPersonImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      showAlert("Permission Required", "Please allow access to your photo library.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.7,
+      base64: true,
+    });
+    if (!result.canceled && result.assets[0]?.base64) {
+      setEditPersonImage(`data:image/jpeg;base64,${result.assets[0].base64}`);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
   };
 
   const saveProperty = async () => {
@@ -180,6 +234,7 @@ export default function MySubmissionsScreen() {
           location: propForm.location.trim(),
           area: propForm.area.trim(),
           description: propForm.description.trim(),
+          images: editPropertyImages,
         }),
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -211,7 +266,7 @@ export default function MySubmissionsScreen() {
           migration_period: personForm.migration_period,
           contact_info: personForm.contact_info.trim() || null,
           notes: personForm.notes.trim() || null,
-          image_url: editingPerson.image_url || null,
+          image_url: editPersonImage || null,
         }),
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -491,6 +546,24 @@ export default function MySubmissionsScreen() {
               <Text style={styles.formLabel}>{t.submitDetails.description}</Text>
               <TextInput style={[styles.input, styles.textArea]} value={propForm.description} onChangeText={(v) => setPropForm({ ...propForm, description: v })} placeholder={t.submitDetails.description} placeholderTextColor={Colors.light.tabIconDefault} multiline numberOfLines={4} textAlignVertical="top" />
 
+              <Text style={styles.formLabel}>Photos ({editPropertyImages.length}/5)</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                {editPropertyImages.map((img, i) => (
+                  <View key={i} style={styles.editImageWrap}>
+                    <Image source={{ uri: img }} style={styles.editImageThumb} />
+                    <Pressable style={styles.editImageRemove} onPress={() => removeEditPropertyImage(i)}>
+                      <Ionicons name="close-circle" size={22} color="#E74C3C" />
+                    </Pressable>
+                  </View>
+                ))}
+                {editPropertyImages.length < 5 && (
+                  <Pressable style={styles.editImageAddBtn} onPress={pickEditPropertyImages}>
+                    <Ionicons name="camera-outline" size={24} color={Colors.light.primary} />
+                    <Text style={styles.editImageAddText}>Add</Text>
+                  </Pressable>
+                )}
+              </ScrollView>
+
               <Pressable
                 onPress={saveProperty}
                 disabled={saving}
@@ -556,6 +629,22 @@ export default function MySubmissionsScreen() {
 
               <Text style={styles.formLabel}>{t.submitDetails.additionalNotes}</Text>
               <TextInput style={[styles.input, styles.textArea]} value={personForm.notes} onChangeText={(v) => setPersonForm({ ...personForm, notes: v })} placeholder={t.submitDetails.additionalNotes} placeholderTextColor={Colors.light.tabIconDefault} multiline numberOfLines={4} textAlignVertical="top" />
+
+              <Text style={styles.formLabel}>Photo</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                {editPersonImage ? (
+                  <View style={styles.editImageWrap}>
+                    <Image source={{ uri: editPersonImage }} style={styles.editImageThumb} />
+                    <Pressable style={styles.editImageRemove} onPress={() => { setEditPersonImage(null); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+                      <Ionicons name="close-circle" size={22} color="#E74C3C" />
+                    </Pressable>
+                  </View>
+                ) : null}
+                <Pressable style={styles.editImageAddBtn} onPress={pickEditPersonImage}>
+                  <Ionicons name="camera-outline" size={24} color={Colors.light.primary} />
+                  <Text style={styles.editImageAddText}>{editPersonImage ? "Change" : "Add"}</Text>
+                </Pressable>
+              </View>
 
               <Pressable
                 onPress={savePerson}
@@ -893,5 +982,38 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_600SemiBold",
     fontSize: 15,
     color: "#fff",
+  },
+  editImageWrap: {
+    position: "relative" as const,
+    marginRight: 10,
+  },
+  editImageThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    backgroundColor: Colors.light.backgroundSecondary,
+  },
+  editImageRemove: {
+    position: "absolute" as const,
+    top: -6,
+    right: -6,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+  },
+  editImageAddBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.light.primary + "40",
+    borderStyle: "dashed" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 4,
+  },
+  editImageAddText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 11,
+    color: Colors.light.primary,
   },
 });
