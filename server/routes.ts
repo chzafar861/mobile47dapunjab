@@ -124,6 +124,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/property-details/:id/comments", async (req: Request, res: Response) => {
+    try {
+      const result = await pool.query(
+        `SELECT * FROM property_comments WHERE property_id = $1 ORDER BY created_at ASC`,
+        [parseInt(req.params.id as string)]
+      );
+      res.json(result.rows);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/property-details/:id/comments", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Please sign in to comment" });
+      }
+      const { comment, parent_id } = req.body;
+      if (!comment || !comment.trim()) {
+        return res.status(400).json({ error: "Comment is required" });
+      }
+      const userResult = await pool.query("SELECT name, email, avatar_url FROM auth_users WHERE id = $1", [userId]);
+      const userName = userResult.rows[0]?.name || "User";
+      const userEmail = userResult.rows[0]?.email || null;
+      const userAvatar = userResult.rows[0]?.avatar_url || null;
+      const result = await pool.query(
+        `INSERT INTO property_comments (property_id, parent_id, user_name, user_email, user_avatar, comment)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [parseInt(req.params.id as string), parent_id || null, userName, userEmail, userAvatar, comment.trim()]
+      );
+      res.json(result.rows[0]);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   app.delete("/api/property-details/:id", async (req: Request, res: Response) => {
     try {
       await deleteDocument("propertyDetails", req.params.id as string);
