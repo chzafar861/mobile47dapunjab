@@ -105,7 +105,7 @@ export default function MigrationDetailScreen() {
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const [commentText, setCommentText] = useState("");
   const [commentName, setCommentName] = useState(user?.name || "");
@@ -246,7 +246,7 @@ export default function MigrationDetailScreen() {
               <DetailRow icon="home" label={t.humanFind.village} value={trVillage} />
               <DetailRow icon="map" label={t.humanFind.district} value={trDistrict} iconColor={Colors.light.accent} />
               <DetailRow icon="location" label={t.humanFind.currentLocation} value={trLocation} iconColor="#E74C3C" />
-              {record.contact_info && (
+              {isAdmin && record.contact_info && (
                 <DetailRow icon="call" label="Contact" value={trContact} iconColor="#3498DB" />
               )}
             </View>

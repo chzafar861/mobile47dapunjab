@@ -160,7 +160,7 @@ export default function PropertyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
@@ -355,7 +355,7 @@ export default function PropertyDetailScreen() {
           </>
         )}
 
-        {(d.contact || d.phone || d.email) && (
+        {isAdmin && (d.contact || d.phone || d.email) && (
           <>
             <View style={styles.divider} />
             <View style={styles.contentSection}>
