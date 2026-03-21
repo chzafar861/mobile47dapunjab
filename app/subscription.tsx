@@ -257,6 +257,14 @@ export default function SubscriptionScreen() {
               Cancel anytime  •  24/7 support  •  Works internationally
             </Text>
 
+            <View style={styles.noticeBox}>
+              <Ionicons name="alert-circle-outline" size={20} color={Colors.light.accent} />
+              <Text style={styles.noticeText}>
+                <Text style={{ fontFamily: "Poppins_600SemiBold" }}>Pakistani Users: </Text>
+                Please make sure international online payments are enabled on your debit/credit card before subscribing. You can enable this from your bank's mobile app or by visiting your nearest branch.
+              </Text>
+            </View>
+
             <Pressable
               onPress={() => router.back()}
               style={({ pressed }) => [styles.goBackBtn, { opacity: pressed ? 0.7 : 1 }]}
@@ -524,6 +532,25 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 8,
     marginBottom: 10,
+  },
+  noticeBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 14,
+    padding: 14,
+    backgroundColor: Colors.light.accent + "12",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.accent + "25",
+  },
+  noticeText: {
+    flex: 1,
+    fontFamily: "Poppins_400Regular",
+    fontSize: 12,
+    color: Colors.light.text,
+    lineHeight: 18,
   },
   goBackBtn: {
     flexDirection: "row",
