@@ -1040,6 +1040,220 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES auth_users(id),
+      plan TEXT NOT NULL DEFAULT 'monthly',
+      payment_method TEXT NOT NULL DEFAULT 'stripe',
+      status TEXT NOT NULL DEFAULT 'pending',
+      stripe_session_id TEXT,
+      payment_proof_url TEXT,
+      transaction_id TEXT,
+      amount INTEGER NOT NULL DEFAULT 1000,
+      currency TEXT NOT NULL DEFAULT 'usd',
+      starts_at TIMESTAMP,
+      expires_at TIMESTAMP,
+      admin_note TEXT,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+
+  app.get("/api/subscription/status", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const result = await pool.query(
+        `SELECT * FROM subscriptions WHERE user_id = $1 AND status = 'active' AND expires_at > NOW() ORDER BY expires_at DESC LIMIT 1`,
+        [userId]
+      );
+      if (result.rows.length > 0) {
+        res.json({ active: true, subscription: result.rows[0] });
+      } else {
+        const pending = await pool.query(
+          `SELECT * FROM subscriptions WHERE user_id = $1 AND status = 'pending' ORDER BY created_at DESC LIMIT 1`,
+          [userId]
+        );
+        res.json({ active: false, pending: pending.rows[0] || null });
+      }
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/subscription/create", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { plan, payment_method } = req.body;
+      if (!plan || !["monthly", "yearly"].includes(plan)) {
+        return res.status(400).json({ error: "Invalid plan" });
+      }
+      if (!payment_method || !["stripe", "jazzcash", "easypaisa"].includes(payment_method)) {
+        return res.status(400).json({ error: "Invalid payment method" });
+      }
+
+      const amount = plan === "monthly" ? 1000 : 4000;
+      const currency = payment_method === "stripe" ? "usd" : "pkr";
+      const amountFinal = payment_method === "stripe" ? amount : (plan === "monthly" ? 2800 : 11200);
+
+      if (payment_method === "stripe") {
+        const stripeKey = process.env.STRIPE_SECRET_KEY;
+        if (!stripeKey) {
+          return res.status(503).json({ error: "Stripe is not configured yet. Please try JazzCash or EasyPaisa." });
+        }
+        const stripe = require("stripe")(stripeKey);
+        const domain = process.env.REPLIT_DOMAINS?.split(",")[0] || process.env.REPLIT_DEV_DOMAIN || "localhost:5000";
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: [{
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: plan === "monthly" ? "47daPunjab Monthly Plan" : "47daPunjab Yearly Plan",
+                description: plan === "monthly" ? "Monthly subscription - $10/month" : "Yearly subscription - $40/year (Save 67%!)",
+              },
+              unit_amount: amount,
+            },
+            quantity: 1,
+          }],
+          mode: "payment",
+          success_url: `https://${domain}/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `https://${domain}/subscription?canceled=true`,
+          metadata: { userId: String(userId), plan },
+        });
+
+        await pool.query(
+          `INSERT INTO subscriptions (user_id, plan, payment_method, status, stripe_session_id, amount, currency) VALUES ($1, $2, $3, 'pending', $4, $5, $6)`,
+          [userId, plan, "stripe", session.id, amount, "usd"]
+        );
+
+        return res.json({ url: session.url, sessionId: session.id });
+      }
+
+      const result = await pool.query(
+        `INSERT INTO subscriptions (user_id, plan, payment_method, status, amount, currency) VALUES ($1, $2, $3, 'pending', $4, $5) RETURNING id`,
+        [userId, plan, payment_method, amountFinal, currency]
+      );
+
+      res.json({ subscriptionId: result.rows[0].id, amount: amountFinal, currency });
+    } catch (e: any) {
+      console.error("Subscription create error:", e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/subscription/submit-proof", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { subscription_id, transaction_id, payment_proof_url } = req.body;
+      if (!subscription_id || !transaction_id) {
+        return res.status(400).json({ error: "Transaction ID is required" });
+      }
+
+      const check = await pool.query(
+        `SELECT id FROM subscriptions WHERE id = $1 AND user_id = $2 AND status = 'pending'`,
+        [subscription_id, userId]
+      );
+      if (check.rows.length === 0) {
+        return res.status(404).json({ error: "Subscription not found" });
+      }
+
+      await pool.query(
+        `UPDATE subscriptions SET transaction_id = $1, payment_proof_url = $2, status = 'awaiting_review', updated_at = NOW() WHERE id = $3`,
+        [transaction_id, payment_proof_url || null, subscription_id]
+      );
+
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/subscription/verify-stripe", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+
+      const { session_id } = req.body;
+      if (!session_id) return res.status(400).json({ error: "Session ID required" });
+
+      const stripeKey = process.env.STRIPE_SECRET_KEY;
+      if (!stripeKey) return res.status(503).json({ error: "Stripe not configured" });
+
+      const stripe = require("stripe")(stripeKey);
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+
+      if (session.payment_status === "paid") {
+        const plan = session.metadata?.plan || "monthly";
+        const interval = plan === "yearly" ? "1 year" : "1 month";
+        await pool.query(
+          `UPDATE subscriptions SET status = 'active', starts_at = NOW(), expires_at = NOW() + INTERVAL '${interval}', updated_at = NOW() WHERE stripe_session_id = $1 AND user_id = $2`,
+          [session_id, userId]
+        );
+        return res.json({ success: true, active: true });
+      }
+
+      res.json({ success: false, status: session.payment_status });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/admin/subscriptions", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userCheck = await pool.query("SELECT role FROM auth_users WHERE id = $1", [userId]);
+      if (userCheck.rows[0]?.role !== "admin") return res.status(403).json({ error: "Admin only" });
+
+      const result = await pool.query(`
+        SELECT s.*, u.name as user_name, u.email as user_email 
+        FROM subscriptions s 
+        JOIN auth_users u ON s.user_id = u.id 
+        ORDER BY s.created_at DESC
+      `);
+      res.json(result.rows);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/admin/subscriptions/:id", async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any)?.userId;
+      if (!userId) return res.status(401).json({ error: "Not authenticated" });
+      const userCheck = await pool.query("SELECT role FROM auth_users WHERE id = $1", [userId]);
+      if (userCheck.rows[0]?.role !== "admin") return res.status(403).json({ error: "Admin only" });
+
+      const { status, admin_note } = req.body;
+      const sub = await pool.query("SELECT * FROM subscriptions WHERE id = $1", [parseInt(req.params.id)]);
+      if (sub.rows.length === 0) return res.status(404).json({ error: "Not found" });
+
+      if (status === "active") {
+        const plan = sub.rows[0].plan;
+        const interval = plan === "yearly" ? "1 year" : "1 month";
+        await pool.query(
+          `UPDATE subscriptions SET status = 'active', starts_at = NOW(), expires_at = NOW() + INTERVAL '${interval}', admin_note = $1, updated_at = NOW() WHERE id = $2`,
+          [admin_note || null, parseInt(req.params.id)]
+        );
+      } else {
+        await pool.query(
+          `UPDATE subscriptions SET status = $1, admin_note = $2, updated_at = NOW() WHERE id = $3`,
+          [status, admin_note || null, parseInt(req.params.id)]
+        );
+      }
+
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

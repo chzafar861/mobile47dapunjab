@@ -61,6 +61,7 @@ function AuthGate() {
       <Stack.Screen name="my-submissions" options={{ headerShown: false }} />
       <Stack.Screen name="my-orders" options={{ headerShown: false }} />
       <Stack.Screen name="property-detail" options={{ headerShown: false }} />
+      <Stack.Screen name="subscription" options={{ headerShown: false }} />
     </Stack>
   );
 }

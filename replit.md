@@ -4,6 +4,24 @@
 A mobile service platform for Punjab, Pakistan visitors. Features protocol services, village video recording, customs assistance, shop, HumanFind (people & property search), history, and property detail submissions.
 
 ## Recent Changes
+- 2026-03-21: Subscription/Payment system added:
+  - New subscription screen (app/subscription.tsx) with plan selection, payment method picker, and proof submission
+  - Plans: Monthly ($10/Rs 2,800) and Yearly ($40/Rs 11,200, Save 67%)
+  - Payment methods: JazzCash, EasyPaisa (manual proof), Stripe (card checkout, requires API keys)
+  - JazzCash/EasyPaisa: user sends payment, then submits transaction ID + screenshot for admin review
+  - Stripe: creates Stripe Checkout session, redirects to payment page, auto-verifies on return
+  - Database: subscriptions table (user_id, plan, payment_method, status, stripe_session_id, transaction_id, payment_proof_url, amount, currency, starts_at, expires_at)
+  - API endpoints: GET /api/subscription/status, POST /api/subscription/create, POST /api/subscription/submit-proof, POST /api/subscription/verify-stripe
+  - Admin endpoints: GET /api/admin/subscriptions, PUT /api/admin/subscriptions/:id (approve/reject)
+  - Active subscription shows green card with expiry date and feature list
+  - Pending/awaiting_review shows status banner
+  - Stack.Screen registered in app/_layout.tsx
+  - Profile page already links to /subscription for non-admin users
+- 2026-03-13: Image edit in my-submissions modals:
+  - Property edit modal: image gallery with add/remove (up to 5 photos)
+  - Person edit modal: single photo add/change/remove
+  - Uses expo-image-picker with base64 encoding
+  - Images saved through existing PUT endpoints
 - 2026-03-12: Google OAuth Android fix & password reset UX:
   - Backend: getBaseUrl() now safely handles comma-separated x-forwarded-proto/host headers
   - Backend: New getOAuthRedirectBase() uses fixed production URL for OAuth redirect_uri consistency
@@ -117,7 +135,7 @@ A mobile service platform for Punjab, Pakistan visitors. Features protocol servi
 ## Project Architecture
 - **Stack**: Expo Router (React Native) + Express backend
 - **Data**: PostgreSQL (built-in) for cloud persistence via JSONB columns
-- **Database Tables**: bookings, cart, property_details, rental_inquiries, users, auth_users, migration_records, migration_comments, blog_posts
+- **Database Tables**: bookings, cart, property_details, rental_inquiries, users, auth_users, migration_records, migration_comments, blog_posts, subscriptions
 - **API Layer**: server/firebase.ts abstracts DB operations; server/routes.ts defines REST endpoints; server/auth.ts handles authentication
 - **Font**: Poppins (Google Fonts)
 - **Colors**: Emerald green + Gold accent (Pakistan inspired)
@@ -145,6 +163,12 @@ A mobile service platform for Punjab, Pakistan visitors. Features protocol servi
 ### Tab Navigation
 5 tabs: Home, Services, Shop, HumanFind, Profile
 Supports NativeTabs (iOS 26 liquid glass) and classic Tabs with blur
+
+## Payment System
+- **Stripe**: Not yet configured. Set STRIPE_SECRET_KEY environment variable when ready. Get keys from https://dashboard.stripe.com/apikeys
+- **JazzCash/EasyPaisa**: Manual payment flow. Users send money to configured account number and submit transaction ID + screenshot. Admin verifies and activates subscription.
+- **Plans**: Monthly ($10/Rs 2,800), Yearly ($40/Rs 11,200)
+- **Admin**: Can view and approve/reject subscriptions via API endpoints
 
 ## User Preferences
 - Main admin email: 47dapunjab@gmail.com
