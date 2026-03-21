@@ -7,27 +7,19 @@ import {
   Pressable,
   Platform,
   ActivityIndicator,
-  TextInput,
   Linking,
-  Modal,
-  Image,
 } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
 import { SEOHead } from "@/components/SEOHead";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import * as ImagePicker from "expo-image-picker";
 import { showAlert } from "@/lib/platform-alert";
 import Colors from "@/constants/colors";
 
 type Plan = "monthly" | "yearly";
-type PaymentMethod = "stripe" | "jazzcash" | "easypaisa";
-
-const JAZZCASH_NUMBER = "03001234567";
-const EASYPAISA_NUMBER = "03001234567";
 
 export default function SubscriptionScreen() {
   const insets = useSafeAreaInsets();
@@ -40,14 +32,8 @@ export default function SubscriptionScreen() {
   const [pendingSub, setPendingSub] = useState<any>(null);
 
   const [selectedPlan, setSelectedPlan] = useState<Plan>("yearly");
-  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>("jazzcash");
   const [processing, setProcessing] = useState(false);
 
-  const [proofModal, setProofModal] = useState(false);
-  const [transactionId, setTransactionId] = useState("");
-  const [proofImage, setProofImage] = useState<string | null>(null);
-  const [currentSubId, setCurrentSubId] = useState<number | null>(null);
-  const [submittingProof, setSubmittingProof] = useState(false);
 
   const checkStatus = useCallback(async () => {
     try {
@@ -97,67 +83,22 @@ export default function SubscriptionScreen() {
     try {
       const result = await authFetch("/api/subscription/create", {
         method: "POST",
-        body: JSON.stringify({ plan: selectedPlan, payment_method: selectedPayment }),
+        body: JSON.stringify({ plan: selectedPlan, payment_method: "stripe" }),
       });
 
-      if (selectedPayment === "stripe" && result.url) {
+      if (result.url) {
         if (Platform.OS === "web") {
           window.location.href = result.url;
         } else {
           Linking.openURL(result.url);
         }
       } else {
-        setCurrentSubId(result.subscriptionId);
-        setProofModal(true);
+        showAlert("Error", "Could not create checkout session. Please try again.");
       }
     } catch (err: any) {
       showAlert("Error", err.message || "Failed to create subscription");
     } finally {
       setProcessing(false);
-    }
-  };
-
-  const pickProofImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      showAlert("Permission Required", "Please allow access to your photo library.");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.7,
-      base64: true,
-    });
-    if (!result.canceled && result.assets[0]?.base64) {
-      setProofImage(`data:image/jpeg;base64,${result.assets[0].base64}`);
-    }
-  };
-
-  const submitProof = async () => {
-    if (!transactionId.trim()) {
-      showAlert("Required", "Please enter the transaction ID from your payment.");
-      return;
-    }
-    setSubmittingProof(true);
-    try {
-      await authFetch("/api/subscription/submit-proof", {
-        method: "POST",
-        body: JSON.stringify({
-          subscription_id: currentSubId,
-          transaction_id: transactionId.trim(),
-          payment_proof_url: proofImage,
-        }),
-      });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setProofModal(false);
-      setTransactionId("");
-      setProofImage(null);
-      showAlert("Submitted!", "Your payment proof has been submitted. We'll verify and activate your subscription within 24 hours.");
-      checkStatus();
-    } catch (err: any) {
-      showAlert("Error", err.message || "Failed to submit proof");
-    } finally {
-      setSubmittingProof(false);
     }
   };
 
@@ -169,11 +110,7 @@ export default function SubscriptionScreen() {
     );
   }
 
-  const planAmount = selectedPayment === "stripe"
-    ? (selectedPlan === "monthly" ? "$10" : "$40")
-    : (selectedPlan === "monthly" ? "Rs 2,800" : "Rs 11,200");
-
-  const paymentAccount = selectedPayment === "jazzcash" ? JAZZCASH_NUMBER : EASYPAISA_NUMBER;
+  const planAmount = selectedPlan === "monthly" ? "$10" : "$40";
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -251,9 +188,7 @@ export default function SubscriptionScreen() {
                 onPress={() => { setSelectedPlan("monthly"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                 style={[styles.planCard, selectedPlan === "monthly" && styles.planCardSelected]}
               >
-                <Text style={[styles.planPrice, selectedPlan === "monthly" && styles.planPriceSelected]}>
-                  {selectedPayment === "stripe" ? "$10" : "Rs 2,800"}
-                </Text>
+                <Text style={[styles.planPrice, selectedPlan === "monthly" && styles.planPriceSelected]}>$10</Text>
                 <Text style={[styles.planPeriod, selectedPlan === "monthly" && styles.planPeriodSelected]}>/month</Text>
                 <Text style={[styles.planName, selectedPlan === "monthly" && styles.planNameSelected]}>Monthly</Text>
               </Pressable>
@@ -265,58 +200,11 @@ export default function SubscriptionScreen() {
                 <View style={styles.saveBadge}>
                   <Text style={styles.saveBadgeText}>Save 67%</Text>
                 </View>
-                <Text style={[styles.planPrice, selectedPlan === "yearly" && styles.planPriceSelected]}>
-                  {selectedPayment === "stripe" ? "$40" : "Rs 11,200"}
-                </Text>
+                <Text style={[styles.planPrice, selectedPlan === "yearly" && styles.planPriceSelected]}>$40</Text>
                 <Text style={[styles.planPeriod, selectedPlan === "yearly" && styles.planPeriodSelected]}>/year</Text>
                 <Text style={[styles.planName, selectedPlan === "yearly" && styles.planNameSelected]}>Yearly</Text>
               </Pressable>
             </View>
-
-            <Text style={styles.sectionLabel}>Payment Method</Text>
-            <View style={styles.paymentMethods}>
-              {([
-                { key: "jazzcash" as PaymentMethod, label: "JazzCash", icon: "phone-portrait-outline", color: "#E2232D" },
-                { key: "easypaisa" as PaymentMethod, label: "EasyPaisa", icon: "phone-portrait-outline", color: "#36B37E" },
-                { key: "stripe" as PaymentMethod, label: "Card (Stripe)", icon: "card-outline", color: "#635BFF" },
-              ]).map((m) => (
-                <Pressable
-                  key={m.key}
-                  onPress={() => { setSelectedPayment(m.key); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                  style={[styles.paymentCard, selectedPayment === m.key && { borderColor: m.color, borderWidth: 2 }]}
-                >
-                  <View style={[styles.paymentIcon, { backgroundColor: m.color + "15" }]}>
-                    <Ionicons name={m.icon as any} size={22} color={m.color} />
-                  </View>
-                  <Text style={[styles.paymentLabel, selectedPayment === m.key && { color: m.color, fontFamily: "Poppins_600SemiBold" }]}>{m.label}</Text>
-                  {selectedPayment === m.key && (
-                    <Ionicons name="checkmark-circle" size={20} color={m.color} style={{ marginLeft: "auto" }} />
-                  )}
-                </Pressable>
-              ))}
-            </View>
-
-            {(selectedPayment === "jazzcash" || selectedPayment === "easypaisa") && (
-              <View style={styles.instructionBox}>
-                <Text style={styles.instructionTitle}>
-                  <Ionicons name="information-circle" size={16} color={Colors.light.primary} /> Payment Instructions
-                </Text>
-                <Text style={styles.instructionText}>
-                  1. Send <Text style={{ fontFamily: "Poppins_600SemiBold" }}>{planAmount}</Text> to{" "}
-                  <Text style={{ fontFamily: "Poppins_600SemiBold" }}>{selectedPayment === "jazzcash" ? "JazzCash" : "EasyPaisa"}</Text> account:
-                </Text>
-                <View style={styles.accountBox}>
-                  <Text style={styles.accountNumber}>{paymentAccount}</Text>
-                  <Text style={styles.accountName}>47daPunjab Services</Text>
-                </View>
-                <Text style={styles.instructionText}>
-                  2. After payment, tap "Subscribe Now" and enter your transaction ID
-                </Text>
-                <Text style={styles.instructionText}>
-                  3. Your subscription will be activated within 24 hours after verification
-                </Text>
-              </View>
-            )}
 
             <View style={styles.featuresSection}>
               <Text style={styles.featuresTitle}>What You Get</Text>
@@ -359,8 +247,14 @@ export default function SubscriptionScreen() {
               </LinearGradient>
             </Pressable>
 
+            <View style={styles.secureRow}>
+              <Ionicons name="card-outline" size={16} color={Colors.light.primary} />
+              <Text style={styles.secureText}>Secure card payment via Stripe</Text>
+              <Ionicons name="lock-closed-outline" size={14} color={Colors.light.primary} />
+            </View>
+
             <Text style={styles.guarantee}>
-              Secure payment  •  Cancel anytime  •  24/7 support
+              Cancel anytime  •  24/7 support  •  Works internationally
             </Text>
 
             <Pressable
@@ -374,64 +268,6 @@ export default function SubscriptionScreen() {
         )}
       </ScrollView>
 
-      <Modal visible={proofModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { paddingTop: insets.top + 20 }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Submit Payment Proof</Text>
-              <Pressable onPress={() => setProofModal(false)}>
-                <Ionicons name="close" size={24} color={Colors.light.text} />
-              </Pressable>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.proofInstructions}>
-                <Ionicons name="checkmark-circle-outline" size={40} color={Colors.light.primary} />
-                <Text style={styles.proofTitle}>Payment Sent?</Text>
-                <Text style={styles.proofSubtitle}>
-                  Enter your {selectedPayment === "jazzcash" ? "JazzCash" : "EasyPaisa"} transaction ID below
-                </Text>
-              </View>
-
-              <Text style={styles.formLabel}>Transaction ID *</Text>
-              <TextInput
-                style={styles.input}
-                value={transactionId}
-                onChangeText={setTransactionId}
-                placeholder="e.g. TRX123456789"
-                placeholderTextColor={Colors.light.tabIconDefault}
-              />
-
-              <Text style={styles.formLabel}>Payment Screenshot (Optional)</Text>
-              <Pressable style={styles.proofImageBtn} onPress={pickProofImage}>
-                {proofImage ? (
-                  <Image source={{ uri: proofImage }} style={styles.proofImagePreview} />
-                ) : (
-                  <View style={styles.proofImagePlaceholder}>
-                    <Ionicons name="camera-outline" size={28} color={Colors.light.tabIconDefault} />
-                    <Text style={styles.proofImageText}>Tap to upload screenshot</Text>
-                  </View>
-                )}
-              </Pressable>
-
-              <Pressable
-                onPress={submitProof}
-                disabled={submittingProof}
-                style={({ pressed }) => [styles.submitProofBtn, { opacity: pressed || submittingProof ? 0.85 : 1 }]}
-              >
-                {submittingProof ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="send-outline" size={18} color="#fff" />
-                    <Text style={styles.submitProofBtnText}>Submit for Verification</Text>
-                  </>
-                )}
-              </Pressable>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -620,74 +456,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#fff",
   },
-  paymentMethods: {
-    marginHorizontal: 16,
-    gap: 10,
-  },
-  paymentCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: Colors.light.border,
-    backgroundColor: Colors.light.backgroundSecondary,
-    gap: 12,
-  },
-  paymentIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  paymentLabel: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 15,
-    color: Colors.light.text,
-  },
-  instructionBox: {
-    margin: 16,
-    padding: 16,
-    backgroundColor: Colors.light.primary + "08",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.light.primary + "20",
-  },
-  instructionTitle: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 14,
-    color: Colors.light.primary,
-    marginBottom: 10,
-  },
-  instructionText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 13,
-    color: Colors.light.text,
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  accountBox: {
-    backgroundColor: "#fff",
-    padding: 14,
-    borderRadius: 10,
-    marginVertical: 8,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-  },
-  accountNumber: {
-    fontFamily: "Poppins_700Bold",
-    fontSize: 20,
-    color: Colors.light.primary,
-    letterSpacing: 1,
-  },
-  accountName: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-    marginTop: 2,
-  },
   featuresSection: {
     margin: 16,
     padding: 20,
@@ -737,12 +505,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#fff",
   },
+  secureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 14,
+  },
+  secureText: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 13,
+    color: Colors.light.primary,
+  },
   guarantee: {
     fontFamily: "Poppins_400Regular",
     fontSize: 12,
     color: Colors.light.textSecondary,
     textAlign: "center",
-    marginTop: 12,
+    marginTop: 8,
     marginBottom: 10,
   },
   goBackBtn: {
@@ -763,104 +543,5 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_500Medium",
     fontSize: 14,
     color: Colors.light.textSecondary,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: Colors.light.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    maxHeight: "90%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 18,
-    color: Colors.light.text,
-  },
-  proofInstructions: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  proofTitle: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 18,
-    color: Colors.light.text,
-    marginTop: 10,
-  },
-  proofSubtitle: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    textAlign: "center",
-    marginTop: 4,
-  },
-  formLabel: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 13,
-    color: Colors.light.text,
-    marginBottom: 6,
-    marginTop: 12,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    borderRadius: 12,
-    padding: 14,
-    fontFamily: "Poppins_400Regular",
-    fontSize: 14,
-    color: Colors.light.text,
-    backgroundColor: Colors.light.backgroundSecondary,
-  },
-  proofImageBtn: {
-    marginTop: 8,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  proofImagePreview: {
-    width: "100%",
-    height: 180,
-    borderRadius: 12,
-  },
-  proofImagePlaceholder: {
-    height: 120,
-    borderWidth: 1.5,
-    borderColor: Colors.light.border,
-    borderStyle: "dashed",
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: Colors.light.backgroundSecondary,
-  },
-  proofImageText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 13,
-    color: Colors.light.tabIconDefault,
-  },
-  submitProofBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: Colors.light.primary,
-    borderRadius: 14,
-    padding: 16,
-    marginTop: 24,
-  },
-  submitProofBtnText: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 15,
-    color: "#fff",
   },
 });

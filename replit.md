@@ -165,10 +165,9 @@ A mobile service platform for Punjab, Pakistan visitors. Features protocol servi
 Supports NativeTabs (iOS 26 liquid glass) and classic Tabs with blur
 
 ## Payment System
-- **Stripe**: Not yet configured. Set STRIPE_SECRET_KEY environment variable when ready. Get keys from https://dashboard.stripe.com/apikeys
-- **JazzCash/EasyPaisa**: Manual payment flow. Users send money to configured account number and submit transaction ID + screenshot. Admin verifies and activates subscription.
-- **Plans**: Monthly ($10/Rs 2,800), Yearly ($40/Rs 11,200)
-- **Admin**: Can view and approve/reject subscriptions via API endpoints
+- **Stripe only** (ATM/card payments): Set STRIPE_SECRET_KEY environment variable when ready. Get keys from https://dashboard.stripe.com/apikeys
+- **Plans**: Monthly ($10/month), Yearly ($40/year — Save 67%)
+- **Admin**: Can view and approve/reject subscriptions via GET/PUT /api/admin/subscriptions
 
 ## User Preferences
 - Main admin email: 47dapunjab@gmail.com
