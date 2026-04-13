@@ -1102,7 +1102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (payment_method === "stripe") {
         const stripeKey = process.env.STRIPE_SECRET_KEY;
         if (!stripeKey) {
-          return res.status(503).json({ error: "Stripe is not configured yet. Please try JazzCash or EasyPaisa." });
+          return res.status(503).json({ error: "Payment system is being set up. Please try again later or contact 47dapunjab@gmail.com for help." });
         }
         const stripe = require("stripe")(stripeKey);
         const domain = process.env.REPLIT_DOMAINS?.split(",")[0] || process.env.REPLIT_DEV_DOMAIN || "localhost:5000";
